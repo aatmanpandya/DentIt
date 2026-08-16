@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dentalpms
+          POSTGRES_PASSWORD: dentalpms_dev
+          POSTGRES_DB: dentalpms
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U dentalpms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://dentalpms:dentalpms_dev@localhost:55432/dentalpms
+      DATABASE_URL_APP: postgres://dentalpms_app:dentalpms_app_dev@localhost:55432/dentalpms
+      JWT_ACCESS_SECRET: ci-access-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # RLS is the tenancy gate — see docs/specs/data-model.md. This must run before
+      # anything else touches the schema, and the build fails if it doesn't pass.
+      - run: npm run db:generate
+      - run: npm run db:migrate
+
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test

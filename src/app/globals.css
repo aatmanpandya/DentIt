@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — see docs/specs/ui-design.md.
+ * Clinical status colours (bleed/caution/healthy) are reserved and must never be used
+ * decoratively. Light theme is primary: operatories are brightly lit and 2mm perio
+ * numerals need maximum contrast — dark mode is a later preference, not the default.
+ */
+:root {
+  --paper: #f8f9f8;
+  --surface: #ffffff;
+  --ink: #101418;
+  --ink-soft: #5a6570;
+  --steel: #33556e;
+  --steel-lo: #e8edf1;
+  --rule: #dde1de;
+  --band: #0b0e11;
+
+  --bleed: #c1272d;
+  --caution: #c77a0a;
+  --healthy: #2e7d5b;
+
+  --radius: 3px;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-steel: var(--steel);
+  --color-steel-lo: var(--steel-lo);
+  --color-rule: var(--rule);
+  --color-band: var(--band);
+  --color-bleed: var(--bleed);
+  --color-caution: var(--caution);
+  --color-healthy: var(--healthy);
+
+  --font-data: var(--font-plex-mono);
+  --font-sans: var(--font-plex-sans);
+  --font-condensed: var(--font-plex-condensed);
+
+  --radius-DEFAULT: var(--radius);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Tabular figures everywhere a number appears — measurements, prices, times. */
+.font-data,
+.tabular-nums {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-condensed {
+  font-family: var(--font-plex-condensed), var(--font-plex-sans), sans-serif;
+}
+
+/* Visible keyboard focus everywhere — a hard requirement, not a nice-to-have. */
+:focus-visible {
+  outline: 2px solid var(--steel);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
