@@ -36,6 +36,20 @@
       "when": 1786870700546,
       "tag": "0004_condemned_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786874904955,
+      "tag": "0005_fuzzy_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786876572561,
+      "tag": "0006_starter_procedure_catalog",
+      "breakpoints": true
     }
   ]
 }

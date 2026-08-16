@@ -36,4 +36,10 @@ describe("RBAC matrix", () => {
     expect(can("accountant", "patients", "read")).toBe(true);
     expect(can("accountant", "patients", "write")).toBe(false);
   });
+
+  it("clinical and front-desk roles can read the catalog but only admin roles edit it", () => {
+    expect(can("provider", "procedure_codes", "read")).toBe(true);
+    expect(can("provider", "procedure_codes", "write")).toBe(false);
+    expect(can("accountant", "procedure_codes", "write")).toBe(true);
+  });
 });

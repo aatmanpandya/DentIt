@@ -1,0 +1,2 @@
+ALTER TABLE "procedure_codes" ALTER COLUMN "organization_id" DROP NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "procedure_codes_starter_code_idx" ON "procedure_codes" USING btree ("code") WHERE "procedure_codes"."organization_id" IS NULL;

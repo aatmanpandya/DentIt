@@ -79,3 +79,18 @@ create extension if not exists pg_trgm;
 drop index if exists patients_name_trgm_idx;
 create index patients_name_trgm_idx on patients
   using gin ((first_name || ' ' || last_name) gin_trgm_ops);
+
+-- procedure_codes starter template: organization_id IS NULL rows (see
+-- docs/specs/pilot-foundations.md §1) are otherwise invisible to every tenant session,
+-- because tenant_isolation's "organization_id = current_org" is never true against NULL.
+-- Request-scoped code (POST /procedure-codes/import-starter) must still go through
+-- dbForRequest, never adminDb, per CLAUDE.md's tenancy rule — so this additive, SELECT-only
+-- policy is what makes the shared template readable. Postgres OR-combines permissive
+-- policies for the same command, so a session can now see its own org's rows (via
+-- tenant_isolation) OR the null-org template (via this policy). Writes are untouched:
+-- tenant_isolation's WITH CHECK still requires organization_id = the session's own org, so
+-- a request-scoped session can never create/edit the shared template itself.
+drop policy if exists procedure_codes_read_starter_template on procedure_codes;
+create policy procedure_codes_read_starter_template on procedure_codes
+  for select
+  using (organization_id is null);

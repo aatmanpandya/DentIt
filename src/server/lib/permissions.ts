@@ -23,6 +23,7 @@ export type Resource =
   | "treatment_plans"
   | "invoices_payments"
   | "fee_schedules"
+  | "procedure_codes"
   | "users"
   | "org_settings"
   | "audit_log";
@@ -67,6 +68,13 @@ const MATRIX: Record<Resource, Partial<Record<Role, Action[]>>> = {
   },
   fee_schedules: {
     owner: ["read", "write"], admin: ["read", "write"], accountant: ["read", "write"],
+  },
+  // Catalog is owned by owner/admin/accountant (same people as fee_schedules); clinical and
+  // front-desk roles get read-only since charting/scheduling need to read codes even though
+  // they never edit the catalog itself.
+  procedure_codes: {
+    owner: ["read", "write"], admin: ["read", "write"], accountant: ["read", "write"],
+    front_desk: ["read"], provider: ["read"], hygienist: ["read"], assistant: ["read"],
   },
   users: {
     owner: ["read", "write"], admin: ["read", "write"],

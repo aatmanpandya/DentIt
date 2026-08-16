@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   date,
@@ -10,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { tenantColumns } from "./_helpers";
 import { locations } from "./locations";
+import { organizations } from "./organizations";
 
 // See docs/specs/pilot-foundations.md §1 — catalog is clinic-owned, no Indian standard exists.
 export const procedureCategory = pgEnum("procedure_category", [
@@ -43,6 +45,7 @@ export const procedureCodes = pgTable(
     ...tenantColumns(),
     // organizationId is nullable here despite tenantColumns() — null = starter template,
     // copied into a clinic's own catalog at onboarding. See pilot-foundations.md §1.
+    organizationId: uuid("organization_id").references(() => organizations.id),
     code: text("code").notNull(),
     shortName: text("short_name").notNull(),
     description: text("description"),
@@ -53,7 +56,15 @@ export const procedureCodes = pgTable(
     cdtEquivalent: text("cdt_equivalent"),
     isActive: boolean("is_active").notNull().default(true),
   },
-  (t) => [uniqueIndex("procedure_codes_org_code_idx").on(t.organizationId, t.code)],
+  (t) => [
+    uniqueIndex("procedure_codes_org_code_idx").on(t.organizationId, t.code),
+    // The index above can't stop duplicate codes among organization_id IS NULL rows —
+    // Postgres treats every NULL as distinct in a unique index — so the starter template
+    // gets its own partial index instead.
+    uniqueIndex("procedure_codes_starter_code_idx")
+      .on(t.code)
+      .where(sql`${t.organizationId} IS NULL`),
+  ],
 );
 
 export const feeSchedules = pgTable("fee_schedules", {
