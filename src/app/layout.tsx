@@ -24,7 +24,7 @@ const plexCondensed = IBM_Plex_Sans_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: "DentalPMS",
+  title: "DentIt",
   description: "Practice management for dental clinics.",
 };
 

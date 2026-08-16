@@ -6,8 +6,8 @@
  * into a typed ApiError the UI can switch on.
  */
 
-const TOKEN_KEY = "dentalpms_access_token";
-const REFRESH_KEY = "dentalpms_refresh_token";
+const TOKEN_KEY = "dentit_access_token";
+const REFRESH_KEY = "dentit_refresh_token";
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;

@@ -16,7 +16,7 @@ if (!process.env.DATABASE_URL) {
 /**
  * Admin connection — migrations and seeding only. Bypasses RLS (superuser-ish role).
  * Request-scoped code must use `dbForRequest()` in ./tenant.ts instead, which connects
- * as the non-BYPASSRLS `dentalpms_app` role. See docs/specs/data-model.md.
+ * as the non-BYPASSRLS `dentit_app` role. See docs/specs/data-model.md.
  */
 const adminClient = postgres(process.env.DATABASE_URL!, { max: 5 });
 export const adminDb = drizzle(adminClient, { schema });

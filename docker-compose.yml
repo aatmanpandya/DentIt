@@ -3,18 +3,18 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: dentalpms
-      POSTGRES_PASSWORD: dentalpms_dev
-      POSTGRES_DB: dentalpms
+      POSTGRES_USER: dentit
+      POSTGRES_PASSWORD: dentit_dev
+      POSTGRES_DB: dentit
     ports:
       - "55432:5432"
     volumes:
-      - dentalpms_pgdata:/var/lib/postgresql/data
+      - dentit_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dentalpms"]
+      test: ["CMD-SHELL", "pg_isready -U dentit"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  dentalpms_pgdata:
+  dentit_pgdata:

@@ -1,4 +1,4 @@
-# DentalPMS
+# DentIt
 
 Read `CONTEXT.md` for domain vocabulary and `docs/adr/` before touching schema. Full specs live
 in `docs/specs/`.

@@ -1,23 +1,23 @@
 -- Row-Level Security setup. Applied by src/server/db/migrate.ts after drizzle migrations.
 -- See docs/specs/data-model.md and docs/adr/0001-typescript-monolith-defer-python-ml.md.
 --
--- The app connects as dentalpms_app, a non-superuser role with NOBYPASSRLS. A forgotten
+-- The app connects as dentit_app, a non-superuser role with NOBYPASSRLS. A forgotten
 -- WHERE clause in application code leaks nothing, because Postgres itself won't return
 -- rows outside the session's app.current_org.
 
 do $$
 begin
-  if not exists (select from pg_roles where rolname = 'dentalpms_app') then
-    create role dentalpms_app login password 'dentalpms_app_dev' nobypassrls;
+  if not exists (select from pg_roles where rolname = 'dentit_app') then
+    create role dentit_app login password 'dentit_app_dev' nobypassrls;
   end if;
 end
 $$;
 
-grant usage on schema public to dentalpms_app;
-grant usage, select on all sequences in schema public to dentalpms_app;
+grant usage on schema public to dentit_app;
+grant usage, select on all sequences in schema public to dentit_app;
 
 -- Default grant: full CRUD. audit_log is narrowed below — append-only, no UPDATE/DELETE.
-grant select, insert, update, delete on all tables in schema public to dentalpms_app;
+grant select, insert, update, delete on all tables in schema public to dentit_app;
 
 -- organizations has no organization_id column (it IS the tenant) — policy compares id directly.
 alter table organizations enable row level security;
@@ -52,7 +52,7 @@ $$;
 
 -- audit_log: append-only. Revoke UPDATE/DELETE explicitly even though the default grant
 -- above included them — belt and suspenders on top of the application never calling them.
-revoke update, delete on audit_log from dentalpms_app;
+revoke update, delete on audit_log from dentit_app;
 
 -- The real double-booking guard: Postgres refuses overlapping appointments in the same
 -- operatory outright, not just via application logic. Requires btree_gist for the uuid

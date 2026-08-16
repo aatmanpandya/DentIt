@@ -12,20 +12,20 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: dentalpms
-          POSTGRES_PASSWORD: dentalpms_dev
-          POSTGRES_DB: dentalpms
+          POSTGRES_USER: dentit
+          POSTGRES_PASSWORD: dentit_dev
+          POSTGRES_DB: dentit
         ports:
           - 55432:5432
         options: >-
-          --health-cmd "pg_isready -U dentalpms"
+          --health-cmd "pg_isready -U dentit"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
-      DATABASE_URL: postgres://dentalpms:dentalpms_dev@localhost:55432/dentalpms
-      DATABASE_URL_APP: postgres://dentalpms_app:dentalpms_app_dev@localhost:55432/dentalpms
+      DATABASE_URL: postgres://dentit:dentit_dev@localhost:55432/dentit
+      DATABASE_URL_APP: postgres://dentit_app:dentit_app_dev@localhost:55432/dentit
       JWT_ACCESS_SECRET: ci-access-secret
       JWT_REFRESH_SECRET: ci-refresh-secret
       NODE_ENV: test

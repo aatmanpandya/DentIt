@@ -1,4 +1,4 @@
-# DentalPMS
+# DentIt
 
 A dental practice management system for clinics, built India-first (cash-pay, GST) with later
 expansion to insurance-driven markets. Clinical charting quality — particularly periodontal

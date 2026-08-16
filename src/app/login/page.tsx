@@ -29,7 +29,7 @@ export default function LoginPage() {
         <div className="mb-8 flex items-center gap-2">
           <div className="h-2 w-6 rounded-[var(--radius)] bg-band" aria-hidden />
           <span className="font-condensed text-[15px] uppercase tracking-wide text-ink">
-            DentalPMS
+            DentIt
           </span>
         </div>
 

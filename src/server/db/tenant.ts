@@ -6,7 +6,7 @@ import * as schema from "./schema";
 /**
  * Every request-scoped query goes through here. The connection is opened per-request,
  * the org GUC is set inside the SAME transaction/session as the query, and the pool
- * connects as `dentalpms_app` — a role with no BYPASSRLS. A forgotten WHERE clause
+ * connects as `dentit_app` — a role with no BYPASSRLS. A forgotten WHERE clause
  * leaks nothing. See docs/specs/data-model.md and docs/adr/ for the RLS design.
  *
  * Do not reuse a pooled connection across requests with different organizationId —
