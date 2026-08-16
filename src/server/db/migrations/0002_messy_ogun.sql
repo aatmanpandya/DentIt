@@ -1,0 +1,1 @@
+CREATE INDEX "patients_phone_idx" ON "patients" USING btree ("phone");

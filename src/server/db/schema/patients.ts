@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { tenantColumns } from "./_helpers";
 import { patients, patientSex } from "./_patients-base";
 
@@ -32,6 +32,7 @@ export const patientAlerts = pgTable("patient_alerts", {
   label: text("label").notNull(),
   detail: text("detail"),
   severity: alertSeverity("severity").notNull().default("warning"),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 export const patientDocuments = pgTable("patient_documents", {

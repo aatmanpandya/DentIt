@@ -69,3 +69,13 @@ alter table appointments
     tstzrange(starts_at, ends_at) with &&
   )
   where (status not in ('cancelled', 'no_show'));
+
+-- Trigram search on patient name — powers `q=` on GET /patients. See docs/specs/data-model.md.
+-- Lives here rather than a Drizzle-generated migration because the gin_trgm_ops operator
+-- class requires the extension to exist first, and this file runs after all schema
+-- migrations (see migrate.ts) — a plain Drizzle index would race the extension.
+create extension if not exists pg_trgm;
+
+drop index if exists patients_name_trgm_idx;
+create index patients_name_trgm_idx on patients
+  using gin ((first_name || ' ' || last_name) gin_trgm_ops);

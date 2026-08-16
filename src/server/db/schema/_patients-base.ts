@@ -1,4 +1,4 @@
-import { date, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { tenantColumns } from "./_helpers";
 import { locations } from "./locations";
 
@@ -28,6 +28,14 @@ export const patients = pgTable(
     preferredLocationId: uuid("preferred_location_id").references(() => locations.id),
     responsiblePartyId: uuid("responsible_party_id"),
     notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
   },
-  (t) => [uniqueIndex("patients_org_number_idx").on(t.organizationId, t.patientNumber)],
+  (t) => [
+    uniqueIndex("patients_org_number_idx").on(t.organizationId, t.patientNumber),
+    index("patients_phone_idx").on(t.phone),
+    // The GIN trigram index on name (first_name || ' ' || last_name) lives in rls.sql,
+    // not here — it needs the pg_trgm extension to exist first, and extension creation
+    // runs after Drizzle's own migrations (see migrate.ts). Keeping the expression index
+    // next to that extension statement keeps the ordering dependency visible in one place.
+  ],
 );

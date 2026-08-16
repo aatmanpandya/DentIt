@@ -24,22 +24,30 @@ const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
-  // Lazy initializer, not an effect — avoids setState-in-effect entirely for the
-  // no-token case, and keeps the token check synchronous with first paint.
-  const [loading, setLoading] = useState(() => Boolean(getAccessToken()));
+  // Always true on both server and client's first render — reading localStorage in
+  // a lazy initializer disagreed between SSR (no window, always null) and hydration
+  // (real token), which threw a hydration mismatch on every hard reload of an
+  // authenticated page. The token check itself has to happen in an effect, since
+  // that's the earliest point server and client are guaranteed to agree.
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (!getAccessToken()) return;
     let cancelled = false;
-    apiFetch<CurrentUser>("/auth/me")
-      .then((me) => {
-        if (!cancelled) setUser(me);
-      })
-      .catch(() => clearTokens())
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const token = getAccessToken();
+    // No-token case still resolves through .finally() rather than an early
+    // synchronous setLoading(false) — react-hooks/set-state-in-effect flags a
+    // setState called directly in the effect body as a cascading-render risk.
+    const check = token
+      ? apiFetch<CurrentUser>("/auth/me")
+          .then((me) => {
+            if (!cancelled) setUser(me);
+          })
+          .catch(() => clearTokens())
+      : Promise.resolve();
+    check.finally(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
