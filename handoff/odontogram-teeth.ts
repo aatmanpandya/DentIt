@@ -172,22 +172,27 @@ export function controlRing(key: string): Array<[number, number]> {
     else add(r.b1, cervY);
   });
 
-  // 2 — distal crown flank
-  if (p.boxy) { add(p.cw / 2 * 0.97, cervY + ch * 0.19, 1); add(p.cw / 2, occY - ch * 0.44); }
+  // 2 — distal crown flank. Stops one point short of cw/2 (doesn't reach all the
+  // way to the flank's own outer edge) and hands off directly into the occlusal
+  // profile's first point instead — that profile point is always a bit narrower
+  // than cw/2 (0.44-0.50 of it), so a flank point landing exactly on cw/2 would
+  // sit just outside it, forcing a short, sharply-angled segment sandwiched
+  // between two much longer ones. On profiles with a big height jump at that seam
+  // (CAN's tall, asymmetric shoulders especially), the closed Catmull-Rom spline
+  // overshoots that mismatch into a visible self-intersecting spike.
+  if (p.boxy) { add(p.cw / 2 * 0.97, cervY + ch * 0.19, 1); }
   else {
     add(p.nw / 2 + (p.cw - p.nw) / 2 * 0.72, cervY + ch * 0.22);
     add(p.cw / 2 * 0.99, occY - ch * 0.42);
-    add(p.cw / 2, occY - ch * 0.14);
   }
 
   // 3 — occlusal / incisal edge, distal to mesial
   const prof = OCC[p.occ] as ReadonlyArray<readonly number[]>;
   for (let i = prof.length - 1; i >= 0; i--) add(prof[i][0] * p.cw, occY - prof[i][1], prof[i][2]);
 
-  // 4 — mesial crown flank
-  if (p.boxy) { add(-p.cw / 2, occY - ch * 0.44); add(-p.cw / 2 * 0.97, cervY + ch * 0.19, 1); }
+  // 4 — mesial crown flank (mirror of the distal flank above — same seam fix)
+  if (p.boxy) { add(-p.cw / 2 * 0.97, cervY + ch * 0.19, 1); }
   else {
-    add(-p.cw / 2, occY - ch * 0.14);
     add(-p.cw / 2 * 0.99, occY - ch * 0.42);
     add(-(p.nw / 2 + (p.cw - p.nw) / 2 * 0.72), cervY + ch * 0.22);
   }

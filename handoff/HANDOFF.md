@@ -23,6 +23,19 @@ live in. Only the geometry primitives were reused:
 - `isAnterior(fdi)` → `tooth-shapes.ts`'s `validSurfacesForFdi`, the client-side mirror of the
   server's `validSurfacesForTooth`.
 
+**Post-integration fix (2026-08-17):** `odontogram-teeth.ts`'s crown-flank code (`controlRing`,
+"distal/mesial crown flank" sections) had a redundant point at exactly `cw/2` on every tooth type,
+one step past the occlusal profile's own outer point (which sits at 0.44-0.50 of `cw`, always a
+touch narrower). That left a short, sharply-angled segment sandwiched between two much longer
+ones at the flank/profile seam, and the closed Catmull-Rom spline overshot the mismatch into a
+visible self-intersecting spike — worst on the canine's tall, asymmetric shoulders, but present
+(more subtly) on every tooth type, including the incisor. Fixed by dropping that redundant point
+so the flank hands off directly into the profile's own outer point instead — verified across all
+21 unique tooth-type/arch/dentition combinations, live in the running app, plus `tsc`/`eslint`/the
+full test suite. Applied identically to both copies of the file (`handoff/odontogram-teeth.ts` and
+`src/components/chart/odontogram-teeth.ts`) so they stay in sync; diff the two before assuming
+otherwise if either gets edited independently later.
+
 `Odontogram.tsx` itself (this folder's second file) was not copied into the component tree —
 its `ArchRow`/`ToothCell`/`SurfaceWheel` layout was the reference for the app's own
 `odontogram.tsx`'s 4-row grid (image/wheel/wheel/image, sandwiched at the midline), but the app's
