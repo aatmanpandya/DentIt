@@ -188,7 +188,13 @@
     { "patient": "p8",  "tooth": "46", "condition_type": "missing" },
     { "patient": "p8",  "tooth": "47", "condition_type": "missing" },
     { "patient": "p2",  "tooth": "16", "condition_type": "furcation_involvement", "note": "Grade II buccal" },
-    { "patient": "p12", "tooth": "21", "surfaces": ["M", "I"], "condition_type": "fracture", "note": "Cricket ball, 2 weeks ago" }
+    { "patient": "p12", "tooth": "21", "surfaces": ["M", "I"], "condition_type": "fracture", "note": "Cricket ball, 2 weeks ago" },
+    { "patient": "p2",  "tooth": "26", "condition_type": "existing_crown", "note": "PFM crown, prior dentist — no record" },
+    { "patient": "p11", "tooth": "36", "condition_type": "existing_rct", "note": "Endodontically treated, prior clinic — no crown placed" },
+    { "patient": "p6",  "tooth": "15", "condition_type": "unerupted" },
+    { "patient": "p6",  "tooth": "25", "condition_type": "unerupted" },
+    { "patient": "p6",  "tooth": "35", "condition_type": "unerupted" },
+    { "patient": "p6",  "tooth": "45", "condition_type": "unerupted" }
   ],
 
   "charted_procedures": [
@@ -199,6 +205,7 @@
     { "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UR",                       "status": "accepted", "provider": "ananya" },
     { "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UL",                       "status": "accepted", "provider": "ananya" },
     { "patient": "p2",  "code": "PERIO-FLAP","quadrant": "UR",                       "status": "planned",  "provider": "ananya" },
+    { "patient": "p2",  "code": "CROWN-ZIR", "tooth": "26",                          "status": "planned",  "provider": "ananya", "note": "Replacement — margin recurrent caries" },
     { "patient": "p3",  "code": "FILL-COMP", "tooth": "14", "surfaces": ["O", "D"],  "status": "completed","provider": "vikram", "day_offset": 0 },
     { "patient": "p5",  "code": "EXT-SURG",  "tooth": "48",                          "status": "scheduled","provider": "vikram" },
     { "patient": "p8",  "code": "DENT-COMP", "arch": "lower",                        "status": "planned",  "provider": "ananya" },

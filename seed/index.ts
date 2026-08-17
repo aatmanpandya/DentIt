@@ -282,6 +282,7 @@ async function main() {
       providerId: userIds[cp.provider],
       price: cp.status !== "planned" ? data.procedure_codes.find((p) => p.code === cp.code)?.price : null,
       feeScheduleId: cp.status !== "planned" ? feeSchedule.id : null,
+      note: cp.note ?? null,
       completedAt: cp.status === "completed" || cp.status === "invoiced" ? atOffset(cp.day_offset ?? 0) : null,
     });
   }

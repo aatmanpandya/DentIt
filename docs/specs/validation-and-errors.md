@@ -69,6 +69,7 @@ APPOINTMENT_OUTSIDE_HOURS     APPOINTMENT_BLOCKED_PERIOD
 APPOINTMENT_PROVIDER_CONFLICT
 PROCEDURE_SCOPE_MISMATCH      PROCEDURE_INVALID_SURFACE
 PROCEDURE_ALREADY_INVOICED    PROCEDURE_NOT_PRICED
+PROCEDURE_NOT_DELETABLE        PROCEDURE_ILLEGAL_TRANSITION
 PERIO_EXAM_COMPLETED
 NOTE_ALREADY_SIGNED
 FEE_SCHEDULE_NO_PRICE
@@ -89,6 +90,7 @@ Wording is design work, not an afterthought. These are the ones operators hit da
 | `APPOINTMENT_PROVIDER_CONFLICT` | "Dr Rao already has an appointment at this time in Operatory 2. Book anyway?" — a **warning with an override**, not a block. A provider can legitimately float between chairs (a quick check-in next door), so this doesn't hard-block like `APPOINTMENT_CONFLICT` |
 | `PROCEDURE_INVALID_SURFACE` | "Tooth 11 is a front tooth — it has an incisal surface, not an occlusal one." |
 | `PROCEDURE_NOT_PRICED` | "This treatment has no price in the current fee schedule. Add one to invoice it." |
+| `PROCEDURE_NOT_DELETABLE` | "Only a planned procedure can be deleted — cancel it instead." |
 | `FEE_SCHEDULE_NO_PRICE` | "No price set for this treatment on 14 Aug." |
 | `NOTE_ALREADY_SIGNED` | "Signed notes can't be edited. Add an amendment instead." |
 | `PAYMENT_EXCEEDS_BALANCE` | "That's more than the ₹2,400 outstanding. Record the extra as credit?" |

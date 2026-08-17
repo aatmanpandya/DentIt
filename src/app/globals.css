@@ -20,6 +20,11 @@
   --caution: #c77a0a;
   --healthy: #2e7d5b;
 
+  /* Decorative only — the odontogram's tooth-silhouette root tone. Not a clinical
+     status color, so it sits outside the bleed/caution/healthy reservation; never
+     use it to encode a finding or a status. */
+  --tooth-root: #ddd0b3;
+
   --radius: 3px;
 }
 
@@ -35,6 +40,7 @@
   --color-bleed: var(--bleed);
   --color-caution: var(--caution);
   --color-healthy: var(--healthy);
+  --color-tooth-root: var(--tooth-root);
 
   --font-data: var(--font-plex-mono);
   --font-sans: var(--font-plex-sans);
