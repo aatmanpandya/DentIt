@@ -66,6 +66,7 @@ VALIDATION_FAILED
 NOT_FOUND
 APPOINTMENT_CONFLICT          APPOINTMENT_ILLEGAL_TRANSITION
 APPOINTMENT_OUTSIDE_HOURS     APPOINTMENT_BLOCKED_PERIOD
+APPOINTMENT_PROVIDER_CONFLICT
 PROCEDURE_SCOPE_MISMATCH      PROCEDURE_INVALID_SURFACE
 PROCEDURE_ALREADY_INVOICED    PROCEDURE_NOT_PRICED
 PERIO_EXAM_COMPLETED
@@ -85,6 +86,7 @@ Wording is design work, not an afterthought. These are the ones operators hit da
 | `APPOINTMENT_CONFLICT` | "Operatory 2 already has an appointment at 10:30. Pick another time or operatory." |
 | `APPOINTMENT_ILLEGAL_TRANSITION` | "A completed appointment can't be marked arrived." |
 | `APPOINTMENT_OUTSIDE_HOURS` | "Dr Rao isn't scheduled at this time. Book anyway?" — a **warning with an override**, not a block. Clinics run late and squeeze people in |
+| `APPOINTMENT_PROVIDER_CONFLICT` | "Dr Rao already has an appointment at this time in Operatory 2. Book anyway?" — a **warning with an override**, not a block. A provider can legitimately float between chairs (a quick check-in next door), so this doesn't hard-block like `APPOINTMENT_CONFLICT` |
 | `PROCEDURE_INVALID_SURFACE` | "Tooth 11 is a front tooth — it has an incisal surface, not an occlusal one." |
 | `PROCEDURE_NOT_PRICED` | "This treatment has no price in the current fee schedule. Add one to invoice it." |
 | `FEE_SCHEDULE_NO_PRICE` | "No price set for this treatment on 14 Aug." |

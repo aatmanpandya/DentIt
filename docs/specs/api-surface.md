@@ -61,6 +61,7 @@ GET    /users
 POST   /users/invite                     owner, admin
 PATCH  /users/:id                        role, active, location access
 GET    /providers                        provider + hygienist users with profiles
+GET    /providers/:id/schedule?location_id=   every provider_schedules row for this provider
 PATCH  /providers/:id/schedule
 ```
 

@@ -9,7 +9,7 @@ export interface CurrentUser {
   full_name: string;
   email: string;
   role: string;
-  organization: { id: string; name: string; tooth_notation_display: "fdi" | "universal" };
+  organization: { id: string; name: string; tooth_notation_display: "fdi" | "universal"; timezone: string };
   location_ids: string[];
 }
 
