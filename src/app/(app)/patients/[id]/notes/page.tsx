@@ -5,12 +5,18 @@ import { useParams } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth-context";
-import { can, type Role } from "@/server/lib/permissions";
 import { listPatientNotes, createNote, updateNote, deleteNote, signNote, amendNote, type ClinicalNote } from "@/lib/notes-api";
 import { listProviders } from "@/lib/schedule-api";
 
 const fieldClass =
   "w-full rounded-[var(--radius)] border border-rule bg-surface px-2.5 py-2 text-[13px] text-ink outline-none focus-visible:border-steel";
+
+// Duplicated from src/server/lib/permissions.ts's clinical_notes / clinical_notes.sign rows,
+// not imported — client code never reaches into @/server/lib, same boundary tooth-shapes.ts
+// keeps for tooth-notation.ts. The server is still the real gate; this only decides what
+// the UI offers to click.
+const NOTE_WRITE_ROLES = new Set(["owner", "provider", "hygienist"]);
+const NOTE_SIGN_ROLES = new Set(["owner", "provider", "hygienist"]);
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -33,9 +39,8 @@ export default function PatientNotesPage() {
     queryClient.invalidateQueries({ queryKey: ["patient-notes", params.id] });
   }
 
-  const role = user?.role as Role | undefined;
-  const canWrite = !!role && can(role, "clinical_notes", "write");
-  const canSign = !!role && can(role, "clinical_notes.sign", "write");
+  const canWrite = !!user?.role && NOTE_WRITE_ROLES.has(user.role);
+  const canSign = !!user?.role && NOTE_SIGN_ROLES.has(user.role);
 
   const createMutation = useMutation({
     mutationFn: (body: string) => createNote(params.id, { body }),
