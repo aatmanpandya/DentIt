@@ -1,4 +1,4 @@
-import type { chartedConditions, chartedProcedures } from "@/server/db/schema";
+import type { chartedConditions, chartedProcedures, clinicalNotes } from "@/server/db/schema";
 
 // snake_case in JSON, matching the database — see docs/specs/api-surface.md.
 export function serializeCondition(condition: typeof chartedConditions.$inferSelect) {
@@ -37,5 +37,20 @@ export function serializeProcedure(procedure: typeof chartedProcedures.$inferSel
     superseded_by_id: procedure.supersededById,
     created_at: procedure.createdAt.toISOString(),
     updated_at: procedure.updatedAt.toISOString(),
+  };
+}
+
+export function serializeNote(note: typeof clinicalNotes.$inferSelect) {
+  return {
+    id: note.id,
+    patient_id: note.patientId,
+    appointment_id: note.appointmentId,
+    provider_id: note.providerId,
+    body: note.body,
+    signed_at: note.signedAt ? note.signedAt.toISOString() : null,
+    signed_by: note.signedBy,
+    amends_note_id: note.amendsNoteId,
+    created_at: note.createdAt.toISOString(),
+    updated_at: note.updatedAt.toISOString(),
   };
 }

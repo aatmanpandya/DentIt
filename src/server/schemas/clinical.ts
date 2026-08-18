@@ -46,3 +46,16 @@ export const updateProcedureContentSchema = z.object({
   provider_id: z.string().uuid().nullable().optional(),
   note: z.string().nullable().optional(),
 });
+
+export const createNoteSchema = z.object({
+  body: z.string().min(1),
+  appointment_id: z.string().uuid().nullable().optional(),
+});
+
+export const updateNoteSchema = z.object({
+  body: z.string().min(1),
+});
+
+export const amendNoteSchema = z.object({
+  body: z.string().min(1),
+});
