@@ -24,7 +24,13 @@ export async function GET(req: NextRequest) {
         full_name: user.fullName,
         email: user.email,
         role: user.role,
-        organization: { id: org.id, name: org.name, tooth_notation_display: org.toothNotationDisplay, timezone: org.timezone },
+        organization: {
+          id: org.id,
+          name: org.name,
+          tooth_notation_display: org.toothNotationDisplay,
+          timezone: org.timezone,
+          probing_sequence: org.probingSequence,
+        },
         // Empty array = access to all locations, per pilot-foundations.md §4.
         location_ids: locationAccess.map((l) => l.locationId),
       });
