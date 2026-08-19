@@ -46,6 +46,14 @@ verified against their documented shortcut behavior rather than assumed:
   hard block** — per `pilot-foundations.md`'s explicit recommendation, an untouched
   bleeding/suppuration/plaque flag defaults to `false` and the operator advances freely; blocking
   on unticked boxes would stall the operator constantly.
+- **Click-to-position, for mouse parity**: clicking any non-skipped site cell (any tooth, not just
+  the current one) moves the keyboard cursor there — mouse decides *where*, keyboard still does
+  *all* the mutating. Satisfies `pilot-foundations.md`'s "any cell is directly clickable" without
+  needing an on-screen numeric picker. Clicking a cell already holding data loads its known values
+  first (never overwrites with blanks), and clicking away from a tooth with any in-progress,
+  not-yet-fully-saved sites fires a partial save before jumping — caught live: the first version
+  silently discarded a real, already-typed measurement the instant a different tooth was clicked,
+  since `save_tooth` only otherwise fires on full 6-site completion.
 - **Mobility & furcation** (per-tooth, not per-site): dedicated `M`/`F` keys open a small
   classification menu (arrow keys or digit `0`-`3` to pick), outside the main auto-advance stream
   — matches Dentrix's own mobility/furcation shortcut behavior. `F` is only offered on

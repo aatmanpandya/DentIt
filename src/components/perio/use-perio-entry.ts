@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type MutableRefObject } from "react";
 import { orderTeethForTraversal } from "./perio-sequence";
-import { initEntryState, firstIncompleteIndex, perioEntryReducer } from "./perio-entry";
-import type { EntryAction, PerioEntryState, SiteDraft } from "./perio-entry";
+import { initEntryState, firstIncompleteIndex, perioEntryReducer, SITE_ORDER } from "./perio-entry";
+import type { EntryAction, PerioEntryState, PerioSiteCode, SiteDraft, ToothDraft } from "./perio-entry";
 import { upsertPerioToothRecord } from "@/lib/perio-api";
 import type { PerioToothRecord } from "@/lib/perio-api";
 
@@ -163,6 +163,65 @@ export function usePerioEntry(
     [state, persistTooth],
   );
 
+  // Click-to-position — mouse parity for entry (pilot-foundations.md §2: "any cell is
+  // directly clickable"). If the clicked tooth is the one already being edited, just
+  // reposition within its live draft (must not overwrite in-progress edits with
+  // possibly-stale server data). Otherwise, build a fresh draft loaded from whatever's
+  // already known for that tooth — recentSaves first (a save may not have round-tripped
+  // through `teeth` yet), then the saved `teeth` prop, then blank for an untouched site —
+  // so clicking an already-measured cell can never wipe it.
+  const jumpTo = useCallback(
+    (tooth: string, site: PerioSiteCode) => {
+      const toothIndex = activeOrder.indexOf(tooth);
+      if (toothIndex === -1) return; // skipped tooth — nothing to enter
+
+      if (state.draft?.tooth === tooth) {
+        dispatch({ type: "jump", target: { toothIndex, site, draft: state.draft } });
+        return;
+      }
+
+      // Jumping away from the tooth currently being edited: if it has any committed
+      // site data that hasn't been fully saved yet (save_tooth only fires once all 6
+      // sites are done), persist whatever's there as a partial save first — the API
+      // already upserts whichever sites it's given, no need for all 6. Caught live:
+      // clicking a different tooth mid-entry silently discarded real, already-typed
+      // measurements with no warning.
+      const departingTooth = state.draft;
+      if (departingTooth && departingTooth.sites.some((s) => s.pocket_depth !== null)) {
+        setRecentSaves((prev) => ({
+          ...prev,
+          [departingTooth.tooth]: { mobility: departingTooth.mobility, furcation: departingTooth.furcation, sites: departingTooth.sites },
+        }));
+        persistTooth(departingTooth.tooth, departingTooth.mobility, departingTooth.furcation, departingTooth.sites);
+      }
+
+      const known = recentSaves[tooth];
+      const savedRecord = teeth.find((t) => t.tooth === tooth);
+      const draft: ToothDraft = {
+        tooth,
+        mobility: known ? known.mobility : (savedRecord?.mobility ?? null),
+        furcation: known ? known.furcation : (savedRecord?.furcation ?? null),
+        sites: SITE_ORDER.map((s) => {
+          const knownSite = known?.sites.find((x) => x.site === s);
+          if (knownSite) return knownSite;
+          const savedSite = savedRecord?.sites.find((x) => x.site === s);
+          return savedSite
+            ? {
+                site: s,
+                pocket_depth: savedSite.pocket_depth,
+                gingival_margin: savedSite.gingival_margin,
+                bleeding_on_probing: savedSite.bleeding_on_probing,
+                suppuration: savedSite.suppuration,
+                plaque: savedSite.plaque,
+              }
+            : { site: s, pocket_depth: null, gingival_margin: null, bleeding_on_probing: false, suppuration: false, plaque: false };
+        }),
+      };
+      dispatch({ type: "jump", target: { toothIndex, site, draft } });
+    },
+    [activeOrder, state.draft, recentSaves, teeth, dispatch, persistTooth],
+  );
+
   // Skip-toggling is deliberately outside the reducer (docs/specs/perio.md — symmetric,
   // works on any tooth via a click/keypress on its header, not just the current one).
   // Same never-lose-it retry-and-drain guarantee as a measurement save.
@@ -185,5 +244,5 @@ export function usePerioEntry(
     [examId, onSaved],
   );
 
-  return { state, dispatch, saveStatus, toggleSkip, activeOrder, recentSaves };
+  return { state, dispatch, saveStatus, toggleSkip, activeOrder, recentSaves, jumpTo };
 }

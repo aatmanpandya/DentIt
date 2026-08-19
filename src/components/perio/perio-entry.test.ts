@@ -1,6 +1,22 @@
 import { describe, it, expect } from "vitest";
 import { initEntryState, perioEntryReducer, SITE_ORDER, firstIncompleteIndex } from "./perio-entry";
-import type { PerioEntryState, EntryAction } from "./perio-entry";
+import type { PerioEntryState, EntryAction, ToothDraft } from "./perio-entry";
+
+function blankDraft(tooth: string): ToothDraft {
+  return {
+    tooth,
+    mobility: null,
+    furcation: null,
+    sites: SITE_ORDER.map((site) => ({
+      site,
+      pocket_depth: null,
+      gingival_margin: null,
+      bleeding_on_probing: false,
+      suppuration: false,
+      plaque: false,
+    })),
+  };
+}
 
 function run(state: PerioEntryState, actions: EntryAction[]) {
   let s = state;
@@ -172,6 +188,50 @@ describe("perioEntryReducer — mobility and furcation menu", () => {
     const { state } = run(initEntryState(["16"]), [{ type: "open_menu", menu: "furcation" }, { type: "close_menu" }]);
     expect(state.menu).toBeNull();
     expect(state.draft?.furcation).toBeNull();
+  });
+});
+
+describe("perioEntryReducer — jump (click-to-position)", () => {
+  it("moves the cursor to a clicked cell on a different tooth, loading the given draft", () => {
+    const { state } = run(initEntryState(["16", "17"]), [digit(3), digit(0)]); // some in-progress work on 16
+
+    const target = { toothIndex: 1, site: "DB" as const, draft: blankDraft("17") };
+    const { state: after } = perioEntryReducer(state, { type: "jump", target });
+
+    expect(after.toothIndex).toBe(1);
+    expect(after.draft?.tooth).toBe("17");
+    expect(after.siteIndex).toBe(SITE_ORDER.indexOf("DB"));
+    expect(after.stage).toBe("pocket_depth");
+    expect(after.menu).toBeNull();
+  });
+
+  it("resets tensPending/gmSignPending/menu when jumping, so stale prefixes don't leak in", () => {
+    const { state } = run(initEntryState(["16"]), [dash()]); // tensPending true
+    const target = { toothIndex: 0, site: "B" as const, draft: blankDraft("16") };
+    const { state: after } = perioEntryReducer(state, { type: "jump", target });
+    expect(after.tensPending).toBe(false);
+    expect(after.gmSignPending).toBe(false);
+  });
+
+  it("works even after the exam is fully entered (draft null) — clicking back to correct a tooth", () => {
+    const keys: EntryAction[] = [];
+    for (let i = 0; i < SITE_ORDER.length; i++) keys.push(digit(1), digit(0));
+    keys.push({ type: "advance" });
+    const { state: finished } = run(initEntryState(["16"]), keys);
+    expect(finished.draft).toBeNull();
+
+    const target = { toothIndex: 0, site: "MB" as const, draft: blankDraft("16") };
+    const { state: after } = perioEntryReducer(finished, { type: "jump", target });
+    expect(after.draft?.tooth).toBe("16");
+    expect(after.siteIndex).toBe(0);
+  });
+
+  it("preserves whatever the caller loaded into the draft — doesn't wipe already-saved values", () => {
+    const preloaded = blankDraft("17");
+    preloaded.sites[0] = { site: "MB", pocket_depth: 4, gingival_margin: 1, bleeding_on_probing: true, suppuration: false, plaque: false };
+    const target = { toothIndex: 1, site: "MB" as const, draft: preloaded };
+    const { state } = perioEntryReducer(initEntryState(["16", "17"]), { type: "jump", target });
+    expect(state.draft?.sites[0]).toMatchObject({ pocket_depth: 4, gingival_margin: 1, bleeding_on_probing: true });
   });
 });
 

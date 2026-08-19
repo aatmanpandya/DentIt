@@ -32,7 +32,7 @@ const MENU_LABEL: Record<"mobility" | "furcation", string> = { mobility: "Mobili
  * this component only renders state and forwards keystrokes.
  */
 export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }: PerioGridProps) {
-  const { state, dispatch, saveStatus, toggleSkip, recentSaves } = usePerioEntry(examId, teeth, probingSequence, onSaved);
+  const { state, dispatch, saveStatus, toggleSkip, recentSaves, jumpTo } = usePerioEntry(examId, teeth, probingSequence, onSaved);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Full column order, skipped teeth included (greyed, not part of the keystroke cursor —
@@ -168,11 +168,25 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
                 const isActiveCell = isDraftTooth && state.siteIndex === siteIdx && !t.is_skipped;
 
                 return (
-                  <div
+                  <button
                     key={`${t.tooth}-${site}`}
+                    type="button"
+                    disabled={completed || t.is_skipped}
+                    aria-label={
+                      t.is_skipped
+                        ? `Tooth ${t.tooth}, ${site}, skipped`
+                        : `Tooth ${t.tooth}, ${site}${pd !== null ? `, pocket depth ${pd}` : ""}${gm !== null ? `, gingival margin ${gm}` : ""}`
+                    }
+                    onClick={() => {
+                      jumpTo(t.tooth, site);
+                      // The click moves DOM focus to this button; move it straight back
+                      // to the grid container so the next keystroke still lands on the
+                      // shared onKeyDown handler, not this button.
+                      containerRef.current?.focus();
+                    }}
                     className={clsx(
                       "flex flex-col items-center justify-center gap-0 border-b border-rule py-1 font-data text-xs tabular-nums",
-                      t.is_skipped && "bg-steel-lo text-ink-soft",
+                      t.is_skipped ? "cursor-default bg-steel-lo text-ink-soft" : "cursor-pointer hover:bg-steel-lo/60",
                       isDraftTooth && !t.is_skipped && "bg-steel-lo/40",
                       isActiveCell && "ring-2 ring-inset ring-steel",
                     )}
@@ -205,7 +219,7 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
                         </span>
                       </>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </Fragment>

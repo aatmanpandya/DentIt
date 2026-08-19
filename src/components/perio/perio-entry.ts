@@ -58,11 +58,25 @@ export type EntryEffect =
   | { type: "invalid_value" }
   | { type: "exam_complete" };
 
+/**
+ * A click-to-position target — mouse parity for entry (pilot-foundations.md §2: "any
+ * cell is directly clickable"). The reducer itself has no access to already-saved data,
+ * so the caller (use-perio-entry.ts, which does) builds the draft to jump into —
+ * loaded from whatever's already known for that tooth, never a blank slate, so clicking
+ * an already-measured cell can't wipe it.
+ */
+export interface JumpTarget {
+  toothIndex: number; // this tooth's position in `order`
+  site: PerioSiteCode;
+  draft: ToothDraft;
+}
+
 export type EntryAction =
   | { type: "digit"; digit: number }
   | { type: "dash" }
   | { type: "flag"; flag: "bleeding_on_probing" | "suppuration" | "plaque" }
   | { type: "advance" }
+  | { type: "jump"; target: JumpTarget }
   | { type: "open_menu"; menu: "mobility" | "furcation" }
   | { type: "select_menu_value"; value: 0 | 1 | 2 | 3 }
   | { type: "close_menu" };
@@ -199,7 +213,9 @@ function reduceFlag(state: PerioEntryState, flag: "bleeding_on_probing" | "suppu
 }
 
 export function perioEntryReducer(state: PerioEntryState, action: EntryAction): StepResult {
-  if (state.draft === null && action.type !== "close_menu") return { state, effects: [] };
+  // "jump" is allowed even once the exam is fully entered (draft === null) — clicking
+  // back onto an already-measured tooth to correct something must still work.
+  if (state.draft === null && action.type !== "close_menu" && action.type !== "jump") return { state, effects: [] };
 
   switch (action.type) {
     case "digit":
@@ -214,6 +230,20 @@ export function perioEntryReducer(state: PerioEntryState, action: EntryAction): 
       // in the exam has no next keystroke to reprocess. Also available any time the
       // operator wants to move on without waiting for the next site's first digit.
       return state.stage === "flags" ? advanceSite(state) : { state, effects: [] };
+    case "jump":
+      return {
+        state: {
+          ...state,
+          toothIndex: action.target.toothIndex,
+          siteIndex: SITE_ORDER.indexOf(action.target.site),
+          stage: "pocket_depth",
+          tensPending: false,
+          gmSignPending: false,
+          menu: null,
+          draft: action.target.draft,
+        },
+        effects: [],
+      };
     case "open_menu":
       return { state: { ...state, menu: action.menu }, effects: [] };
     case "select_menu_value": {
