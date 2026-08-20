@@ -1,6 +1,6 @@
-import { sql, eq, and, isNull, desc, lt } from "drizzle-orm";
+import { sql, eq, and, isNull, desc, lt, inArray, asc } from "drizzle-orm";
 import { dbForRequest } from "@/server/db/tenant";
-import { perioExams, perioToothRecords, perioSiteMeasurements, patients } from "@/server/db/schema";
+import { perioExams, perioToothRecords, perioSiteMeasurements, patients, users } from "@/server/db/schema";
 import { assertCan } from "@/server/lib/permissions";
 import { hasFurcation, isPrimaryTooth, isValidFdiTooth } from "@/server/lib/tooth-notation";
 // Pure, DOM-free arch/socket geometry — no React dependency (see its own header comment).
@@ -41,6 +41,24 @@ export class InvalidFurcationError extends Error {
   }
 }
 
+// 422 — generic VALIDATION_FAILED. `provider_id` is user-pickable (docs/specs/perio.md's
+// "pickable at creation, decoupled from write-RBAC"), so unlike the actor-defaulted case it
+// needs real validation: must be an active user of this org in an eligible clinical role.
+export class InvalidProviderError extends Error {
+  constructor() {
+    super("The selected provider isn't an eligible clinical staff member in this organization.");
+    this.name = "InvalidProviderError";
+  }
+}
+
+// Owner/Provider/Hygienist/Assistant — broader than perio write-RBAC on purpose (an
+// assistant transcribes for a hygienist who did the actual probing), per
+// docs/specs/perio.md's "RBAC" section. Deliberately NOT locations.ts's listProviders(),
+// which inner-joins provider_profiles (a scheduling concept — color, operatory) that
+// assistants don't have rows for; reusing it would silently drop the one role this picker
+// exists for.
+const ELIGIBLE_PROVIDER_ROLES = ["owner", "provider", "hygienist", "assistant"] as const;
+
 type Tx = Parameters<Parameters<typeof dbForRequest>[1]>[0];
 
 async function requirePatient(tx: Tx, actor: RequestActor, patientId: string) {
@@ -64,6 +82,23 @@ async function requireExam(tx: Tx, actor: RequestActor, examId: string) {
 }
 
 // --- Read ---
+
+/**
+ * The perio provider-picker's data source (docs/specs/perio.md, "provider_id... pickable at
+ * creation") — active org users in an eligible clinical role, not locations.ts's
+ * listProviders() (a scheduling-scoped list assistants aren't part of).
+ */
+export async function listEligiblePerioProviders(actor: RequestActor) {
+  assertCan(actor.role, "perio", "read");
+
+  return dbForRequest(actor.organizationId, async (tx) => {
+    return tx
+      .select({ id: users.id, fullName: users.fullName, role: users.role })
+      .from(users)
+      .where(and(eq(users.organizationId, actor.organizationId), eq(users.isActive, true), inArray(users.role, [...ELIGIBLE_PROVIDER_ROLES])))
+      .orderBy(asc(users.fullName));
+  });
+}
 
 export async function listPatientPerioExams(actor: RequestActor, patientId: string) {
   assertCan(actor.role, "perio", "read");
@@ -136,6 +171,22 @@ export async function createPerioExam(actor: RequestActor, patientId: string, in
 
   return dbForRequest(actor.organizationId, async (tx) => {
     await requirePatient(tx, actor, patientId);
+
+    if (input.provider_id) {
+      const [provider] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(
+            eq(users.id, input.provider_id),
+            eq(users.organizationId, actor.organizationId),
+            eq(users.isActive, true),
+            inArray(users.role, [...ELIGIBLE_PROVIDER_ROLES]),
+          ),
+        )
+        .limit(1);
+      if (!provider) throw new InvalidProviderError();
+    }
 
     const [exam] = await tx
       .insert(perioExams)
@@ -398,7 +449,15 @@ export async function comparePerioExam(actor: RequestActor, examId: string, agai
     const exam = await requireExam(tx, actor, examId);
 
     let priorExamId = against;
-    if (!priorExamId) {
+    if (priorExamId) {
+      // An explicit `against` is user-suppliable (the compare UI's baseline picker) — must
+      // belong to the same patient, or this leaks another patient's CAL/site data as
+      // "before" values. requireExam already org-scopes; PerioExamNotFoundError either way
+      // (never a distinct "wrong patient" error) so this can't be used as an existence oracle
+      // for another patient's exam ids.
+      const priorExam = await requireExam(tx, actor, priorExamId);
+      if (priorExam.patientId !== exam.patientId) throw new PerioExamNotFoundError();
+    } else {
       const [prior] = await tx
         .select({ id: perioExams.id })
         .from(perioExams)

@@ -40,6 +40,18 @@ export function listPatientPerioExams(patientId: string) {
   return apiFetch<{ data: PerioExam[] }>(`/patients/${patientId}/perio-exams`);
 }
 
+export interface EligiblePerioProvider {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
+// Perio-scoped (Owner/Provider/Hygienist/Assistant), not schedule-api's listProviders() —
+// that one excludes assistants (no provider_profiles row), see src/server/services/perio.ts.
+export function listEligiblePerioProviders() {
+  return apiFetch<{ data: EligiblePerioProvider[] }>(`/perio-exams/providers`);
+}
+
 export interface CreatePerioExamInput {
   exam_date: string;
   provider_id?: string | null;

@@ -10,6 +10,7 @@ import {
   createPerioExam,
   getPerioExam,
   listPatientPerioExams,
+  listEligiblePerioProviders,
   updatePerioExamNotes,
   upsertPerioToothRecord,
   completePerioExam,
@@ -19,6 +20,7 @@ import {
   PerioExamCompletedError,
   InvalidFurcationError,
   InvalidToothError,
+  InvalidProviderError,
 } from "./perio";
 
 const TEST_ORG_NAME = "__perio_service_test";
@@ -120,6 +122,75 @@ describe("createPerioExam", () => {
   it("admin is read-only on perio", async () => {
     const { actor, patient } = await setup("admin");
     await expect(createPerioExam(actor, patient.id, { exam_date: "2026-08-19" })).rejects.toThrow(PermissionDeniedError);
+  });
+
+  it("rejects a provider_id that isn't an eligible clinical-staff role in this org", async () => {
+    const { actor, patient, org } = await setup("assistant");
+    const [frontDesk] = await adminDb
+      .insert(users)
+      .values({ organizationId: org.id, email: `fd-${Date.now()}@example.test`, fullName: "Front Desk", role: "front_desk" })
+      .returning();
+
+    await expect(
+      createPerioExam(actor, patient.id, { exam_date: "2026-08-19", provider_id: frontDesk.id }),
+    ).rejects.toThrow(InvalidProviderError);
+  });
+
+  it("rejects a provider_id from a different organization", async () => {
+    const { actor, patient } = await setup("assistant");
+    const [otherOrg] = await adminDb.insert(organizations).values({ name: TEST_ORG_NAME }).returning();
+    const [otherOrgProvider] = await adminDb
+      .insert(users)
+      .values({ organizationId: otherOrg.id, email: `other-${Date.now()}@example.test`, fullName: "Other Org Provider", role: "provider" })
+      .returning();
+
+    await expect(
+      createPerioExam(actor, patient.id, { exam_date: "2026-08-19", provider_id: otherOrgProvider.id }),
+    ).rejects.toThrow(InvalidProviderError);
+  });
+});
+
+describe("listEligiblePerioProviders", () => {
+  afterEach(cleanup);
+
+  it("lists active clinical staff eligible to be picked as a perio provider, sorted by name", async () => {
+    const { actor, org } = await setup("owner");
+    await adminDb.insert(users).values([
+      { organizationId: org.id, email: `prov-${Date.now()}@example.test`, fullName: "Zed Provider", role: "provider" },
+      { organizationId: org.id, email: `hyg-${Date.now()}@example.test`, fullName: "Amy Hygienist", role: "hygienist" },
+      { organizationId: org.id, email: `asst-${Date.now()}@example.test`, fullName: "Bo Assistant", role: "assistant" },
+      { organizationId: org.id, email: `fd-${Date.now()}@example.test`, fullName: "Front Desk Person", role: "front_desk" },
+      { organizationId: org.id, email: `acct-${Date.now()}@example.test`, fullName: "Accountant Person", role: "accountant" },
+    ]);
+
+    const eligible = await listEligiblePerioProviders(actor);
+
+    // setup("owner") itself creates an eligible user ("Test Staff", role owner) — included.
+    expect(eligible.map((p) => p.fullName)).toEqual(["Amy Hygienist", "Bo Assistant", "Test Staff", "Zed Provider"]);
+  });
+
+  it("excludes inactive users", async () => {
+    const { actor, org } = await setup("owner");
+    const [inactiveProvider] = await adminDb
+      .insert(users)
+      .values({ organizationId: org.id, email: `inactive-${Date.now()}@example.test`, fullName: "Inactive Provider", role: "provider", isActive: false })
+      .returning();
+
+    const eligible = await listEligiblePerioProviders(actor);
+
+    expect(eligible.map((p) => p.id)).not.toContain(inactiveProvider.id);
+  });
+
+  it("excludes front_desk and accountant roles", async () => {
+    const { actor, org } = await setup("owner");
+    const [frontDesk] = await adminDb
+      .insert(users)
+      .values({ organizationId: org.id, email: `fd2-${Date.now()}@example.test`, fullName: "Front Desk Two", role: "front_desk" })
+      .returning();
+
+    const eligible = await listEligiblePerioProviders(actor);
+
+    expect(eligible.map((p) => p.id)).not.toContain(frontDesk.id);
   });
 });
 
@@ -282,5 +353,34 @@ describe("comparePerioExam", () => {
     expect(result.against_exam_id).toBeNull();
     expect(result.deltas[0].cal_before).toBeNull();
     expect(result.deltas[0].significant).toBe(false);
+  });
+
+  it("accepts an explicit against exam id belonging to the same patient", async () => {
+    const { actor, patient } = await setup();
+    const older = await createPerioExam(actor, patient.id, { exam_date: "2026-01-01" });
+    await upsertPerioToothRecord(actor, older.id, "16", { sites: [{ site: "MB", pocket_depth: 2, gingival_margin: 0 }] });
+    const middle = await createPerioExam(actor, patient.id, { exam_date: "2026-04-01" });
+    await upsertPerioToothRecord(actor, middle.id, "16", { sites: [{ site: "MB", pocket_depth: 4, gingival_margin: 0 }] });
+    const newest = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+    await upsertPerioToothRecord(actor, newest.id, "16", { sites: [{ site: "MB", pocket_depth: 5, gingival_margin: 0 }] });
+
+    // Explicitly compare against the OLDER exam, not the default (most-recent-prior = middle).
+    const result = await comparePerioExam(actor, newest.id, older.id);
+    expect(result.against_exam_id).toBe(older.id);
+    expect(result.deltas.find((d) => d.tooth === "16" && d.site === "MB")?.cal_before).toBe(2);
+  });
+
+  it("rejects comparing against an exam that belongs to a different patient (cross-patient leak)", async () => {
+    const { actor, patient, org } = await setup();
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+
+    const [otherPatient] = await adminDb
+      .insert(patients)
+      .values({ organizationId: org.id, patientNumber: "P-0002", firstName: "Other", lastName: "Patient", phone: "9000000001" })
+      .returning();
+    const otherExam = await createPerioExam(actor, otherPatient.id, { exam_date: "2026-08-01" });
+    await upsertPerioToothRecord(actor, otherExam.id, "16", { sites: [{ site: "MB", pocket_depth: 9, gingival_margin: 0 }] });
+
+    await expect(comparePerioExam(actor, exam.id, otherExam.id)).rejects.toThrow(PerioExamNotFoundError);
   });
 });

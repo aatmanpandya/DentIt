@@ -4,7 +4,7 @@ import { errorResponse } from "@/server/lib/api-error";
 import { PermissionDeniedError } from "@/server/lib/permissions";
 import { serializePerioExam } from "@/server/lib/serialize-perio";
 import { createPerioExamSchema } from "@/server/schemas/perio";
-import { listPatientPerioExams, createPerioExam, PatientNotFoundError } from "@/server/services/perio";
+import { listPatientPerioExams, createPerioExam, PatientNotFoundError, InvalidProviderError } from "@/server/services/perio";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     if (err instanceof SessionExpiredError) return errorResponse(401, "AUTH_SESSION_IDLE_TIMEOUT", err.message);
     if (err instanceof PermissionDeniedError) return errorResponse(403, "PERMISSION_DENIED", "You don't have permission to record perio.");
     if (err instanceof PatientNotFoundError) return errorResponse(404, "NOT_FOUND", err.message);
+    if (err instanceof InvalidProviderError) return errorResponse(422, "VALIDATION_FAILED", err.message);
     throw err;
   }
 }
