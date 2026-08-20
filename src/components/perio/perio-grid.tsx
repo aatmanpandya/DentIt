@@ -2,17 +2,26 @@
 
 import { Fragment, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import clsx from "clsx";
+import { Lock } from "lucide-react";
 import { usePerioEntry } from "./use-perio-entry";
 import { orderTeethForTraversal } from "./perio-sequence";
 import { SITE_ORDER } from "./perio-entry";
 import { hasFurcation } from "./tooth-furcation";
-import type { PerioToothRecord } from "@/lib/perio-api";
+import { renderTooth } from "./tooth-display";
+import { buildDeltaIndex, badgeForDelta } from "./perio-compare";
+import type { PerioToothRecord, PerioSiteDelta } from "@/lib/perio-api";
 
 export interface PerioGridProps {
   examId: string;
   teeth: PerioToothRecord[];
   probingSequence: readonly string[] | null;
   completed: boolean;
+  // Org's tooth-notation display preference (ADR-0003) — FDI is always the storage/logic
+  // notation; this only controls what's rendered.
+  toothDisplay: "fdi" | "universal";
+  // Comparison-view toggle (docs/specs/perio.md) — null when compare mode is off. When
+  // present, each site's CAL gets a delta badge next to it, ≥2mm flagged as significant.
+  compareDeltas: PerioSiteDelta[] | null;
   // Called after every successful per-tooth save (measurement or skip toggle) — the
   // caller should refetch the exam so is_skipped/mobility/furcation/sites reflect what
   // actually persisted (the graphical overlay in particular needs this — it renders from
@@ -31,9 +40,10 @@ const MENU_LABEL: Record<"mobility" | "furcation", string> = { mobility: "Mobili
  * drivable teeth x sites table; entry mechanics live in use-perio-entry.ts/perio-entry.ts,
  * this component only renders state and forwards keystrokes.
  */
-export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }: PerioGridProps) {
+export function PerioGrid({ examId, teeth, probingSequence, completed, toothDisplay, compareDeltas, onSaved }: PerioGridProps) {
   const { state, dispatch, saveStatus, toggleSkip, recentSaves, jumpTo } = usePerioEntry(examId, teeth, probingSequence, onSaved);
   const containerRef = useRef<HTMLDivElement>(null);
+  const deltaIndex = useMemo(() => (compareDeltas ? buildDeltaIndex(compareDeltas) : null), [compareDeltas]);
 
   // Full column order, skipped teeth included (greyed, not part of the keystroke cursor —
   // that's `state`'s own `order`, built from the active, non-skipped subset).
@@ -97,10 +107,18 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
         role="application"
         aria-label="Perio measurement entry grid"
         onKeyDown={onKeyDown}
-        className="overflow-x-auto rounded-DEFAULT border border-rule focus:outline-none"
+        className={clsx(
+          "overflow-x-auto rounded-DEFAULT border border-rule focus:outline-none",
+          completed && "opacity-75",
+        )}
       >
         <div className="inline-grid" style={{ gridTemplateColumns: `72px repeat(${displayOrder.length}, 52px)` }}>
-          <div className="sticky left-0 z-10 border-b border-rule bg-surface" />
+          <div
+            className="sticky left-0 z-10 flex items-center justify-center border-b border-rule bg-surface"
+            title={completed ? "Locked — exam completed" : undefined}
+          >
+            {completed && <Lock size={13} strokeWidth={2} className="text-ink-soft" />}
+          </div>
           {displayOrder.map((t) => {
             const isCurrentTooth = state.draft?.tooth === t.tooth && !t.is_skipped;
             const status = saveStatus[t.tooth];
@@ -115,9 +133,13 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
                   t.is_skipped ? "bg-steel-lo text-ink-soft" : "bg-surface text-ink",
                   isCurrentTooth && "bg-steel-lo ring-1 ring-inset ring-steel",
                 )}
-                title={t.is_skipped ? `${t.tooth} — skipped, click to un-skip` : `${t.tooth} — click to skip`}
+                title={
+                  t.is_skipped
+                    ? `${renderTooth(t.tooth, toothDisplay)} — skipped, click to un-skip`
+                    : `${renderTooth(t.tooth, toothDisplay)} — click to skip`
+                }
               >
-                <span>{t.tooth}</span>
+                <span>{renderTooth(t.tooth, toothDisplay)}</span>
                 <span
                   className={clsx(
                     "h-1.5 w-1.5 rounded-full",
@@ -166,6 +188,7 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
                 const plaque = localSite ? localSite.plaque : (savedSite?.plaque ?? false);
 
                 const isActiveCell = isDraftTooth && state.siteIndex === siteIdx && !t.is_skipped;
+                const badge = deltaIndex && !t.is_skipped ? badgeForDelta(deltaIndex.get(`${t.tooth}:${site}`)) : null;
 
                 return (
                   <button
@@ -174,8 +197,8 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
                     disabled={completed || t.is_skipped}
                     aria-label={
                       t.is_skipped
-                        ? `Tooth ${t.tooth}, ${site}, skipped`
-                        : `Tooth ${t.tooth}, ${site}${pd !== null ? `, pocket depth ${pd}` : ""}${gm !== null ? `, gingival margin ${gm}` : ""}`
+                        ? `Tooth ${renderTooth(t.tooth, toothDisplay)}, ${site}, skipped`
+                        : `Tooth ${renderTooth(t.tooth, toothDisplay)}, ${site}${pd !== null ? `, pocket depth ${pd}` : ""}${gm !== null ? `, gingival margin ${gm}` : ""}`
                     }
                     onClick={() => {
                       jumpTo(t.tooth, site);
@@ -199,7 +222,14 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
                           {pd ?? "·"}
                           {gm !== null ? `/${gm > 0 ? "+" : ""}${gm}` : ""}
                         </span>
-                        <span className="text-[9px] text-ink-soft">{cal !== null ? `CAL ${cal}` : " "}</span>
+                        <span className="text-[9px] text-ink-soft">
+                          {cal !== null ? `CAL ${cal}` : " "}
+                          {badge && (
+                            <span className={clsx("ml-0.5", badge.significant ? "font-medium text-bleed" : "text-ink-soft")} title="Change since compared exam">
+                              {badge.label}
+                            </span>
+                          )}
+                        </span>
                         <span className="flex h-3 gap-0.5 text-[9px] leading-none">
                           {bop && (
                             <span className="text-bleed" title="Bleeding on probing">
@@ -230,7 +260,7 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, onSaved }
       {state.menu && state.draft && (
         <div className="flex items-center gap-1 rounded-DEFAULT border border-rule bg-surface p-2 text-xs">
           <span className="mr-1 text-ink-soft">
-            {MENU_LABEL[state.menu]} for {state.draft.tooth}:
+            {MENU_LABEL[state.menu]} for {renderTooth(state.draft.tooth, toothDisplay)}:
           </span>
           {([0, 1, 2, 3] as const).map((v) => (
             <button
