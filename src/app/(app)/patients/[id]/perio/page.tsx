@@ -12,9 +12,11 @@ import {
   updatePerioExamNotes,
   completePerioExam,
   uncompletePerioExam,
+  listEligiblePerioProviders,
+  comparePerioExam,
 } from "@/lib/perio-api";
-import { listProviders } from "@/lib/schedule-api";
 import { PerioGrid } from "@/components/perio/perio-grid";
+import { PerioOverlay } from "@/components/perio/perio-overlay";
 
 // Duplicated from src/server/lib/permissions.ts's `perio` row, not imported — client code
 // never reaches into @/server/lib (same boundary src/components/chart/tooth-shapes.ts and
@@ -37,6 +39,11 @@ export default function PatientPerioPage() {
   const { user } = useAuth();
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<string | null>(null);
+  const [newExamProviderId, setNewExamProviderId] = useState<string | null>(null);
+  const [compareEnabled, setCompareEnabled] = useState(false);
+  // Explicit baseline override — null means "let the server default to the most recent
+  // prior exam" (docs/specs/perio.md's "zero extra clicks for the common case").
+  const [compareAgainstId, setCompareAgainstId] = useState<string | null>(null);
 
   const canWrite = !!user?.role && PERIO_WRITE_ROLES.has(user.role);
 
@@ -53,14 +60,26 @@ export default function PatientPerioPage() {
     enabled: !!activeExamId,
   });
 
-  const { data: providersData } = useQuery({ queryKey: ["providers"], queryFn: listProviders });
+  // Perio-scoped eligible-provider list (Owner/Provider/Hygienist/Assistant) — not
+  // schedule-api's listProviders(), which excludes assistants (see perio-api.ts).
+  const { data: providersData } = useQuery({ queryKey: ["perio-providers"], queryFn: listEligiblePerioProviders });
   const providers = providersData?.data ?? [];
+
+  const { data: compareData } = useQuery({
+    queryKey: ["perio-compare", activeExamId, compareAgainstId],
+    queryFn: () => comparePerioExam(activeExamId as string, compareAgainstId ?? undefined),
+    enabled: compareEnabled && !!activeExamId,
+  });
 
   function refetchExams() {
     queryClient.invalidateQueries({ queryKey: ["perio-exams", params.id] });
   }
   const refetchDetail = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["perio-exam", activeExamId] });
+    // A per-tooth save can change this exam's CAL, which the compare-mode delta badges
+    // (keyed ["perio-compare", activeExamId, ...]) already fetched — without this they'd
+    // keep showing the pre-save delta until Compare was toggled off and back on.
+    queryClient.invalidateQueries({ queryKey: ["perio-compare", activeExamId] });
   }, [queryClient, activeExamId]);
 
   const createMutation = useMutation({
@@ -98,36 +117,71 @@ export default function PatientPerioPage() {
   return (
     <div className="flex gap-4 p-4">
       {/* Exam history sidebar — also doubles as the comparison-baseline picker
-          (docs/specs/perio.md) once the comparison view lands. */}
+          (docs/specs/perio.md): while Compare is on, clicking a different exam picks it as
+          the baseline instead of navigating to it. */}
       <aside className="w-40 shrink-0">
         <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-soft">Exams</h2>
         <ul className="flex flex-col gap-1">
-          {exams.map((exam) => (
-            <li key={exam.id}>
-              <button
-                type="button"
-                onClick={() => setSelectedExamId(exam.id)}
-                className={clsx(
-                  "w-full rounded-[var(--radius)] px-2 py-1.5 text-left text-[12px]",
-                  exam.id === activeExamId ? "bg-steel-lo font-medium text-ink" : "text-ink-soft hover:bg-steel-lo/50",
-                )}
-              >
-                {formatDate(exam.exam_date)}
-                {!exam.completed_at && <span className="ml-1 text-caution">•</span>}
-              </button>
-            </li>
-          ))}
+          {exams.map((exam) => {
+            const isBaseline = compareEnabled && exam.id === (compareData?.against_exam_id ?? compareAgainstId);
+            return (
+              <li key={exam.id}>
+                <button
+                  type="button"
+                  disabled={compareEnabled && exam.id === activeExamId}
+                  onClick={() => {
+                    if (compareEnabled) {
+                      setCompareAgainstId(exam.id);
+                    } else {
+                      setSelectedExamId(exam.id);
+                      setCompareAgainstId(null);
+                    }
+                  }}
+                  title={compareEnabled && exam.id !== activeExamId ? "Compare against this exam" : undefined}
+                  className={clsx(
+                    "w-full rounded-[var(--radius)] px-2 py-1.5 text-left text-[12px] disabled:cursor-default",
+                    exam.id === activeExamId ? "bg-steel-lo font-medium text-ink" : "text-ink-soft hover:bg-steel-lo/50",
+                    isBaseline && "ring-1 ring-inset ring-steel",
+                  )}
+                >
+                  {formatDate(exam.exam_date)}
+                  {!exam.completed_at && <span className="ml-1 text-caution">•</span>}
+                  {isBaseline && <span className="ml-1 text-[10px] text-steel">vs</span>}
+                </button>
+              </li>
+            );
+          })}
         </ul>
         {exams.length === 0 && <p className="text-[12px] text-ink-soft">No gum measurements recorded. Start an exam.</p>}
         {canWrite && (
-          <button
-            type="button"
-            disabled={createMutation.isPending}
-            onClick={() => createMutation.mutate(user?.id ?? null)}
-            className="mt-3 h-7 w-full rounded-[var(--radius)] bg-steel px-2 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
-          >
-            New exam
-          </button>
+          <div className="mt-3 flex flex-col gap-1">
+            <label className="text-[10px] font-medium uppercase tracking-wide text-ink-soft" htmlFor="new-exam-provider">
+              Performed by
+            </label>
+            {/* Who actually probed, not necessarily who's at the keyboard — an assistant
+                transcribing for a hygienist is the reason this is pickable, not defaulted
+                silently to the logged-in user. docs/specs/perio.md. */}
+            <select
+              id="new-exam-provider"
+              value={newExamProviderId ?? user?.id ?? ""}
+              onChange={(e) => setNewExamProviderId(e.target.value)}
+              className="h-7 w-full rounded-[var(--radius)] border border-rule bg-surface px-1.5 text-[12px] text-ink outline-none focus-visible:border-steel"
+            >
+              {providers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={createMutation.isPending}
+              onClick={() => createMutation.mutate(newExamProviderId ?? user?.id ?? null)}
+              className="h-7 w-full rounded-[var(--radius)] bg-steel px-2 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              New exam
+            </button>
+          </div>
         )}
       </aside>
 
@@ -144,24 +198,49 @@ export default function PatientPerioPage() {
                   {providers.find((p) => p.id === examDetail.provider_id)?.full_name ?? "—"}
                 </p>
               </div>
-              {canWrite && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => (examDetail.completed_at ? uncompleteMutation.mutate() : completeMutation.mutate())}
-                  className="h-7 rounded-[var(--radius)] border border-rule px-3 text-[12px] font-medium text-ink hover:bg-steel-lo"
+                  onClick={() => {
+                    setCompareEnabled((v) => !v);
+                    setCompareAgainstId(null);
+                  }}
+                  className={clsx(
+                    "h-7 rounded-[var(--radius)] border px-3 text-[12px] font-medium",
+                    compareEnabled ? "border-steel bg-steel-lo text-ink" : "border-rule text-ink hover:bg-steel-lo",
+                  )}
                 >
-                  {examDetail.completed_at ? "Reopen exam" : "Complete exam"}
+                  Compare
                 </button>
-              )}
+                {canWrite && (
+                  <button
+                    type="button"
+                    onClick={() => (examDetail.completed_at ? uncompleteMutation.mutate() : completeMutation.mutate())}
+                    className="h-7 rounded-[var(--radius)] border border-rule px-3 text-[12px] font-medium text-ink hover:bg-steel-lo"
+                  >
+                    {examDetail.completed_at ? "Reopen exam" : "Complete exam"}
+                  </button>
+                )}
+              </div>
             </div>
+
+            {compareEnabled && compareData && compareData.against_exam_id === null && (
+              <p className="text-[12px] text-ink-soft">No prior exam to compare against — this is the first one on record.</p>
+            )}
 
             <PerioGrid
               examId={examDetail.id}
               teeth={examDetail.teeth}
               probingSequence={user?.organization.probing_sequence ?? null}
               completed={!!examDetail.completed_at}
+              toothDisplay={user?.organization.tooth_notation_display ?? "fdi"}
+              compareDeltas={compareEnabled ? (compareData?.deltas ?? null) : null}
               onSaved={refetchDetail}
             />
+
+            {/* Read surface, not the entry grid — reflects saved state only, refreshes
+                whenever examDetail refetches. docs/specs/perio.md's "Graphical overlay". */}
+            <PerioOverlay teeth={examDetail.teeth} toothDisplay={user?.organization.tooth_notation_display ?? "fdi"} />
 
             {/* Deliberately inline below the periochart, not in the separate Clinical
                 Notes tab — docs/specs/perio.md, more accessible for a note taken at the
