@@ -1,4 +1,4 @@
-import { integer, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { tenantColumns } from "./_helpers";
 import { locations } from "./locations";
@@ -28,6 +28,10 @@ export const invoices = pgTable(
     taxTotal: numeric("tax_total", { precision: 10, scale: 2 }).notNull().default("0"),
     total: numeric("total", { precision: 10, scale: 2 }).notNull(),
     voidReason: text("void_reason"),
+    // The clinic's GST status at issue, so a reprint matches what was issued even if the
+    // clinic registers (or deregisters) later. docs/bug-log.md entry 28.
+    gstRegistered: boolean("gst_registered").notNull().default(false),
+    gstin: text("gstin"),
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     voidedBy: uuid("voided_by").references(() => users.id),
   },

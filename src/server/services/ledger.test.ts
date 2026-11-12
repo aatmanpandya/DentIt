@@ -493,3 +493,29 @@ describe("review fixes", () => {
     expect(again.payment.id).toBe(first.payment.id);
   });
 });
+
+// docs/bug-log.md entry 28: the printout decided "tax invoice vs receipt" from the clinic's
+// current GST setting, so old receipts reprinted as tax invoices after registering.
+describe("tax status is recorded on the invoice at issue", () => {
+  afterEach(cleanup);
+
+  it("keeps an invoice issued while unregistered a receipt after the clinic registers", async () => {
+    const { org, owner, location, patient, code } = await setup({ gstRegistered: false });
+    const proc = await completed(owner, patient.id, code.CROWN.id, { tooth: "46", snapshot: "12000.00" });
+    const { invoice } = await createInvoice(owner, { patient_id: patient.id, location_id: location.id, charted_procedure_ids: [proc.id] });
+
+    await adminDb.update(organizations).set({ gstRegistered: true, gstin: "27AAAAA0000A1Z5" }).where(eq(organizations.id, org.id));
+
+    const detail = await getInvoice(owner, invoice.id);
+    expect(detail.invoice.gstRegistered).toBe(false);
+    expect(detail.invoice.gstin).toBeNull();
+  });
+
+  it("records the GSTIN on an invoice issued while registered", async () => {
+    const { org, owner, location, patient, code } = await setup({ gstRegistered: true });
+    await adminDb.update(organizations).set({ gstin: "27AAAAA0000A1Z5" }).where(eq(organizations.id, org.id));
+    const proc = await completed(owner, patient.id, code.CROWN.id, { tooth: "46", snapshot: "12000.00" });
+    const { invoice } = await createInvoice(owner, { patient_id: patient.id, location_id: location.id, charted_procedure_ids: [proc.id] });
+    expect(invoice).toMatchObject({ gstRegistered: true, gstin: "27AAAAA0000A1Z5" });
+  });
+});

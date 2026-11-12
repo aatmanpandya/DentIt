@@ -35,7 +35,7 @@ import {
   invoiceNumberCounters,
 } from "../src/server/db/schema";
 import { fromPaise, lineTax, rateToPercentString, toPaise, TAX_RATE_BY_CLASS, type TaxClass } from "../src/server/lib/money";
-import { zonedDateString } from "../src/server/lib/timezone";
+import { zonedDateString, zonedDateTimeToInstant } from "../src/server/lib/timezone";
 
 /**
  * Loads seed/mock-data.json through the same tables the app writes to — see
@@ -51,18 +51,23 @@ if (process.env.NODE_ENV === "production" && process.env.SEED_ALLOW_PRODUCTION !
 type Data = typeof import("./mock-data.json");
 const data = JSON.parse(readFileSync(join(__dirname, "mock-data.json"), "utf-8")) as Data;
 
+// Dates and clock times are the clinic's (seed-data.md: "resolved in Asia/Kolkata"), not the
+// machine's: setHours() used the machine's timezone, so on a UTC server "09:30" landed at
+// 15:00 IST, and dateOnly() took the UTC date (docs/bug-log.md entry 29).
+const SEED_TZ = data.organization.timezone;
 const today = new Date();
-function atOffset(dayOffset: number, time?: string): Date {
-  const d = new Date(today);
-  d.setDate(d.getDate() + dayOffset);
-  if (time) {
-    const [h, m] = time.split(":").map(Number);
-    d.setHours(h, m, 0, 0);
-  }
-  return d;
-}
+const todayInClinic = zonedDateString(today, SEED_TZ);
+
+/** "YYYY-MM-DD" in the clinic's calendar, `dayOffset` days from today. */
 function dateOnly(dayOffset: number): string {
-  return atOffset(dayOffset).toISOString().slice(0, 10);
+  const [y, m, d] = todayInClinic.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + dayOffset)).toISOString().slice(0, 10);
+}
+
+/** An instant `dayOffset` days from now; with `time`, that wall-clock time in the clinic. */
+function atOffset(dayOffset: number, time?: string): Date {
+  if (time) return zonedDateTimeToInstant(dateOnly(dayOffset), time, SEED_TZ);
+  return new Date(today.getTime() + dayOffset * 24 * 60 * 60 * 1000);
 }
 
 type SiteTuple = [number, number, boolean, boolean, boolean];
@@ -415,7 +420,7 @@ async function main() {
   // void returns it to `completed` like any real invoice. Money in paise via money.ts, tax
   // through the same lineTax the ledger service uses. Numbers are INV-<this year>-<sequence>,
   // and the counter starts after the highest seeded one. See docs/specs/ledger.md.
-  const invoiceYear = Number(zonedDateString(today, data.organization.timezone).slice(0, 4));
+  const invoiceYear = Number(todayInClinic.slice(0, 4));
   let maxSequence = 0;
   for (const inv of data.invoices) {
     const lines = inv.lines.map((l) => {

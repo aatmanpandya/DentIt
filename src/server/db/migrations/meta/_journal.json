@@ -71,6 +71,13 @@
       "when": 1794484594922,
       "tag": "0009_minor_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794502698017,
+      "tag": "0010_unknown_electro",
+      "breakpoints": true
     }
   ]
 }

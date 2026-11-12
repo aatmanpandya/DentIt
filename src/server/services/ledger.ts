@@ -338,6 +338,8 @@ export async function createInvoice(actor: RequestActor, input: CreateInvoiceInp
         subtotal: fromPaise(lines.reduce((s, l) => s + l.unit, 0)),
         taxTotal: fromPaise(lines.reduce((s, l) => s + l.tax, 0)),
         total: fromPaise(lines.reduce((s, l) => s + l.total, 0)),
+        gstRegistered: org.gstRegistered,
+        gstin: org.gstRegistered ? org.gstin : null,
         createdBy: actor.userId,
       })
       .returning();

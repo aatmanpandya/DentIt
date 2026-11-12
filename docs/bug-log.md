@@ -380,3 +380,23 @@ and every finding listed here was re-checked against the code before it was fixe
   yesterday's fee schedule and new perio exams were dated the day before.
 - **Fix:** the server's default pricing date and the perio / fee-schedule pages use the
   clinic's timezone (`zonedDateString`, `src/lib/dates.ts`).
+
+## 28. Old invoices reprinted as tax invoices after the clinic registered for GST
+
+- **Symptom:** the print page chose "Tax invoice" vs "Receipt", and the GSTIN shown, from the
+  clinic's *current* setting. Receipts issued while unregistered would reprint as tax
+  invoices (with GSTIN and SAC, and zero tax) after registering; the reverse after
+  deregistering.
+- **Fix:** each invoice records `gst_registered` and `gstin` at issue (migration `0010`); the
+  printout reads those. Tests: "keeps an invoice issued while unregistered a receipt…",
+  "records the GSTIN…". (Written together with the fix, not run red first — the fields they
+  assert didn't exist before.)
+
+## 29. Seeded appointment times depended on the machine's timezone
+
+- **Symptom:** `seed/index.ts` built times with `setHours()` in the machine's timezone and
+  dates with the UTC date, while `seed-data.md` says times are the clinic's (Asia/Kolkata). On
+  a UTC server or CI, "09:30" landed at 15:00 IST.
+- **Fix:** dates are computed in the clinic's calendar and clock times converted with
+  `zonedDateTimeToInstant`. Verified by seeding with `TZ=UTC`: today's appointments still start
+  at 09:30 IST.

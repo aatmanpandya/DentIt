@@ -80,7 +80,8 @@ export function serializeInvoiceDetail(d: Awaited<ReturnType<typeof getInvoice>>
     responsible_party: d.responsibleParty
       ? { full_name: d.responsibleParty.fullName, relationship: d.responsibleParty.relationship, phone: d.responsibleParty.phone }
       : null,
-    organization: { name: d.organization.name, gst_registered: d.organization.gstRegistered, gstin: d.organization.gstin, timezone: d.organization.timezone },
+    // Tax status as recorded on the invoice at issue, not the clinic's current setting.
+    organization: { name: d.organization.name, gst_registered: d.invoice.gstRegistered, gstin: d.invoice.gstin, timezone: d.organization.timezone },
   };
 }
 
