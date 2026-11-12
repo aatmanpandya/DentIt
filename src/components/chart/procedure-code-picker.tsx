@@ -30,11 +30,14 @@ export function ProcedureCodePicker({
   selectedCodeId,
   onSelect,
   pinned = [],
+  autoFocus = false,
 }: {
   scopeFilter: (code: ProcedureCode) => boolean;
   selectedCodeId: string | null;
   onSelect: (code: ProcedureCode) => void;
   pinned?: PinnedPickerRow[];
+  /** For pickers opened on demand (plan builder's "+ Add item") — typing should land in search. */
+  autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const { data } = useQuery({ queryKey: ["procedure-codes", "active"], queryFn: () => listProcedureCodes({ active: true, limit: 200 }) });
@@ -50,6 +53,7 @@ export function ProcedureCodePicker({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search treatments…"
+        autoFocus={autoFocus}
         className="h-8 w-full rounded-[var(--radius)] border border-rule bg-surface px-2 text-[12px] text-ink outline-none focus-visible:border-steel"
       />
       <div className="flex max-h-40 flex-col gap-0.5 overflow-auto">

@@ -58,6 +58,7 @@ export default function PatientPlansPage() {
   const [newPhaseName, setNewPhaseName] = useState<Record<string, string>>({});
   const [pickerPhaseId, setPickerPhaseId] = useState<string | null>(null);
   const [acceptOpen, setAcceptOpen] = useState(false);
+  const [declineOpen, setDeclineOpen] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
 
   const canWrite = !!user?.role && PLAN_WRITE_ROLES.has(user.role);
@@ -105,7 +106,14 @@ export default function PatientPlansPage() {
     },
   });
 
-  const declineMutation = useMutation({ mutationFn: () => declineTreatmentPlan(activePlanId as string), onSuccess: () => { refetchDetail(); refetchPlans(); } });
+  const declineMutation = useMutation({
+    mutationFn: () => declineTreatmentPlan(activePlanId as string),
+    onSuccess: () => {
+      setDeclineOpen(false);
+      refetchDetail();
+      refetchPlans();
+    },
+  });
   const presentMutation = useMutation({ mutationFn: () => presentTreatmentPlan(activePlanId as string), onSuccess: () => { refetchDetail(); refetchPlans(); } });
   const acceptMutation = useMutation({
     mutationFn: () => acceptTreatmentPlan(activePlanId as string, signature),
@@ -208,7 +216,13 @@ export default function PatientPlansPage() {
             <li key={p.id}>
               <button
                 type="button"
-                onClick={() => setSelectedPlanId(p.id)}
+                onClick={() => {
+                  // An open accept/decline confirm belongs to the plan it was opened on —
+                  // never let it carry over and act on a different plan.
+                  setAcceptOpen(false);
+                  setDeclineOpen(false);
+                  setSelectedPlanId(p.id);
+                }}
                 className={clsx(
                   "flex w-full flex-col items-start rounded-[var(--radius)] px-2 py-1.5 text-left text-[12px]",
                   p.id === activePlanId ? "bg-steel-lo font-medium text-ink" : "text-ink-soft hover:bg-steel-lo/50",
@@ -272,7 +286,10 @@ export default function PatientPlansPage() {
                 {canWrite && plan.status === "presented" && (
                   <button
                     type="button"
-                    onClick={() => setAcceptOpen(true)}
+                    onClick={() => {
+                      setDeclineOpen(false);
+                      setAcceptOpen(true);
+                    }}
                     className="h-7 rounded-[var(--radius)] bg-steel px-3 text-[12px] font-medium text-white hover:opacity-90"
                   >
                     Accept
@@ -281,8 +298,10 @@ export default function PatientPlansPage() {
                 {canWrite && (plan.status === "draft" || plan.status === "presented") && (
                   <button
                     type="button"
-                    disabled={declineMutation.isPending}
-                    onClick={() => declineMutation.mutate()}
+                    onClick={() => {
+                      setAcceptOpen(false);
+                      setDeclineOpen(true);
+                    }}
                     className="h-7 rounded-[var(--radius)] border border-rule px-3 text-[12px] font-medium text-ink hover:bg-steel-lo"
                   >
                     Decline
@@ -290,6 +309,33 @@ export default function PatientPlansPage() {
                 )}
               </div>
             </div>
+
+            {/* Declining is irreversible (no transition out of `declined`), so it confirms —
+                ui-design.md: "Confirm only for irreversible things". Inline, not a modal. */}
+            {declineOpen && (
+              <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-rule bg-surface p-3">
+                <p className="text-[12px] text-ink">
+                  Declining is final — this plan can&apos;t be reopened or accepted later. Its charted procedures stay on the
+                  chart as planned.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={declineMutation.isPending}
+                    onClick={() => declineMutation.mutate()}
+                    className="h-7 rounded-[var(--radius)] bg-bleed px-3 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  >
+                    Decline plan
+                  </button>
+                  <button type="button" onClick={() => setDeclineOpen(false)} className="h-7 px-2 text-[12px] text-ink-soft">
+                    Keep plan
+                  </button>
+                </div>
+                {declineMutation.isError && (
+                  <p className="text-[12px] text-bleed">{(declineMutation.error as Error).message}</p>
+                )}
+              </div>
+            )}
 
             {acceptOpen && (
               <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-rule bg-surface p-3">

@@ -80,3 +80,23 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
 - **Verified:** test "completes directly from planned or accepted" (failed before with
   `Can't move from planned to completed`, passes after). In the browser: completed the three
   procedures on Arjun Kulkarni's accepted plan from the chart; the plan flipped to Completed.
+- **Commit:** `f9aea35`
+
+---
+
+## 4. One click on "Decline" permanently kills a plan
+
+- **Symptom:** "Decline" sits next to "Accept" and acts on one click. `declined` has no
+  outgoing transitions, so a misclick loses the plan for good: no confirm, no undo.
+- **How noticed:** browser walk, declining a second plan. Checked `ui-design.md`: "Confirm
+  only for irreversible things", so this breaks the project's own rule.
+- **Fix:** inline confirm (same pattern as the accept panel, not a modal): "Declining is
+  final … Its charted procedures stay on the chart as planned." with **Decline plan** /
+  **Keep plan**. While building it, found that an open accept or decline panel would survive
+  switching plans in the sidebar and then act on the *newly selected* plan; both panels now
+  close on plan switch, and opening one closes the other.
+- **Also fixed (same walk, minor):** the plan builder's "+ Add item" picker didn't focus its
+  search box, so typing went into whatever field had focus last (it landed in "Plan name").
+  `ProcedureCodePicker` takes an opt-in `autoFocus`; only the plan builder uses it.
+- **Verified in browser:** confirm appears; switching plans closes it; "Decline plan"
+  declines; typing after "+ Add item" lands in search.

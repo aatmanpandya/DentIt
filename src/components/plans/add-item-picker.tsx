@@ -89,7 +89,7 @@ export function AddItemPicker({
 
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-rule bg-paper p-2.5">
-      <ProcedureCodePicker scopeFilter={() => true} selectedCodeId={code?.id ?? null} onSelect={setCode} pinned={pinned} />
+      <ProcedureCodePicker scopeFilter={() => true} selectedCodeId={code?.id ?? null} onSelect={setCode} pinned={pinned} autoFocus />
 
       {(code?.applies_to === "tooth" || code?.applies_to === "surface") && (
         <input
