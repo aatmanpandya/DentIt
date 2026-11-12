@@ -647,6 +647,15 @@ export async function getInvoice(actor: RequestActor, invoiceId: string) {
   });
 }
 
+const METHOD_LABEL: Record<(typeof payments.$inferSelect)["method"], string> = {
+  cash: "Cash",
+  card: "Card",
+  upi: "UPI",
+  bank_transfer: "Bank transfer",
+  cheque: "Cheque",
+  other: "Other",
+};
+
 export type LedgerEntryKind = "invoice" | "void" | "payment" | "adjustment";
 
 export interface LedgerEntry {
@@ -680,7 +689,7 @@ export async function getPatientLedger(actor: RequestActor, patientId: string) {
       raw.push({ kind: "adjustment", at: adj.createdAt, id: adj.id, label: `${adj.adjustmentType} on ${invoiceById.get(adj.invoiceId)?.invoiceNumber ?? ""} — ${adj.reason}`, amount: adj.amount, invoiceId: adj.invoiceId });
     }
     for (const p of rows.payments) {
-      raw.push({ kind: "payment", at: p.receivedAt, id: p.id, label: `Payment · ${p.method.replace("_", " ")}${p.reference ? ` · ${p.reference}` : ""}`, amount: fromPaise(-toPaise(p.amount)), invoiceId: null });
+      raw.push({ kind: "payment", at: p.receivedAt, id: p.id, label: `Payment · ${METHOD_LABEL[p.method]}${p.reference ? ` · ${p.reference}` : ""}`, amount: fromPaise(-toPaise(p.amount)), invoiceId: null });
     }
     // Ties (same instant, e.g. seeded rows) keep a stable, readable order: charges before payments.
     const order: Record<LedgerEntryKind, number> = { invoice: 0, adjustment: 1, void: 2, payment: 3 };
