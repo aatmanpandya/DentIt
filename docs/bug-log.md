@@ -121,3 +121,21 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
 - **Fix:** builder shows "Unpriced" per item and subtotal, "Total: N items unpriced" for the
   plan. The accept panel names the unpriced items, links to Settings → Fee schedule, and
   disables Confirm, so the patient never signs a plan that can't be accepted.
+- **Commit:** `0e9c954`
+
+---
+
+## 6. Declined plans show every item as unpriced
+
+- **Symptom:** on the new `/plans` list, Sunita Deshmukh's declined "Lower denture" showed
+  "1 unpriced" although complete dentures are ₹18,000 in the fee schedule.
+- **How noticed:** browser check of `/plans` after seeding a plan in every status.
+- **Root cause:** `resolveItemPrice` (`treatment-plans.ts`) read the accept-time snapshot for
+  *any* status that isn't editable (`draft`/`presented`). `declined` isn't editable, but a
+  declined plan never went through accept, so there is no snapshot: every price came back
+  `null`. This predates `/plans`; the patient's own Plans tab showed the same "Unpriced" for
+  declined plans. Earlier hand-declined plans in the walk had no items, so ₹0.00 hid it.
+- **Fix:** read the snapshot only for `accepted`/`completed` (the statuses accept produces);
+  everything else, `declined` included, prices live.
+- **Test:** "prices a declined plan live, since it was never snapshotted" (failed with
+  `expected [ null ] to deeply equal [ '500.00' ]`, passes after).

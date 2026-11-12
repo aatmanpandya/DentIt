@@ -490,6 +490,22 @@ describe("listOrganizationTreatmentPlans", () => {
     expect(byName.get("Accepted")?.itemPrices).toEqual(["500.00"]);
   });
 
+  // A declined plan never reached accept, so there is no snapshot to read. It must still
+  // show what it would have cost (live price), not report a priced code as unpriced.
+  it("prices a declined plan live, since it was never snapshotted", async () => {
+    const { actor, patient, code } = await setup();
+    const plan = await createTreatmentPlan(actor, patient.id, { name: "Turned down" });
+    const proc = await plannedProcedure(actor, patient.id, code.id);
+    await addItemToPhase(actor, plan.phases[0].phase.id, { charted_procedure_id: proc.id });
+    await updateTreatmentPlan(actor, plan.plan.id, { to_status: "declined" });
+
+    const rows = await listOrganizationTreatmentPlans(actor, { status: "declined" });
+    const detail = await getTreatmentPlan(actor, plan.plan.id);
+
+    expect(rows[0].itemPrices).toEqual(["500.00"]);
+    expect(detail.phases[0].items[0].price).toBe("500.00");
+  });
+
   it("never returns another org's plans", async () => {
     const { actor } = await setup();
     const [otherOrg] = await adminDb.insert(organizations).values({ name: TEST_ORG_NAME }).returning();

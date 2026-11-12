@@ -225,7 +225,10 @@ async function resolveItemPrice(
   procedureCodeId: string,
   snapshotPrice: string | null,
 ): Promise<string | null> {
-  if (!EDITABLE_STATUSES.has(plan.status)) return snapshotPrice;
+  // Only accept takes a snapshot, so only accepted/completed plans read one. A declined
+  // plan never got that far: price it live like a draft, or every priced code on it would
+  // read as unpriced (docs/bug-log.md entry 6).
+  if (plan.status === "accepted" || plan.status === "completed") return snapshotPrice;
   try {
     const priced = await resolvePrice(tx, actor, { procedure_code_id: procedureCodeId });
     return priced.price;
