@@ -663,10 +663,28 @@ export async function rescheduleAppointment(actor: RequestActor, id: string, inp
     await checkWarnings(
       tx,
       actor,
-      { locationId: before.locationId, operatoryId: input.operatory_id, providerId, startsAt, endsAt },
+      // The appointment being moved can't conflict with its own replacement.
+      { locationId: before.locationId, operatoryId: input.operatory_id, providerId, startsAt, endsAt, excludeAppointmentId: id },
       input.override,
       timeZone,
     );
+
+    // Cancel the original BEFORE inserting the replacement: the overlap exclusion constraint
+    // ignores cancelled rows, so a move that overlaps the original's own slot (15 minutes
+    // later in the same chair) no longer collides with itself. The link to the new row is
+    // set once it exists. docs/bug-log.md entry 23.
+    const cancelledAt = new Date();
+    await tx
+      .update(appointments)
+      .set({
+        status: "cancelled",
+        cancelledAt,
+        cancelledBy: "practice",
+        cancellationReason: "Rescheduled",
+        updatedBy: actor.userId,
+        updatedAt: cancelledAt,
+      })
+      .where(eq(appointments.id, id));
 
     let created;
     try {
@@ -694,15 +712,7 @@ export async function rescheduleAppointment(actor: RequestActor, id: string, inp
 
     const [cancelledOriginal] = await tx
       .update(appointments)
-      .set({
-        status: "cancelled",
-        cancelledAt: new Date(),
-        cancelledBy: "practice",
-        cancellationReason: "Rescheduled",
-        rescheduledToId: created.id,
-        updatedBy: actor.userId,
-        updatedAt: new Date(),
-      })
+      .set({ rescheduledToId: created.id })
       .where(eq(appointments.id, id))
       .returning();
 

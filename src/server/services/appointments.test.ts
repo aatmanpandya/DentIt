@@ -378,6 +378,32 @@ describe("rescheduleAppointment", () => {
     expect(original2.status).toBe("cancelled");
     expect(original2.rescheduledToId).toBe(rescheduled.id);
   });
+
+  // docs/bug-log.md entry 23: the new row was inserted before the original was cancelled,
+  // so a move that overlaps the original's own slot collided with itself.
+  it("moves an appointment 15 minutes later in the same chair", async () => {
+    const { actor, location, opA, provider, patient } = await setup();
+    const original = await createAppointment(actor, {
+      patient_id: patient.id, location_id: location.id, operatory_id: opA.id, provider_id: provider.id,
+      starts_at: at("10:00"), ends_at: at("10:30"),
+    });
+
+    const moved = await rescheduleAppointment(actor, original.id, { operatory_id: opA.id, starts_at: at("10:15"), ends_at: at("10:45") });
+
+    expect(moved.status).toBe("scheduled");
+    expect((await getAppointment(actor, original.id)).rescheduledToId).toBe(moved.id);
+  });
+
+  it("doesn't flag the dentist as double-booked against the appointment being moved", async () => {
+    const { actor, location, opA, opB, provider, patient } = await setup();
+    const original = await createAppointment(actor, {
+      patient_id: patient.id, location_id: location.id, operatory_id: opA.id, provider_id: provider.id,
+      starts_at: at("10:00"), ends_at: at("10:30"),
+    });
+    await expect(
+      rescheduleAppointment(actor, original.id, { operatory_id: opB.id, starts_at: at("10:15"), ends_at: at("10:45") }),
+    ).resolves.toMatchObject({ status: "scheduled" });
+  });
 });
 
 describe("listAppointments", () => {

@@ -335,3 +335,18 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** the password comes from `DATABASE_URL_APP` (`db/app-role.ts`), is substituted into
   `rls.sql` by `migrate.ts`, and is re-applied with `ALTER ROLE` on each migrate so the role
   follows the environment. Production refuses to migrate without one, or with the dev default.
+
+## 23. Moving an appointment 15 minutes in the same chair was refused as a clash with itself
+
+- **Symptom:** rescheduling an appointment to an overlapping time in the same operatory (e.g.
+  10:00 → 10:15) returned `APPOINTMENT_CONFLICT`; moving it to another chair at an overlapping
+  time warned that the dentist was double-booked.
+- **Root cause:** `rescheduleAppointment` inserted the new row before cancelling the
+  original, so the `appointments_no_overlap` exclusion constraint saw the still-active
+  original; and `checkWarnings` wasn't told to ignore the original (updateAppointment was).
+- **Fix:** cancel the original first (the constraint ignores cancelled rows), insert the
+  replacement, then link them; pass `excludeAppointmentId` to the warning check. Both new tests
+  failed before.
+- **Noted while testing:** one unrelated appointment test timed out at 5 s during the full run
+  and passed in 345 ms alone — the machine's load average was ~68 at the time (Spotlight and the
+  Docker VM), not a code problem.
