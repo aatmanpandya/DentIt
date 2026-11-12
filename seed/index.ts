@@ -32,7 +32,10 @@ import {
   invoiceLines,
   payments,
   paymentAllocations,
+  invoiceNumberCounters,
 } from "../src/server/db/schema";
+import { fromPaise, lineTax, rateToPercentString, toPaise, TAX_RATE_BY_CLASS, type TaxClass } from "../src/server/lib/money";
+import { zonedDateString } from "../src/server/lib/timezone";
 
 /**
  * Loads seed/mock-data.json through the same tables the app writes to — see
@@ -290,6 +293,7 @@ async function main() {
       feeScheduleId: cp.status !== "planned" ? feeSchedule.id : null,
       note: cp.note ?? null,
       completedAt: cp.status === "completed" || cp.status === "invoiced" ? atOffset(cp.day_offset ?? 0) : null,
+      invoicedAt: cp.status === "invoiced" ? atOffset(cp.day_offset ?? 0) : null,
     }).returning();
     if ("key" in cp && cp.key) chartedProcedureIds[cp.key] = cpRow.id;
   }
@@ -407,36 +411,47 @@ async function main() {
   }
 
   // --- invoices & payments ---
+  // Each line points at the charted procedure it bills (already `invoiced` above), so a
+  // void returns it to `completed` like any real invoice. Money in paise via money.ts, tax
+  // through the same lineTax the ledger service uses. Numbers are INV-<this year>-<sequence>,
+  // and the counter starts after the highest seeded one. See docs/specs/ledger.md.
+  const invoiceYear = Number(zonedDateString(today, data.organization.timezone).slice(0, 4));
+  let maxSequence = 0;
   for (const inv of data.invoices) {
     const lines = inv.lines.map((l) => {
-      const code = data.procedure_codes.find((p) => p.code === l.code)!;
-      const unitPrice = parseFloat(code.price);
-      const lineTotal = unitPrice * l.quantity;
-      return { code, quantity: l.quantity, unitPrice, lineTotal, taxClass: code.tax_class };
+      const cp = data.charted_procedures.find((c) => "key" in c && c.key === l.procedure);
+      if (!cp) throw new Error(`invoices: no charted procedure with key "${l.procedure}"`);
+      const code = data.procedure_codes.find((p) => p.code === cp.code)!;
+      const rate = data.organization.gst_registered ? TAX_RATE_BY_CLASS[code.tax_class as TaxClass] : 0;
+      const tax = lineTax(toPaise(code.price), rate, true);
+      return { cp, code, rate, ...tax };
     });
-    const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
+    maxSequence = Math.max(maxSequence, inv.sequence);
 
     const [invoiceRow] = await adminDb.insert(invoices).values({
       organizationId: org.id,
       locationId: locationIds[inv.location],
       patientId: patientIds[inv.patient],
-      invoiceNumber: inv.invoice_number,
+      invoiceNumber: `INV-${invoiceYear}-${String(inv.sequence).padStart(4, "0")}`,
       issuedAt: atOffset(inv.day_offset),
       status: "issued",
-      subtotal: subtotal.toFixed(2),
-      taxTotal: "0.00",
-      total: subtotal.toFixed(2),
+      subtotal: fromPaise(lines.reduce((sum, l) => sum + l.unit, 0)),
+      taxTotal: fromPaise(lines.reduce((sum, l) => sum + l.tax, 0)),
+      total: fromPaise(lines.reduce((sum, l) => sum + l.total, 0)),
     }).returning();
 
     for (const l of lines) {
       await adminDb.insert(invoiceLines).values({
         organizationId: org.id,
         invoiceId: invoiceRow.id,
+        chartedProcedureId: chartedProcedureIds[l.cp.key as string],
         description: l.code.short_name,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice.toFixed(2),
-        taxClass: l.taxClass as typeof invoiceLines.$inferInsert.taxClass,
-        lineTotal: l.lineTotal.toFixed(2),
+        quantity: 1,
+        unitPrice: fromPaise(l.unit),
+        taxClass: l.code.tax_class as typeof invoiceLines.$inferInsert.taxClass,
+        taxRate: rateToPercentString(l.rate),
+        taxAmount: fromPaise(l.tax),
+        lineTotal: fromPaise(l.total),
       });
     }
 
@@ -460,6 +475,7 @@ async function main() {
       });
     }
   }
+  await adminDb.insert(invoiceNumberCounters).values({ organizationId: org.id, year: invoiceYear, lastValue: maxSequence });
 
   console.log(`Seeded organization ${org.id} — "${org.name}"`);
   console.log(`  ${data.locations.length} locations, ${data.users.length} users, ${data.patients.length} patients`);

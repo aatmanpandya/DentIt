@@ -162,3 +162,21 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
 - **Fix:** every ledger event timestamp comes from the app clock: `received_at` and the
   adjustment's `created_at` are set explicitly in the service, never left to the DB default.
   Same-instant ties sort charges before payments. 21/21 across three consecutive runs after.
+- **Commit:** `0972894`
+
+---
+
+## 8. Seeded invoices bill procedures the chart still shows as un-invoiced
+
+- **Symptom:** `INV-0882` bills Rohan Shetty's filling on 14 and `INV-0883` Meenakshi Iyer's
+  gum assessment, but both procedures were seeded as `completed`, and the invoice lines had no
+  `charted_procedure_id`. With the ledger built, both would appear in "Create invoice" again:
+  the demo could bill the same work twice, and voiding a seeded invoice couldn't find its
+  procedures.
+- **How noticed:** reading the seed's invoice block before building the ledger UI, to check
+  the void rule ("procedures go back to completed") would work on seeded data.
+- **Root cause:** the seed predates the ledger; it wrote invoice rows directly with a bare
+  procedure *code* per line and float maths (`parseFloat`, against the no-floats rule).
+- **Fix:** invoice lines reference seeded procedures by `key`; those procedures are seeded
+  `invoiced` with `invoiced_at`; amounts go through `money.ts`/`lineTax`; numbers use the
+  current year; `invoice_number_counters` starts after the highest seeded number.
