@@ -48,7 +48,7 @@ export function Logo({ height = 24 }: { height?: number }) {
         style={{ fontSize: height * 1.25, color: BRAND_INK, letterSpacing: "-0.02em" }}
         aria-hidden
       >
-        DentIT
+        DentIt
       </span>
     </span>
   );
@@ -66,7 +66,7 @@ export function PoweredBy() {
       <span className="text-center leading-tight" aria-hidden>
         <span className="block text-[8px] text-ink-soft">Powered by</span>
         <span className="block font-brand text-[10px] font-bold" style={{ color: BRAND_INK, letterSpacing: "-0.02em" }}>
-          DentIT
+          DentIt
         </span>
       </span>
     </div>
