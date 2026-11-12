@@ -5,13 +5,16 @@
 -- WHERE clause in application code leaks nothing, because Postgres itself won't return
 -- rows outside the session's app.current_org.
 
+-- The password is substituted by migrate.ts from DATABASE_URL_APP (see db/app-role.ts) —
+-- never hard-coded here — and re-applied on every migrate so the role follows the env.
 do $$
 begin
   if not exists (select from pg_roles where rolname = 'dentit_app') then
-    create role dentit_app login password 'dentit_app_dev' nobypassrls;
+    create role dentit_app login nobypassrls;
   end if;
 end
 $$;
+alter role dentit_app with login password __APP_ROLE_PASSWORD__;
 
 grant usage on schema public to dentit_app;
 grant usage, select on all sequences in schema public to dentit_app;
@@ -59,6 +62,17 @@ revoke update, delete on audit_log from dentit_app;
 -- row; nothing in the ledger is ever deleted.
 revoke update, delete on invoice_lines, payments, payment_allocations, adjustments from dentit_app;
 revoke delete on invoices from dentit_app;
+
+-- user_location_access has no organization_id (it's keyed by user + location), so the loop
+-- above skips it — but it is tenant data. Scope it through the user's organisation.
+-- docs/bug-log.md entry 21; enforced by rls.test.ts.
+alter table user_location_access enable row level security;
+drop policy if exists tenant_isolation on user_location_access;
+create policy tenant_isolation on user_location_access
+  using (exists (select 1 from users u where u.id = user_location_access.user_id
+                 and u.organization_id = current_setting('app.current_org', true)::uuid))
+  with check (exists (select 1 from users u where u.id = user_location_access.user_id
+                      and u.organization_id = current_setting('app.current_org', true)::uuid));
 
 -- The real double-booking guard: Postgres refuses overlapping appointments in the same
 -- operatory outright, not just via application logic. Requires btree_gist for the uuid

@@ -24,6 +24,13 @@ export async function wipeOrganizationData(db: Database, organizationId: string)
     where column_name = 'organization_id' and table_schema = 'public'
   `);
 
+  // user_location_access has no organization_id but references this org's users and
+  // locations; clear it first or those two can never be deleted (bug-log entry 21).
+  await db.execute(sql`
+    delete from user_location_access
+    where user_id in (select id from users where organization_id = ${organizationId})
+  `);
+
   let remaining = tables.map((t) => t.table_name);
 
   while (remaining.length > 0) {

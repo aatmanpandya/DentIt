@@ -313,3 +313,25 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Symptom:** after a 15-minute lock expired, the failure count was still 5, so a single
   wrong password made it 6 and locked the account again.
 - **Fix:** a lock that has run out starts the count from zero.
+
+## 21. The location-access table had no row-level security
+
+- **Symptom:** `user_location_access` (which locations a user may use) has no
+  `organization_id`, so the loop in `rls.sql` that attaches policies, and the CI gate in
+  `rls.test.ts`, both skip it. RLS was off and `dentit_app` had full CRUD: any clinic's session
+  could read or change another clinic's location-access rows.
+- **How found:** review agent; confirmed with `select relrowsecurity … where relname =
+  'user_location_access'` → `f`.
+- **Fix:** a `tenant_isolation` policy scoped through the row's user's organisation, plus a
+  test that checks RLS is on and that another org's rows are invisible through
+  `dbForRequest`. Writing that test reproduced a second, latent bug: `wipeOrganizationData`
+  never cleared this table, so wiping any org that had such rows failed with "no progress on:
+  locations, users". It now clears it first.
+
+## 22. The app's database role had a publicly known password in every environment
+
+- **Symptom:** `rls.sql`, run on every `db:migrate` including production, created `dentit_app`
+  with the password `dentit_app_dev` written in the file.
+- **Fix:** the password comes from `DATABASE_URL_APP` (`db/app-role.ts`), is substituted into
+  `rls.sql` by `migrate.ts`, and is re-applied with `ALTER ROLE` on each migrate so the role
+  follows the environment. Production refuses to migrate without one, or with the dev default.

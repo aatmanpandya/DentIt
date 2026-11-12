@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { appRolePassword, sqlLiteral } from "./app-role";
 
 // Standalone script, no Next.js .env.local loader available. Same guard as db/client.ts.
 if (!process.env.DATABASE_URL) {
@@ -21,7 +22,10 @@ async function main() {
   await migrate(db, { migrationsFolder: "./src/server/db/migrations" });
 
   console.log("Applying RLS policies and constraints...");
-  const rls = readFileSync(join(process.cwd(), "src/server/db/rls.sql"), "utf-8");
+  const rls = readFileSync(join(process.cwd(), "src/server/db/rls.sql"), "utf-8").replace(
+    "__APP_ROLE_PASSWORD__",
+    sqlLiteral(appRolePassword(process.env)),
+  );
   await client.unsafe(rls);
 
   console.log("Done.");
