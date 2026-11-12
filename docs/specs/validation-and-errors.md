@@ -73,6 +73,8 @@ PROCEDURE_NOT_DELETABLE        PROCEDURE_ILLEGAL_TRANSITION
 PERIO_EXAM_COMPLETED
 NOTE_ALREADY_SIGNED
 FEE_SCHEDULE_NO_PRICE
+TREATMENT_PLAN_ILLEGAL_TRANSITION   TREATMENT_PLAN_LOCKED
+TREATMENT_PLAN_EMPTY                TREATMENT_PLAN_ITEM_NOT_PLANNED
 INVOICE_ALREADY_VOID          PAYMENT_EXCEEDS_BALANCE
 DUPLICATE_PATIENT_NUMBER      DUPLICATE_PROCEDURE_CODE
 RATE_LIMITED                  INTERNAL_ERROR
@@ -93,6 +95,8 @@ Wording is design work, not an afterthought. These are the ones operators hit da
 | `PROCEDURE_NOT_DELETABLE` | "Only a planned procedure can be deleted — cancel it instead." |
 | `FEE_SCHEDULE_NO_PRICE` | "No price set for this treatment on 14 Aug." |
 | `NOTE_ALREADY_SIGNED` | "Signed notes can't be edited. Add an amendment instead." |
+| `TREATMENT_PLAN_LOCKED` | "This plan has already been accepted and can't be edited." |
+| `TREATMENT_PLAN_EMPTY` | "Add at least one item before presenting this plan." |
 | `PAYMENT_EXCEEDS_BALANCE` | "That's more than the ₹2,400 outstanding. Record the extra as credit?" |
 
 Note the pattern: where the clinic is doing something unusual but legitimate, offer the override.

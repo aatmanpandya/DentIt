@@ -22,7 +22,7 @@ export function NavRail() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-14 flex-none flex-col items-center gap-1 border-r border-rule bg-surface py-3">
+    <nav className="flex w-14 flex-none flex-col items-center gap-1 border-r border-rule bg-surface py-3 print:hidden">
       {ITEMS.map(({ href, label, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (

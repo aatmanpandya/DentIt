@@ -1,6 +1,15 @@
-import { eq, and, ne, isNull, desc } from "drizzle-orm";
+import { eq, and, ne, isNull, inArray, desc } from "drizzle-orm";
 import { dbForRequest } from "@/server/db/tenant";
-import { chartedConditions, chartedProcedures, procedureCodes, providerProfiles, patients } from "@/server/db/schema";
+import {
+  chartedConditions,
+  chartedProcedures,
+  procedureCodes,
+  providerProfiles,
+  patients,
+  treatmentPlans,
+  treatmentPlanPhases,
+  treatmentPlanItems,
+} from "@/server/db/schema";
 import { assertCan } from "@/server/lib/permissions";
 import { isValidFdiTooth, validSurfacesForTooth } from "@/server/lib/tooth-notation";
 import { writeAudit } from "./audit";
@@ -85,7 +94,7 @@ export class ProcedureNotDeletableError extends Error {
   }
 }
 
-type Tx = Parameters<Parameters<typeof dbForRequest>[1]>[0];
+export type Tx = Parameters<Parameters<typeof dbForRequest>[1]>[0];
 
 const LEGAL_PROCEDURE_TRANSITIONS: Record<string, string[]> = {
   planned: ["accepted", "cancelled"],
@@ -139,7 +148,7 @@ async function requireProcedure(tx: Tx, actor: RequestActor, id: string) {
   return row;
 }
 
-async function requireProcedureCode(tx: Tx, actor: RequestActor, id: string) {
+export async function requireProcedureCode(tx: Tx, actor: RequestActor, id: string) {
   const [row] = await tx
     .select()
     .from(procedureCodes)
@@ -149,7 +158,7 @@ async function requireProcedureCode(tx: Tx, actor: RequestActor, id: string) {
   return row;
 }
 
-async function defaultProviderId(tx: Tx, actor: RequestActor): Promise<string | null> {
+export async function defaultProviderId(tx: Tx, actor: RequestActor): Promise<string | null> {
   const [profile] = await tx
     .select({ userId: providerProfiles.userId })
     .from(providerProfiles)
@@ -158,15 +167,19 @@ async function defaultProviderId(tx: Tx, actor: RequestActor): Promise<string | 
   return profile ? actor.userId : null;
 }
 
-interface ScopeInput {
+export interface ScopeInput {
   tooth?: string | null;
   surfaces?: string[] | null;
   quadrant?: string | null;
   arch?: string | null;
 }
 
-/** PROCEDURE_SCOPE_MISMATCH — what was sent must match the code's applies_to exactly. */
-function assertScopeMatches(code: typeof procedureCodes.$inferSelect, input: ScopeInput) {
+/**
+ * PROCEDURE_SCOPE_MISMATCH — what was sent must match the code's applies_to exactly.
+ * Exported for reuse by treatment-plans.ts's "add a treatment without charting
+ * first" path (docs/specs/treatment-planning.md) — same rule, not re-derived.
+ */
+export function assertScopeMatches(code: typeof procedureCodes.$inferSelect, input: ScopeInput) {
   const hasTooth = !!input.tooth;
   const hasSurfaces = !!(input.surfaces && input.surfaces.length);
   const hasQuadrant = !!input.quadrant;
@@ -201,7 +214,7 @@ function assertScopeMatches(code: typeof procedureCodes.$inferSelect, input: Sco
   }
 }
 
-function assertToothAndSurfacesValid(tooth: string | null | undefined, surfaces: string[] | null | undefined) {
+export function assertToothAndSurfacesValid(tooth: string | null | undefined, surfaces: string[] | null | undefined) {
   if (!tooth) return;
   if (!isValidFdiTooth(tooth)) throw new InvalidToothError(tooth);
   const valid = validSurfacesForTooth(tooth);
@@ -430,6 +443,65 @@ export async function createProcedure(actor: RequestActor, patientId: string, in
   });
 }
 
+/**
+ * A treatment plan's `completed` status is derived, never set directly — see
+ * docs/specs/treatment-planning.md's "Plan lifecycle" section. The moment a procedure
+ * completes, check whether it's the last incomplete item on some plan and flip that
+ * plan if so. No cron: this is the only place a charted_procedure reaches `completed`.
+ */
+async function derivePlanCompletion(tx: Tx, actor: RequestActor, chartedProcedureId: string) {
+  const [item] = await tx
+    .select({ planId: treatmentPlanPhases.treatmentPlanId })
+    .from(treatmentPlanItems)
+    .innerJoin(treatmentPlanPhases, eq(treatmentPlanItems.treatmentPlanPhaseId, treatmentPlanPhases.id))
+    .where(eq(treatmentPlanItems.chartedProcedureId, chartedProcedureId))
+    .limit(1);
+  if (!item) return;
+
+  const beforePlan = await tx
+    .select()
+    .from(treatmentPlans)
+    .where(eq(treatmentPlans.id, item.planId))
+    .limit(1)
+    .then((rows) => rows[0]);
+  if (!beforePlan || beforePlan.status !== "accepted") return;
+
+  const siblingItems = await tx
+    .select({ chartedProcedureId: treatmentPlanItems.chartedProcedureId })
+    .from(treatmentPlanItems)
+    .innerJoin(treatmentPlanPhases, eq(treatmentPlanItems.treatmentPlanPhaseId, treatmentPlanPhases.id))
+    .where(eq(treatmentPlanPhases.treatmentPlanId, item.planId));
+
+  // A still-deferred sibling (chartedProcedureId null) shouldn't exist on an
+  // `accepted` plan — every item is promoted at accept, see treatment-plans.ts's
+  // acceptTreatmentPlan — but if one somehow does, that's "not all completed" by
+  // definition, not something to silently skip past.
+  const linkedIds = siblingItems.flatMap((s) => (s.chartedProcedureId ? [s.chartedProcedureId] : []));
+  if (linkedIds.length !== siblingItems.length) return;
+
+  const siblingProcedures = await tx
+    .select({ status: chartedProcedures.status })
+    .from(chartedProcedures)
+    .where(inArray(chartedProcedures.id, linkedIds));
+
+  const allCompleted = siblingProcedures.length > 0 && siblingProcedures.every((p) => p.status === "completed");
+  if (!allCompleted) return;
+
+  const [afterPlan] = await tx
+    .update(treatmentPlans)
+    .set({ status: "completed", updatedBy: actor.userId, updatedAt: new Date() })
+    .where(eq(treatmentPlans.id, item.planId))
+    .returning();
+
+  await writeAudit(tx, { organizationId: actor.organizationId, actorUserId: actor.userId, actorIp: null }, {
+    entityType: "treatment_plan",
+    entityId: item.planId,
+    action: "update",
+    before: beforePlan,
+    after: afterPlan,
+  });
+}
+
 export async function updateProcedureStatus(actor: RequestActor, id: string, toStatus: string) {
   assertCan(actor.role, "odontogram", "write");
 
@@ -456,6 +528,8 @@ export async function updateProcedureStatus(actor: RequestActor, id: string, toS
       before,
       after,
     });
+
+    if (toStatus === "completed") await derivePlanCompletion(tx, actor, id);
 
     return after;
   });

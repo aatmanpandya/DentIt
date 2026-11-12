@@ -50,7 +50,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-none items-center gap-3 border-b border-rule bg-surface px-4 py-2">
+      <div className="flex flex-none items-center gap-3 border-b border-rule bg-surface px-4 py-2 print:hidden">
         {patient ? (
           <>
             <span className="text-[13px] font-medium text-ink">
@@ -87,7 +87,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      <nav className="flex flex-none gap-1 border-b border-rule bg-surface px-4">
+      <nav className="flex flex-none gap-1 border-b border-rule bg-surface px-4 print:hidden">
         {TABS.map((tab) => {
           const href = `${basePath}${tab.href}`;
           const active = pathname === href;

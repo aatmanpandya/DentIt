@@ -167,11 +167,18 @@ POST   /patients/:id/treatment-plans
 GET    /treatment-plans/:id
 PATCH  /treatment-plans/:id
 POST   /treatment-plans/:id/phases
-POST   /phases/:id/items                      { charted_procedure_id }
+PATCH  /phases/:id                            { sequence }  — reorder phases within a plan
+POST   /phases/:id/items                      { charted_procedure_id } OR
+                                               { new_procedure: { procedure_code_id, tooth?,
+                                                 surfaces?, quadrant?, arch?, chart_now } }
+PATCH  /items/:id                             { sequence }  — reorder items within a phase
 DELETE /items/:id
 POST   /treatment-plans/:id/present
 POST   /treatment-plans/:id/accept            { signature_image? }
 ```
+
+See `docs/specs/treatment-planning.md` for the full spec — status lifecycle, the pricing-snapshot
+timing, signature-capture scope, and why the two `PATCH` reorder endpoints were added.
 
 ## Ledger
 

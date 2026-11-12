@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const surfaceEnum = z.enum(["M", "D", "B", "L", "O", "I"]);
+export const surfaceEnum = z.enum(["M", "D", "B", "L", "O", "I"]);
 
 export const createConditionSchema = z.object({
   tooth: z.string().min(1),

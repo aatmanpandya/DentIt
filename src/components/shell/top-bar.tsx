@@ -9,7 +9,7 @@ export function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="flex h-12 flex-none items-center gap-4 border-b border-rule bg-surface px-4">
+    <header className="flex h-12 flex-none items-center gap-4 border-b border-rule bg-surface px-4 print:hidden">
       <button className="flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1 text-[13px] font-medium text-ink hover:bg-steel-lo">
         <span className="h-2 w-4 rounded-[2px] bg-band" aria-hidden />
         {user?.organization.name ?? "DentIt"}

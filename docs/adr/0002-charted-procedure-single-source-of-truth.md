@@ -34,3 +34,17 @@ real domain constraint rather than an accident of design.
 Historical accuracy needs explicit handling. An invoiced procedure must not silently change if
 the chart is later amended, so amendments after `invoiced` create a new row and mark the
 original superseded, rather than mutating in place.
+
+## Amendment (2026-08-26)
+
+A treatment plan item may now hold *either* a Charted Procedure reference *or* its own copy of
+code/tooth/surfaces/quadrant/arch — the latter only while nothing has been charted yet, so a plan
+can be drafted without an Odontogram entry existing first. See
+`docs/specs/treatment-planning.md`'s "Adding a treatment without charting first" for the full
+rationale and mechanism. The core decision above is **not reversed**: the copy is temporary and
+scoped to the pre-charting state of a single item. The moment a plan reaches `accepted` — the point
+real clinical commitment happens — every item is promoted to a real Charted Procedure and its own
+copied fields are cleared, so the single-source-of-truth invariant holds for anything that actually
+gets scheduled, completed, or invoiced. A plan that's only ever drafted or declined never produces
+a Charted Procedure at all, which is fine: nothing was ever "the chart" for it, so there's nothing
+that can diverge.

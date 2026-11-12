@@ -111,9 +111,12 @@ otherwise left selectable — covers an assistant charting mid-exam on a provide
 
 **Price: deferred, not shown in this panel.** `charted_procedures.price` is left null at charting
 time. Price is entered manually later, at the invoicing stage, once the procedure is marked
-`completed` — not derived or previewed from the fee schedule here. **This is provisional**: if a
-live price preview (via the already-spec'd `GET /pricing`) turns out to be wanted after all,
-that's a product call to revisit explicitly, not something to build ahead of being asked for.
+`completed` — not derived or previewed from the fee schedule here, *for a procedure charted
+directly on the Odontogram and never put on a treatment plan*. **Resolved** (this was flagged
+provisional; the product call has been made): `docs/specs/treatment-planning.md`'s "Pricing" section
+adds a live price preview via `GET /pricing` in the treatment-plan builder/presentation screens,
+with the price snapshot itself happening at plan acceptance — not here, and not for procedures that
+skip the treatment-plan flow entirely.
 
 ## Mouth / arch / quadrant-scoped procedures
 

@@ -41,6 +41,8 @@ function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "23505";
 }
 
+type Tx = Parameters<Parameters<typeof dbForRequest>[1]>[0];
+
 type ProcedureCategory = (typeof procedureCodes.$inferSelect)["category"];
 type ProcedureScope = (typeof procedureCodes.$inferSelect)["appliesTo"];
 type TaxClass = (typeof procedureCodes.$inferSelect)["taxClass"];
@@ -282,7 +284,7 @@ export async function createFeeSchedule(actor: RequestActor, input: CreateFeeSch
   });
 }
 
-async function requireFeeSchedule(tx: Parameters<Parameters<typeof dbForRequest>[1]>[0], actor: RequestActor, feeScheduleId: string) {
+async function requireFeeSchedule(tx: Tx, actor: RequestActor, feeScheduleId: string) {
   const [schedule] = await tx
     .select()
     .from(feeSchedules)
@@ -361,6 +363,52 @@ export interface GetPricingInput {
 }
 
 /**
+ * The tx-level resolver — reused by treatment-plans.ts to price a plan's items live
+ * (docs/specs/treatment-planning.md's "Pricing" section) inside its own transaction,
+ * same as chart.ts's getToothState is a tx-taking function other services call
+ * directly rather than re-deriving. Does not call assertCan — the caller's own gate
+ * (fee_schedules read for the plain pricing route, treatment_plans read/write for the
+ * plan builder) is what's meaningful here, not a second permission check on the
+ * shared computation.
+ */
+export async function resolvePrice(tx: Tx, actor: RequestActor, input: GetPricingInput) {
+  const onDate = input.on_date ?? new Date().toISOString().slice(0, 10);
+  const effectiveToCondition = or(isNull(feeSchedules.effectiveTo), gte(feeSchedules.effectiveTo, onDate));
+
+  const candidates = await tx
+    .select()
+    .from(feeSchedules)
+    .where(
+      and(
+        eq(feeSchedules.organizationId, actor.organizationId),
+        isNull(feeSchedules.deletedAt),
+        lte(feeSchedules.effectiveFrom, onDate),
+        ...(effectiveToCondition ? [effectiveToCondition] : []),
+      ),
+    );
+
+  const locationMatch = input.location_id ? candidates.filter((c) => c.locationId === input.location_id) : [];
+  const orgWide = candidates.filter((c) => c.locationId === null);
+  const pool = locationMatch.length > 0 ? locationMatch : orgWide;
+  const chosen =
+    pool.find((c) => c.isDefault) ??
+    [...pool].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
+
+  if (!chosen) throw new FeeScheduleNoPriceError();
+
+  const [item] = await tx
+    .select()
+    .from(feeScheduleItems)
+    .where(
+      and(eq(feeScheduleItems.feeScheduleId, chosen.id), eq(feeScheduleItems.procedureCodeId, input.procedure_code_id)),
+    )
+    .limit(1);
+  if (!item) throw new FeeScheduleNoPriceError();
+
+  return { procedure_code_id: input.procedure_code_id, fee_schedule_id: chosen.id, price: item.price };
+}
+
+/**
  * Resolves the effective price for a procedure on a given date/location. Candidate
  * schedules are those currently in effect (effective_from <= on_date <= effective_to,
  * or effective_to null = open-ended); a location-specific schedule wins over an
@@ -369,41 +417,5 @@ export interface GetPricingInput {
  */
 export async function getPricing(actor: RequestActor, input: GetPricingInput) {
   assertCan(actor.role, "fee_schedules", "read");
-  const onDate = input.on_date ?? new Date().toISOString().slice(0, 10);
-
-  return dbForRequest(actor.organizationId, async (tx) => {
-    const effectiveToCondition = or(isNull(feeSchedules.effectiveTo), gte(feeSchedules.effectiveTo, onDate));
-
-    const candidates = await tx
-      .select()
-      .from(feeSchedules)
-      .where(
-        and(
-          eq(feeSchedules.organizationId, actor.organizationId),
-          isNull(feeSchedules.deletedAt),
-          lte(feeSchedules.effectiveFrom, onDate),
-          ...(effectiveToCondition ? [effectiveToCondition] : []),
-        ),
-      );
-
-    const locationMatch = input.location_id ? candidates.filter((c) => c.locationId === input.location_id) : [];
-    const orgWide = candidates.filter((c) => c.locationId === null);
-    const pool = locationMatch.length > 0 ? locationMatch : orgWide;
-    const chosen =
-      pool.find((c) => c.isDefault) ??
-      [...pool].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
-
-    if (!chosen) throw new FeeScheduleNoPriceError();
-
-    const [item] = await tx
-      .select()
-      .from(feeScheduleItems)
-      .where(
-        and(eq(feeScheduleItems.feeScheduleId, chosen.id), eq(feeScheduleItems.procedureCodeId, input.procedure_code_id)),
-      )
-      .limit(1);
-    if (!item) throw new FeeScheduleNoPriceError();
-
-    return { procedure_code_id: input.procedure_code_id, fee_schedule_id: chosen.id, price: item.price };
-  });
+  return dbForRequest(actor.organizationId, (tx) => resolvePrice(tx, actor, input));
 }
