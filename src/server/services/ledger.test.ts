@@ -162,7 +162,9 @@ describe("createInvoice", () => {
 
     const numbers = results.map((r) => r.invoice.invoiceNumber).sort();
     expect(numbers).toEqual([1, 2, 3, 4, 5, 6].map((n) => `INV-${year()}-000${n}`));
-  });
+    // Six creates for one patient queue on the per-patient ledger lock (bug-log entry 15) — by
+    // design — so under a loaded full-suite run this can exceed the default 5 s. ~0.5 s alone.
+  }, 20_000);
 
   it("never bills the same procedure twice when two invoices race for it", async () => {
     const { owner, location, patient, code } = await setup();
