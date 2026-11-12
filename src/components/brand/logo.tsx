@@ -53,3 +53,22 @@ export function Logo({ height = 24 }: { height?: number }) {
     </span>
   );
 }
+
+/**
+ * Vendor credit for the bottom of the nav rail. The top bar belongs to the clinic (its
+ * name only); DentIt is the software it runs on, so the product shows up as a quiet
+ * "Powered by" in a corner rather than beside the clinic's name.
+ */
+export function PoweredBy() {
+  return (
+    <div className="flex flex-col items-center gap-1 opacity-70" title="Powered by DentIt" aria-label="Powered by DentIt">
+      <LogoMark height={11} />
+      <span className="text-center leading-tight" aria-hidden>
+        <span className="block text-[8px] text-ink-soft">Powered by</span>
+        <span className="block font-brand text-[10px] font-bold" style={{ color: BRAND_INK, letterSpacing: "-0.02em" }}>
+          DentIT
+        </span>
+      </span>
+    </div>
+  );
+}

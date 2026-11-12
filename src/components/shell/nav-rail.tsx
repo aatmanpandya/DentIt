@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, CalendarDays, Users, ClipboardList, Receipt, Settings } from "lucide-react";
 import clsx from "clsx";
+import { PoweredBy } from "@/components/brand/logo";
 
 /**
  * Icon-only left rail — width is worth more than affordance here, and staff learn
@@ -47,6 +48,9 @@ export function NavRail() {
           </Link>
         );
       })}
+      <div className="mt-auto pt-3">
+        <PoweredBy />
+      </div>
     </nav>
   );
 }

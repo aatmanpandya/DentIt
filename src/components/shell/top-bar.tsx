@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ChevronDown, Search, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { LogoMark } from "@/components/brand/logo";
 
 export function TopBar() {
   const { user, logout } = useAuth();
@@ -12,7 +11,6 @@ export function TopBar() {
   return (
     <header className="flex h-12 flex-none items-center gap-4 border-b border-rule bg-surface px-4 print:hidden">
       <button className="flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1 text-[13px] font-medium text-ink hover:bg-steel-lo">
-        <LogoMark height={12} />
         {user?.organization.name ?? "DentIt"}
         <ChevronDown size={14} className="text-ink-soft" />
       </button>
