@@ -139,3 +139,26 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
   everything else, `declined` included, prices live.
 - **Test:** "prices a declined plan live, since it was never snapshotted" (failed with
   `expected [ null ] to deeply equal [ '500.00' ]`, passes after).
+- **Commit:** `ef31e7f`
+
+---
+
+## 7. A payment recorded after an invoice sorted before it in the ledger
+
+- **Symptom:** `ledger.test.ts` "takes a part payment and computes the balance" failed in a
+  full run (`expected [ …(2) ] to deeply equal [ Array(2) ]`, the entry order) but passed
+  when run on its own, three times in a row.
+- **How noticed:** first full run of the new ledger tests. Passing alone and failing in a
+  batch pointed at timing, not arithmetic.
+- **Root cause:** two clocks. `invoices.issued_at` was set from Node (`new Date()`) while
+  `payments.received_at` and `adjustments.created_at` used the column default, Postgres
+  `now()`. The ledger sorts events across those tables by those timestamps. Sampling both
+  clocks back to back showed the Docker VM's database clock a few milliseconds behind the
+  host: on one sample the database read 4 ms *earlier* even though it was queried after
+  Node. A payment recorded milliseconds after an invoice could therefore get an earlier
+  timestamp and sort first.
+- **What didn't work:** nothing was changed blind; re-running alone just passed, which is
+  what showed it was order-dependent.
+- **Fix:** every ledger event timestamp comes from the app clock: `received_at` and the
+  adjustment's `created_at` are set explicitly in the service, never left to the DB default.
+  Same-instant ties sort charges before payments. 21/21 across three consecutive runs after.
