@@ -10,6 +10,7 @@ export const createInvoiceSchema = z.object({
   location_id: z.string().uuid(),
   charted_procedure_ids: z.array(z.string().uuid()).min(1, "Choose at least one treatment."),
   prices: z.record(z.string().uuid(), money).optional(),
+  discount: z.object({ amount: money, reason: z.string().trim().min(1, "Give a reason for the discount.") }).optional(),
 });
 
 export const voidInvoiceSchema = z.object({

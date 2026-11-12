@@ -597,3 +597,32 @@ describe("reversePayment", () => {
     expect(org.balances.find((b) => b.patientId === patient.id)?.balance).toBe("1500.00");
   });
 });
+
+// A discount given at billing time, in the same step as creating the invoice.
+describe("createInvoice with a discount", () => {
+  afterEach(cleanup);
+
+  it("records the discount as an adjustment on the new invoice", async () => {
+    const { owner, location, patient, code } = await setup();
+    const proc = await completed(owner, patient.id, code.FILL.id, { tooth: "36", snapshot: "1500.00" });
+    const { invoice } = await createInvoice(owner, {
+      patient_id: patient.id,
+      location_id: location.id,
+      charted_procedure_ids: [proc.id],
+      discount: { amount: "150.00", reason: "Senior citizen 10%" },
+    });
+    const detail = await getInvoice(owner, invoice.id);
+    expect(invoice.total).toBe("1500.00"); // the invoice keeps its full price…
+    expect(detail.outstanding).toBe("1350.00"); // …the discount reduces what's owed
+    expect(detail.adjustments).toEqual([expect.objectContaining({ amount: "-150.00", adjustmentType: "discount", reason: "Senior citizen 10%" })]);
+  });
+
+  it("refuses a discount bigger than the invoice, writing nothing", async () => {
+    const { owner, location, patient, code } = await setup();
+    const proc = await completed(owner, patient.id, code.FILL.id, { tooth: "36", snapshot: "1500.00" });
+    await expect(
+      createInvoice(owner, { patient_id: patient.id, location_id: location.id, charted_procedure_ids: [proc.id], discount: { amount: "1600.00", reason: "x" } }),
+    ).rejects.toThrow(AdjustmentInvalidError);
+    expect(await adminDb.select().from(invoices).where(eq(invoices.patientId, patient.id))).toEqual([]);
+  });
+});

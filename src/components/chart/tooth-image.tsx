@@ -12,6 +12,20 @@ export interface ToothImageOverlay {
   struck?: boolean;
   ring?: "existing" | "procedure" | "both" | null;
   rootLineIcon?: boolean;
+  ringTreatment?: "dashed" | "solid" | "filled" | "filled-invoiced" | null;
+}
+
+/** Planned → dashed; accepted → solid; completed/invoiced → heavier, with the crown shaded. */
+function procedureRingStyle(treatment: ToothImageOverlay["ringTreatment"]) {
+  switch (treatment) {
+    case "solid":
+      return { strokeWidth: 2.5, dash: undefined, fill: "none", fillOpacity: 0 };
+    case "filled":
+    case "filled-invoiced":
+      return { strokeWidth: 3.5, dash: undefined, fill: "var(--steel)", fillOpacity: 0.22 };
+    default:
+      return { strokeWidth: 2, dash: "4,3", fill: "none", fillOpacity: 0 };
+  }
 }
 
 /**
@@ -64,7 +78,16 @@ export function ToothImage({ fdi, overlay, className, style }: { fdi: string; ov
         )}
         {(overlay?.ring === "procedure" || overlay?.ring === "both") && (
           <g clipPath={`url(#${crownClipId})`}>
-            <path d={g.d} fill="none" stroke="var(--steel)" strokeWidth={2} strokeDasharray="4,3" transform="scale(0.85)" style={{ transformOrigin: `0px ${(g.cervicalY + BOX.height) / 2}px` }} />
+            <path
+              d={g.d}
+              fill={procedureRingStyle(overlay?.ringTreatment).fill}
+              fillOpacity={procedureRingStyle(overlay?.ringTreatment).fillOpacity}
+              stroke="var(--steel)"
+              strokeWidth={procedureRingStyle(overlay?.ringTreatment).strokeWidth}
+              strokeDasharray={procedureRingStyle(overlay?.ringTreatment).dash}
+              transform="scale(0.85)"
+              style={{ transformOrigin: `0px ${(g.cervicalY + BOX.height) / 2}px` }}
+            />
           </g>
         )}
         {overlay?.rootLineIcon && <line x1={0} y1={0} x2={0} y2={g.cervicalY} stroke="var(--ink-soft)" strokeWidth={1.5} />}

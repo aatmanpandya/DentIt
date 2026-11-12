@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatRupees, addMoney } from "./format-money";
+import { formatRupees, addMoney, percentOf } from "./format-money";
 
 describe("formatRupees", () => {
   it("groups the Indian way: thousands, then pairs", () => {
@@ -17,5 +17,14 @@ describe("addMoney", () => {
     expect(addMoney(["0.10", "0.20", "0.29"])).toBe("0.59");
     expect(addMoney(["1500", "-200.50"])).toBe("1299.50");
     expect(addMoney([])).toBe("0.00");
+  });
+});
+
+describe("percentOf", () => {
+  it("works out a percentage exactly, rounding half up to the paisa", () => {
+    expect(percentOf("1500", "10")).toBe("150.00");
+    expect(percentOf("1500.00", "12.5")).toBe("187.50");
+    expect(percentOf("999.99", "33.33")).toBe("333.30"); // 333.296… → 333.30
+    expect(percentOf("0.03", "50")).toBe("0.02"); // 0.015 → 0.02
   });
 });

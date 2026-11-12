@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { SidePanel } from "@/components/ui/side-panel";
 import { ApiError } from "@/lib/api-client";
@@ -149,6 +150,18 @@ export function AppointmentPanel({
   return (
     <SidePanel open={open} onClose={onClose} title={editing ? "Edit appointment" : "New appointment"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Who this appointment is for, and one click to their chart — the schedule is where
+            the day starts, so it should lead straight to the patient. */}
+        {editing && appointment && (
+          <div className="flex items-center justify-between rounded-[var(--radius)] border border-rule bg-paper px-2.5 py-2 text-[13px]">
+            <span className="font-medium text-ink">
+              {[appointment.patient_first_name, appointment.patient_last_name].filter(Boolean).join(" ") || "Patient"}
+            </span>
+            <Link href={`/patients/${appointment.patient_id}`} className="text-[12px] font-medium text-steel hover:underline">
+              Open chart →
+            </Link>
+          </div>
+        )}
         {!editing && (
           <div>
             <label className="mb-1 block text-[12px] font-medium text-ink-soft">Patient</label>

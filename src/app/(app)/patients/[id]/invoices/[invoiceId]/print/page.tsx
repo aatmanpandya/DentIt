@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
@@ -39,7 +40,15 @@ export default function InvoicePrintPage() {
   const { data: inv, isError } = useQuery({ queryKey: ["invoice", params.invoiceId], queryFn: () => getInvoice(params.invoiceId) });
 
   if (isError) return <div className="p-8 text-[13px] text-bleed">This invoice couldn&apos;t be loaded.</div>;
-  if (!inv) return <div className="p-8 text-[13px] text-ink-soft">Loading…</div>;
+  if (!inv)
+    return (
+      <div className="mx-auto mt-14 flex max-w-[794px] flex-col gap-4 bg-surface px-12 py-10 ring-1 ring-rule">
+        <Skeleton className="h-14 w-48" />
+        <Skeleton className="h-3 w-72" />
+        <Skeleton className="mt-6 h-24 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
 
   return (
     <div className="min-h-full bg-paper px-6 py-8 print:bg-white print:p-0">

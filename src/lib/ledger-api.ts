@@ -91,7 +91,13 @@ export function suggestLocation(patientId: string, chartedProcedureIds: string[]
   return apiFetch<{ location_id: string | null; mixed: boolean }>(`/invoices/suggest-location?patient_id=${patientId}${ids}`);
 }
 
-export function createInvoice(input: { patient_id: string; location_id: string; charted_procedure_ids: string[]; prices?: Record<string, string> }) {
+export function createInvoice(input: {
+  patient_id: string;
+  location_id: string;
+  charted_procedure_ids: string[];
+  prices?: Record<string, string>;
+  discount?: { amount: string; reason: string };
+}) {
   return apiFetch<Invoice & { lines: InvoiceLine[] }>("/invoices", { method: "POST", body: JSON.stringify(input) });
 }
 

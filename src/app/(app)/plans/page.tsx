@@ -1,5 +1,6 @@
 "use client";
 
+import { formatRupees } from "@/lib/format-money";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +26,7 @@ const STATUS_LABEL: Record<TreatmentPlanStatus, string> = {
 };
 
 function totalLabel(row: OrganizationTreatmentPlanRow): string {
-  if (row.total !== null) return `₹${row.total}`;
+  if (row.total !== null) return formatRupees(row.total);
   return `${row.unpriced_count} unpriced`;
 }
 

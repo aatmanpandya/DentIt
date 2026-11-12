@@ -24,6 +24,7 @@ import { assertCan, PermissionDeniedError } from "@/server/lib/permissions";
 import type { RequestActor } from "@/server/lib/request-auth";
 import { fromPaise, lineTax, rateToPercentString, toPaise, TAX_RATE_BY_CLASS } from "@/server/lib/money";
 import { zonedDateString } from "@/server/lib/timezone";
+import { formatRupees } from "@/lib/format-money";
 import { writeAudit } from "./audit";
 import { resolvePrice, FeeScheduleNoPriceError } from "./catalog";
 import { PatientNotFoundError } from "./patients";
@@ -285,6 +286,8 @@ export interface CreateInvoiceInput {
   charted_procedure_ids: string[];
   /** Price for a procedure with no accept-time snapshot, keyed by charted_procedure_id. */
   prices?: Record<string, string>;
+  /** A discount given at billing time: rupees off (positive), recorded as a discount adjustment. */
+  discount?: { amount: string; reason: string };
 }
 
 function describeProcedure(code: typeof procedureCodes.$inferSelect, p: typeof chartedProcedures.$inferSelect): string {
@@ -402,6 +405,28 @@ export async function createInvoice(actor: RequestActor, input: CreateInvoiceInp
     }
 
     await writeAudit(tx, auditContext(actor), { entityType: "invoice", entityId: invoice.id, action: "create", after: { invoice, lines: lineRows } });
+
+    // Discount at billing time: the same discount adjustment "Adjust" would record, in the
+    // same transaction, so it can't exist without its invoice or exceed it.
+    if (input.discount && toPaise(input.discount.amount) > 0) {
+      const off = toPaise(input.discount.amount);
+      if (off > toPaise(invoice.total)) {
+        throw new AdjustmentInvalidError(`A discount can't be more than the ${formatRupees(invoice.total)} invoice total.`);
+      }
+      const [adjustment] = await tx
+        .insert(adjustments)
+        .values({
+          organizationId: actor.organizationId,
+          invoiceId: invoice.id,
+          amount: fromPaise(-off),
+          adjustmentType: "discount",
+          reason: input.discount.reason,
+          createdAt: issuedAt,
+          createdBy: actor.userId,
+        })
+        .returning();
+      await writeAudit(tx, auditContext(actor), { entityType: "adjustment", entityId: adjustment.id, action: "create", after: adjustment });
+    }
     return { invoice, lines: lineRows };
   });
 }
@@ -490,11 +515,11 @@ function validateAllocations(state: LedgerState, rows: LedgerRows, allocations: 
     const outstanding = state.outstandingByInvoice.get(invoiceId) ?? 0;
     if (amount > outstanding) {
       const number = invoiceById.get(invoiceId)?.invoiceNumber;
-      throw new PaymentExceedsBalanceError(`That's more than the ₹${fromPaise(outstanding)} outstanding on ${number}.`);
+      throw new PaymentExceedsBalanceError(`That's more than the ${formatRupees(fromPaise(outstanding))} outstanding on ${number}.`);
     }
   }
   const total = [...requested.values()].reduce((s, v) => s + v, 0);
-  if (total > available) throw new PaymentExceedsBalanceError(`Allocations add up to ₹${fromPaise(total)}, more than the ₹${fromPaise(available)} available.`);
+  if (total > available) throw new PaymentExceedsBalanceError(`Allocations add up to ${formatRupees(fromPaise(total))}, more than the ${formatRupees(fromPaise(available))} available.`);
 }
 
 export async function recordPayment(actor: RequestActor, input: RecordPaymentInput, idempotencyKey?: string | null) {
@@ -684,7 +709,7 @@ export async function createAdjustment(actor: RequestActor, input: CreateAdjustm
     const rows = await loadPatientLedgerRows(tx, actor, invoice.patientId);
     const outstanding = computeLedgerState(rows).outstandingByInvoice.get(invoice.id) ?? 0;
     if (outstanding + amount < 0) {
-      throw new AdjustmentInvalidError(`That's more than the ₹${fromPaise(outstanding)} outstanding on ${invoice.invoiceNumber}.`);
+      throw new AdjustmentInvalidError(`That's more than the ${formatRupees(fromPaise(outstanding))} outstanding on ${invoice.invoiceNumber}.`);
     }
 
     const [row] = await tx
@@ -809,7 +834,7 @@ export async function getPatientLedger(actor: RequestActor, patientId: string) {
       raw.push({ kind: "payment", at: p.receivedAt, id: p.id, label: `Payment · ${METHOD_LABEL[p.method]}${p.reference ? ` · ${p.reference}` : ""}`, amount: fromPaise(-toPaise(p.amount)), invoiceId: null, reversed: reversalByPayment.has(p.id) });
       const reversal = reversalByPayment.get(p.id);
       if (reversal) {
-        raw.push({ kind: "reversal", at: reversal.reversedAt, id: reversal.id, label: `Payment reversed (${METHOD_LABEL[p.method]} ₹${p.amount}) — ${reversal.reason}`, amount: p.amount, invoiceId: null });
+        raw.push({ kind: "reversal", at: reversal.reversedAt, id: reversal.id, label: `Payment reversed (${METHOD_LABEL[p.method]} ${formatRupees(p.amount)}) — ${reversal.reason}`, amount: p.amount, invoiceId: null });
       }
     }
     // Ties (same instant, e.g. seeded rows) keep a stable, readable order: charges before payments.

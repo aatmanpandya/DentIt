@@ -1,11 +1,18 @@
 "use client";
 
 import { Logo } from "@/components/brand/logo";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth, ApiError } from "@/lib/auth-context";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
+  const router = useRouter();
+
+  // Already signed in: there's nothing to do here, so go to the day's schedule.
+  useEffect(() => {
+    if (!loading && user) router.replace("/schedule");
+  }, [loading, user, router]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

@@ -29,3 +29,10 @@ export function fromPaise(paise: number): string {
 export function addMoney(values: string[]): string {
   return fromPaise(values.reduce((sum, v) => sum + toPaise(v), 0));
 }
+
+/** `percent`% of `amount`, rounded half up to the paisa, as a decimal string. "1500", "10" → "150.00". Exact. */
+export function percentOf(amount: string, percent: string): string {
+  const basisPoints = toPaise(percent); // "12.5" → 1250
+  const product = toPaise(amount) * basisPoints;
+  return fromPaise(Math.floor((2 * product + 10_000) / 20_000));
+}

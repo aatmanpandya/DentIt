@@ -87,7 +87,7 @@ export function RecordPaymentPanel({
       setCreditAmount("");
     }
   }
-  const effectiveLocationId = locationId || (suggestion?.location_id ?? "");
+  const effectiveLocationId = locationId || (suggestion?.location_id ?? locationsData?.data[0]?.id ?? "");
   // Derived, not captured at open: the ledger may still be loading then, and the list can change.
   const effectiveCreditInvoiceId = openInvoices.some((i) => i.id === creditInvoiceId) ? creditInvoiceId : (openInvoices[0]?.id ?? "");
 

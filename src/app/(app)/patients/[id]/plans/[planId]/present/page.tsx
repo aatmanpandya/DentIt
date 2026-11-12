@@ -1,5 +1,7 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatRupees } from "@/lib/format-money";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Printer } from "lucide-react";
@@ -7,7 +9,7 @@ import { getPatient } from "@/lib/patients-api";
 import { getTreatmentPlan } from "@/lib/treatment-plans-api";
 
 function money(value: string | null): string {
-  return value === null ? "Not yet priced" : `₹${value}`;
+  return value === null ? "Not yet priced" : formatRupees(value);
 }
 
 /**
@@ -23,7 +25,14 @@ export default function TreatmentPlanPresentPage() {
   const { data: patient } = useQuery({ queryKey: ["patient", params.id], queryFn: () => getPatient(params.id) });
   const { data: plan } = useQuery({ queryKey: ["treatment-plan", params.planId], queryFn: () => getTreatmentPlan(params.planId) });
 
-  if (!plan) return <div className="p-8 text-[13px] text-ink-soft">Loading…</div>;
+  if (!plan)
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 px-8 py-10">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="mt-6 h-32 w-full" />
+      </div>
+    );
 
   return (
     <div className="mx-auto max-w-2xl px-8 py-10 print:px-0 print:py-0">

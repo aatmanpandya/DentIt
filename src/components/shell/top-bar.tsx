@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Search, LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { GlobalSearch } from "./global-search";
 
 export function TopBar() {
   const { user, logout } = useAuth();
@@ -10,20 +11,10 @@ export function TopBar() {
 
   return (
     <header className="flex h-12 flex-none items-center gap-4 border-b border-rule bg-surface px-4 print:hidden">
-      <button className="flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1 text-[13px] font-medium text-ink hover:bg-steel-lo">
-        {user?.organization.name ?? "DentIt"}
-        <ChevronDown size={14} className="text-ink-soft" />
-      </button>
+      {/* The clinic's name. Not a switcher: a login belongs to exactly one clinic. */}
+      <span className="px-2 py-1 text-[13px] font-medium text-ink">{user?.organization.name ?? "DentIt"}</span>
 
-      <div className="mx-auto flex max-w-md flex-1 items-center gap-2 rounded-[var(--radius)] border border-rule bg-paper px-2.5 py-1.5 text-ink-soft">
-        <Search size={14} />
-        <input
-          type="search"
-          placeholder="Search patients, appointments…"
-          className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-soft"
-        />
-        <kbd className="font-data rounded-[2px] border border-rule px-1 text-[10px] text-ink-soft">/</kbd>
-      </div>
+      <GlobalSearch />
 
       <div className="relative">
         <button

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { NavRail } from "@/components/shell/nav-rail";
 import { TopBar } from "@/components/shell/top-bar";
 import { ToastProvider } from "@/components/ui/toast";
+import { LogoMark } from "@/components/brand/logo";
 
 export default function AppShellLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -16,7 +17,13 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
   }, [loading, user, router]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-paper text-ink-soft">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper" role="status" aria-label="Loading">
+        <span className="animate-pulse">
+          <LogoMark height={28} />
+        </span>
+      </div>
+    );
   }
 
   if (!user) return null;

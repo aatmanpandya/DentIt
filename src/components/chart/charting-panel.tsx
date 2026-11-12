@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import clsx from "clsx";
 import type { Condition, Procedure, Surface } from "@/lib/chart-api";
 import {
@@ -98,7 +100,7 @@ function ToothPanelContent({
       <ConditionForm patientId={patientId} fdi={fdi} initialSurface={initialSurface} validSurfaces={validSurfaces} onChanged={onChanged} />
       <ProcedureForm patientId={patientId} fdi={fdi} initialSurface={initialSurface} validSurfaces={validSurfaces} onChanged={onChanged} />
 
-      <HistorySection conditions={conditions} procedures={procedures} onChanged={onChanged} />
+      <HistorySection patientId={patientId} conditions={conditions} procedures={procedures} onChanged={onChanged} />
     </div>
   );
 }
@@ -253,18 +255,51 @@ function ProcedureForm({
   );
 }
 
-function HistorySection({ conditions, procedures, onChanged }: { conditions: Condition[]; procedures: Procedure[]; onChanged: () => void }) {
+// Duplicated from server/lib/permissions.ts's invoices_payments write row (client code never
+// imports server modules) — only these roles get the "Create invoice" shortcut.
+const INVOICE_WRITE_ROLES = new Set(["owner", "admin", "front_desk", "accountant"]);
+
+function HistorySection({
+  patientId,
+  conditions,
+  procedures,
+  onChanged,
+}: {
+  patientId: string;
+  conditions: Condition[];
+  procedures: Procedure[];
+  onChanged: () => void;
+}) {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  // Cancelling is final (a cancelled procedure has no way back), so it confirms inline —
+  // ui-design.md: "Confirm only for irreversible things".
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const resolveCondition = useMutation({
     mutationFn: (id: string) => updateCondition(id, { resolve: true }),
     onSuccess: onChanged,
   });
   const cancelProcedure = useMutation({
     mutationFn: (id: string) => updateProcedureStatus(id, "cancelled"),
-    onSuccess: onChanged,
+    onSuccess: () => {
+      setConfirmCancelId(null);
+      onChanged();
+    },
   });
   const completeProcedureMutation = useMutation({
     mutationFn: (id: string) => completeProcedure(id),
-    onSuccess: onChanged,
+    onSuccess: () => {
+      onChanged();
+      // Completing is usually followed by billing — offer it right here instead of making
+      // staff go and find the Ledger tab.
+      if (user && INVOICE_WRITE_ROLES.has(user.role)) {
+        showToast({
+          message: "Treatment completed.",
+          action: { label: "Create invoice", onClick: () => router.push(`/patients/${patientId}/ledger?bill=1`) },
+        });
+      }
+    },
   });
   const removeProcedure = useMutation({
     mutationFn: (id: string) => deleteProcedure(id),
@@ -314,9 +349,21 @@ function HistorySection({ conditions, procedures, onChanged }: { conditions: Con
                 </button>
               )}
               {(p.status === "planned" || p.status === "accepted" || p.status === "scheduled") && (
-                <button disabled={pending} onClick={() => cancelProcedure.mutate(p.id)} className="text-[11px] text-ink-soft hover:text-ink">
-                  Cancel
-                </button>
+                confirmCancelId === p.id ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-ink">Cancel for good?</span>
+                    <button disabled={pending} onClick={() => cancelProcedure.mutate(p.id)} className="text-[11px] font-medium text-bleed hover:underline">
+                      Yes, cancel
+                    </button>
+                    <button onClick={() => setConfirmCancelId(null)} className="text-[11px] text-ink-soft hover:text-ink">
+                      Keep
+                    </button>
+                  </span>
+                ) : (
+                  <button disabled={pending} onClick={() => setConfirmCancelId(p.id)} className="text-[11px] text-ink-soft hover:text-ink">
+                    Cancel
+                  </button>
+                )
               )}
               {p.status === "planned" && (
                 <button disabled={pending} onClick={() => removeProcedure.mutate(p.id)} className="text-[11px] text-bleed hover:underline">

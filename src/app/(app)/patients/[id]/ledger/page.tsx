@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { usePathname, useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { Printer, Receipt } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
-import { createAdjustment, getPatientLedger, reversePayment, voidInvoice, type Invoice, type LedgerEntry } from "@/lib/ledger-api";
-import { formatRupees, fromPaise, toPaise } from "@/lib/format-money";
+import { createAdjustment, getPatientLedger, listInvoiceable, reversePayment, voidInvoice, type Invoice, type LedgerEntry } from "@/lib/ledger-api";
+import { formatRupees, fromPaise, percentOf, toPaise } from "@/lib/format-money";
 import { CreateInvoicePanel } from "@/components/ledger/create-invoice-panel";
 import { RecordPaymentPanel } from "@/components/ledger/record-payment-panel";
 
@@ -42,7 +42,22 @@ export default function PatientLedgerPage() {
   const canWrite = !!user && LEDGER_WRITE_ROLES.has(user.role);
 
   const { data: ledger, isLoading } = useQuery({ queryKey: ["patient-ledger", params.id], queryFn: () => getPatientLedger(params.id) });
-  const [invoicePanelOpen, setInvoicePanelOpen] = useState(false);
+  // ?bill=1 comes from the chart's "Treatment completed — Create invoice" prompt.
+  const searchParams = useSearchParams();
+  const [invoicePanelOpen, setInvoicePanelOpen] = useState(searchParams.get("bill") === "1");
+  // Drop ?bill=1 once used, so a reload doesn't reopen the panel.
+  const router = useRouter();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (searchParams.get("bill") === "1") router.replace(pathname);
+  }, [searchParams, router, pathname]);
+  // Completed treatments not yet on an invoice — surfaced so nothing done goes unbilled.
+  const { data: invoiceable } = useQuery({
+    queryKey: ["invoiceable", params.id],
+    queryFn: () => listInvoiceable(params.id),
+    enabled: canWrite,
+  });
+  const readyToBill = invoiceable?.data ?? [];
   const [paymentPanelOpen, setPaymentPanelOpen] = useState(false);
 
   function refresh() {
@@ -99,6 +114,20 @@ export default function PatientLedgerPage() {
           </div>
         )}
       </div>
+
+      {canWrite && readyToBill.length > 0 && !invoicePanelOpen && (
+        <div className="flex flex-none items-center justify-between gap-3 border-b border-caution/30 bg-caution/10 px-6 py-2 text-[12px] text-ink">
+          <span>
+            <span className="font-medium">
+              {readyToBill.length} completed {readyToBill.length === 1 ? "treatment" : "treatments"} not yet invoiced
+            </span>
+            <span className="text-ink-soft"> — {readyToBill.map((p) => p.short_name + (p.tooth ? ` · ${p.tooth}` : "")).join(", ")}</span>
+          </span>
+          <button type="button" onClick={() => setInvoicePanelOpen(true)} className="flex-none font-medium text-steel hover:underline">
+            Create invoice
+          </button>
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-auto px-6 py-4">
         {isLoading ? null : !ledger || (ledger.invoices.length === 0 && ledger.entries.length === 0) ? (
@@ -189,6 +218,7 @@ function InvoiceRow({
   const [reason, setReason] = useState("");
   const [adjustType, setAdjustType] = useState<"discount" | "writeoff" | "correction">("discount");
   const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustInPercent, setAdjustInPercent] = useState(false);
   const isVoid = invoice.status === "void";
   // What was actually allocated to it — what moves to credit on void. Not total − outstanding,
   // which counts a discount as money paid (docs/bug-log.md entry 14).
@@ -203,7 +233,10 @@ function InvoiceRow({
   });
   // Discounts and write-offs reduce what's owed; a correction may go either way, so it
   // takes the sign the user types.
-  const signedAdjustment = adjustType === "correction" ? adjustAmount : `-${adjustAmount}`;
+  // A percentage applies to the invoice total (discounts and write-offs only).
+  const usePercent = adjustInPercent && adjustType !== "correction";
+  const adjustRupees = usePercent && MONEY.test(adjustAmount) ? percentOf(invoice.total, adjustAmount) : adjustAmount;
+  const signedAdjustment = adjustType === "correction" ? adjustAmount : `-${adjustRupees}`;
   const adjustMutation = useMutation({
     mutationFn: () => createAdjustment({ invoice_id: invoice.id, amount: signedAdjustment, adjustment_type: adjustType, reason: reason.trim() }),
     onSuccess: () => {
@@ -282,7 +315,22 @@ function InvoiceRow({
               <option value="writeoff">Write-off</option>
               <option value="correction">Correction (±)</option>
             </select>
-            <input value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value.trim())} placeholder={adjustType === "correction" ? "e.g. -100 or 100" : "Amount off"} inputMode="decimal" className={`${field} w-28 text-right font-data`} aria-label="Adjustment amount" />
+            {adjustType !== "correction" && (
+              <div className="flex overflow-hidden rounded-[var(--radius)] border border-rule" role="group" aria-label="Amount in">
+                {[false, true].map((pct) => (
+                  <button
+                    key={String(pct)}
+                    type="button"
+                    aria-pressed={adjustInPercent === pct}
+                    onClick={() => setAdjustInPercent(pct)}
+                    className={clsx("h-7 px-2 text-[12px]", adjustInPercent === pct ? "bg-steel text-white" : "bg-surface text-ink-soft hover:bg-steel-lo")}
+                  >
+                    {pct ? "%" : "₹"}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value.trim())} placeholder={adjustType === "correction" ? "e.g. -100 or 100" : usePercent ? "% off" : "Amount off"} inputMode="decimal" className={`${field} w-24 text-right font-data`} aria-label="Adjustment amount" />
             <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (required)" className={`${field} flex-1`} />
           </div>
           <div className="flex gap-2">
@@ -292,7 +340,7 @@ function InvoiceRow({
               onClick={() => adjustMutation.mutate()}
               className="h-7 rounded-[var(--radius)] bg-steel px-3 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
-              Save adjustment
+              {usePercent && MONEY.test(adjustAmount) ? `Take off ${formatRupees(adjustRupees)}` : "Save adjustment"}
             </button>
             <button type="button" onClick={() => setMode("idle")} className="h-7 px-2 text-[12px] text-ink-soft">
               Cancel

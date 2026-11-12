@@ -1,5 +1,7 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatRupees } from "@/lib/format-money";
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
@@ -69,6 +71,19 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
             >
               <Pencil size={12} /> Edit
             </Link>
+            {/* Money owed (or held as credit), visible from every tab — front desk shouldn't
+                have to open the Ledger to know. Same calculation as the Ledger tab. */}
+            {summary && summary.balance !== "0.00" && (
+              <Link
+                href={`${basePath}/ledger`}
+                className={clsx(
+                  "rounded-[var(--radius)] border px-2 py-0.5 font-data text-[12px] font-medium",
+                  summary.balance.startsWith("-") ? "border-healthy/40 text-healthy" : "border-caution/50 text-caution",
+                )}
+              >
+                {summary.balance.startsWith("-") ? `${formatRupees(summary.balance.slice(1))} credit` : `${formatRupees(summary.balance)} due`}
+              </Link>
+            )}
             <div className="ml-auto flex items-center gap-3">
               {activeAlerts.map((alert) => (
                 <span
@@ -83,7 +98,10 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
             </div>
           </>
         ) : (
-          <span className="text-[13px] text-ink-soft">Loading…</span>
+          <span className="flex items-center gap-3">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-20" />
+          </span>
         )}
       </div>
 

@@ -14,6 +14,8 @@ import { X } from "lucide-react";
 interface ShowToastInput {
   message: string;
   onUndo?: () => void;
+  /** A forward action instead of (or as well as) undo — e.g. "Create invoice" after completing work. */
+  action?: { label: string; onClick: () => void };
 }
 
 interface ToastContextValue {
@@ -62,6 +64,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               className="font-medium text-steel hover:underline"
             >
               Undo
+            </button>
+          )}
+          {toast.action && (
+            <button
+              onClick={() => {
+                toast.action?.onClick();
+                dismiss();
+              }}
+              className="font-medium text-steel hover:underline"
+            >
+              {toast.action.label}
             </button>
           )}
           <button onClick={dismiss} aria-label="Dismiss" className="text-ink-soft hover:text-ink">

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatRupees } from "@/lib/format-money";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -48,7 +49,7 @@ const STATUS_LABEL: Record<TreatmentPlan["status"], string> = {
 // null = no price in the fee schedule. Said plainly, never a blank or a dash —
 // treatment-planning.md: "a code with no price shows plainly as unpriced".
 function money(value: string | null): string {
-  return value === null ? "Unpriced" : `₹${value}`;
+  return value === null ? "Unpriced" : formatRupees(value);
 }
 
 export default function PatientPlansPage() {
@@ -245,7 +246,14 @@ export default function PatientPlansPage() {
         </ul>
         {plans.length === 0 && <p className="text-[12px] text-ink-soft">No treatment plans yet.</p>}
         {canWrite && (
-          <div className="mt-3 flex flex-col gap-1">
+          // A real <form>, so Enter in the name field creates the plan.
+          <form
+            className="mt-3 flex flex-col gap-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (newPlanName.trim() && !createPlanMutation.isPending) createPlanMutation.mutate();
+            }}
+          >
             <input
               value={newPlanName}
               onChange={(e) => setNewPlanName(e.target.value)}
@@ -253,14 +261,13 @@ export default function PatientPlansPage() {
               className="h-7 w-full rounded-[var(--radius)] border border-rule bg-surface px-1.5 text-[12px] text-ink outline-none focus-visible:border-steel"
             />
             <button
-              type="button"
+              type="submit"
               disabled={!newPlanName.trim() || createPlanMutation.isPending}
-              onClick={() => createPlanMutation.mutate()}
               className="h-7 w-full rounded-[var(--radius)] bg-steel px-2 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
               New plan
             </button>
-          </div>
+          </form>
         )}
       </aside>
 
@@ -497,7 +504,13 @@ export default function PatientPlansPage() {
               </DndContext>
 
               {canWrite && editable && (
-                <div className="flex items-center gap-1.5">
+                <form
+                  className="flex items-center gap-1.5"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!createPhaseMutation.isPending) createPhaseMutation.mutate();
+                  }}
+                >
                   <input
                     value={newPhaseName[activePlanId] ?? ""}
                     onChange={(e) => setNewPhaseName((prev) => ({ ...prev, [activePlanId]: e.target.value }))}
@@ -505,14 +518,13 @@ export default function PatientPlansPage() {
                     className="h-7 w-48 rounded-[var(--radius)] border border-rule bg-surface px-1.5 text-[12px] text-ink outline-none focus-visible:border-steel"
                   />
                   <button
-                    type="button"
+                    type="submit"
                     disabled={createPhaseMutation.isPending}
-                    onClick={() => createPhaseMutation.mutate()}
                     className="h-7 rounded-[var(--radius)] border border-rule px-2 text-[12px] font-medium text-ink hover:bg-steel-lo"
                   >
                     + Add phase
                   </button>
-                </div>
+                </form>
               )}
 
               <div className="flex justify-end border-t border-rule pt-2">

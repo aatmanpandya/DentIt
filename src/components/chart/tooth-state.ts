@@ -118,10 +118,20 @@ export interface WholeToothOverlay {
   struck: boolean; // diagonal strike — missing only, not unerupted (a normal absence isn't a finding)
   ring: RingKind;
   rootLineIcon: boolean; // existing_rct
+  // How far the tooth-level procedure has got (dashed planned → filled done), so a finished
+  // crown no longer looks like a planned one. null without a tooth-level procedure.
+  ringTreatment: ProcedureTreatment | null;
 }
 
+const TREATMENT_RANK: Record<ProcedureTreatment, number> = { dashed: 0, solid: 1, filled: 2, "filled-invoiced": 3 };
+
 export function wholeToothOverlay(state: ToothState): WholeToothOverlay {
-  const hasToothScopedProcedure = state.procedures.some((p) => p.tooth && !(p.surfaces && p.surfaces.length > 0));
+  const toothScoped = state.procedures.filter((p) => p.tooth && !(p.surfaces && p.surfaces.length > 0));
+  const hasToothScopedProcedure = toothScoped.length > 0;
+  const ringTreatment = toothScoped
+    .map((p) => procedureStatusTreatment(p.status))
+    .filter((t): t is ProcedureTreatment => t !== null)
+    .sort((a, b) => TREATMENT_RANK[b] - TREATMENT_RANK[a])[0] ?? null;
   const hasExistingCrownOrRestoration = state.existingRestoration === "existing_crown" || state.existingRestoration === "existing_restoration";
 
   let ring: RingKind = null;
@@ -134,5 +144,6 @@ export function wholeToothOverlay(state: ToothState): WholeToothOverlay {
     struck: state.isMissing,
     ring,
     rootLineIcon: state.existingRestoration === "existing_rct",
+    ringTreatment,
   };
 }

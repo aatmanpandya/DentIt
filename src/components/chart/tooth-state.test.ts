@@ -141,3 +141,25 @@ describe("wholeToothOverlay", () => {
     expect(wholeToothOverlay(state).rootLineIcon).toBe(true);
   });
 });
+
+// A completed crown used to draw exactly like a planned one (always dashed), so the chart
+// couldn't show what had been done. The ring now follows the procedure's status.
+describe("wholeToothOverlay ring status", () => {
+  it("styles the ring by the most advanced tooth-level procedure", () => {
+    const planned = computeToothState("16", [], [procedure({ id: "a", tooth: "16", surfaces: null, status: "planned" })]);
+    expect(wholeToothOverlay(planned).ringTreatment).toBe("dashed");
+
+    const done = computeToothState("16", [], [
+      procedure({ id: "a", tooth: "16", surfaces: null, status: "planned" }),
+      procedure({ id: "b", tooth: "16", surfaces: null, status: "completed" }),
+    ]);
+    expect(wholeToothOverlay(done).ringTreatment).toBe("filled");
+
+    const billed = computeToothState("16", [], [procedure({ id: "c", tooth: "16", surfaces: null, status: "invoiced" })]);
+    expect(wholeToothOverlay(billed).ringTreatment).toBe("filled-invoiced");
+  });
+
+  it("has no ring treatment without a tooth-level procedure", () => {
+    expect(wholeToothOverlay(computeToothState("16", [], [])).ringTreatment).toBeNull();
+  });
+});
