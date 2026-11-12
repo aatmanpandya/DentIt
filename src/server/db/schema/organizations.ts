@@ -10,6 +10,9 @@ export const organizations = pgTable("organizations", {
   name: text("name").notNull(),
   gstRegistered: boolean("gst_registered").notNull().default(false),
   gstin: text("gstin"),
+  // Fee-schedule prices already include GST (the clinic quotes the patient one figure).
+  // false = prices are before tax and GST is added on the invoice. See docs/specs/ledger.md.
+  pricesIncludeTax: boolean("prices_include_tax").notNull().default(true),
   toothNotationDisplay: toothNotationDisplay("tooth_notation_display").notNull().default("fdi"),
   probingSequence: jsonb("probing_sequence"),
   deploymentTarget: deploymentTarget("deployment_target").notNull().default("cloud"),

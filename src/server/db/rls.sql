@@ -54,6 +54,12 @@ $$;
 -- above included them — belt and suspenders on top of the application never calling them.
 revoke update, delete on audit_log from dentit_app;
 
+-- The ledger is append-only (docs/specs/ledger.md): enforced here, not just by the absence
+-- of PATCH/DELETE routes. Invoices keep UPDATE because voiding sets status/voided_at on the
+-- row; nothing in the ledger is ever deleted.
+revoke update, delete on invoice_lines, payments, payment_allocations, adjustments from dentit_app;
+revoke delete on invoices from dentit_app;
+
 -- The real double-booking guard: Postgres refuses overlapping appointments in the same
 -- operatory outright, not just via application logic. Requires btree_gist for the uuid
 -- equality term inside the exclusion constraint.

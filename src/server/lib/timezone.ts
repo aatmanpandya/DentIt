@@ -70,3 +70,9 @@ export function zonedDateTimeToInstant(dateStr: string, timeStr: string, timeZon
   const offset = timeZoneOffsetMs(new Date(naiveUTC), timeZone);
   return new Date(naiveUTC - offset);
 }
+
+/** "YYYY-MM-DD" calendar date of a UTC instant in `timeZone` — e.g. the IST day an invoice was issued on. */
+export function zonedDateString(date: Date, timeZone: string): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+}

@@ -47,6 +47,19 @@ describe("Row-level security enforcement", () => {
     expect(rows[0]?.relrowsecurity).toBe(true);
   });
 
+  it("the ledger is append-only for the app role", async () => {
+    const rows = await adminDb.execute<{ table_name: string; privilege_type: string }>(sql`
+      select table_name, privilege_type from information_schema.role_table_grants
+      where grantee = 'dentit_app'
+        and (
+          (table_name in ('invoice_lines', 'payments', 'payment_allocations', 'adjustments')
+            and privilege_type in ('UPDATE', 'DELETE'))
+          or (table_name = 'invoices' and privilege_type = 'DELETE')
+        )
+    `);
+    expect(rows).toEqual([]);
+  });
+
   it("audit_log has no UPDATE or DELETE grant for the app role", async () => {
     const rows = await adminDb.execute<{ privilege_type: string }>(sql`
       select privilege_type from information_schema.role_table_grants

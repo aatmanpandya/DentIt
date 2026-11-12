@@ -1,4 +1,5 @@
 import { integer, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { users } from "./users";
 import { tenantColumns } from "./_helpers";
 import { locations } from "./locations";
 import { patients, } from "./_patients-base";
@@ -27,6 +28,8 @@ export const invoices = pgTable(
     taxTotal: numeric("tax_total", { precision: 10, scale: 2 }).notNull().default("0"),
     total: numeric("total", { precision: 10, scale: 2 }).notNull(),
     voidReason: text("void_reason"),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => users.id),
   },
   (t) => [uniqueIndex("invoices_org_number_idx").on(t.organizationId, t.invoiceNumber)],
 );
@@ -70,7 +73,12 @@ export const payments = pgTable("payments", {
   receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
   receivedBy: uuid("received_by").notNull(), // -> users.id
   note: text("note"),
-});
+  // Idempotency-Key header (docs/specs/ledger.md): a repeat with the same key returns this
+  // payment instead of recording the money twice; requestHash detects the same key reused
+  // for a different request.
+  idempotencyKey: text("idempotency_key"),
+  requestHash: text("request_hash"),
+}, (t) => [uniqueIndex("payments_org_idempotency_key_idx").on(t.organizationId, t.idempotencyKey)]);
 
 export const paymentAllocations = pgTable("payment_allocations", {
   ...tenantColumns(),
@@ -95,3 +103,16 @@ export const adjustments = pgTable("adjustments", {
   reason: text("reason").notNull(),
   adjustmentType: adjustmentType("adjustment_type").notNull(),
 });
+
+// Per-organisation, per-calendar-year invoice sequence. Bumped with INSERT … ON CONFLICT DO
+// UPDATE … RETURNING inside the invoice transaction, so concurrent creators serialise on the
+// row lock and a rolled-back invoice releases its number. See docs/specs/ledger.md.
+export const invoiceNumberCounters = pgTable(
+  "invoice_number_counters",
+  {
+    ...tenantColumns(),
+    year: integer("year").notNull(),
+    lastValue: integer("last_value").notNull(),
+  },
+  (t) => [uniqueIndex("invoice_number_counters_org_year_idx").on(t.organizationId, t.year)],
+);

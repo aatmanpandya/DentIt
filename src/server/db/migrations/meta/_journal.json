@@ -64,6 +64,13 @@
       "when": 1794483048297,
       "tag": "0008_shiny_darwin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794484594922,
+      "tag": "0009_minor_red_wolf",
+      "breakpoints": true
     }
   ]
 }
