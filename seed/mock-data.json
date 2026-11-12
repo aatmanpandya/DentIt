@@ -201,7 +201,7 @@
     { "patient": "p1",  "code": "FILL-COMP", "tooth": "26", "surfaces": ["O"],      "status": "planned",  "provider": "ananya" },
     { "patient": "p1",  "code": "FILL-COMP", "tooth": "36", "surfaces": ["M", "O"], "status": "planned",  "provider": "ananya" },
     { "key": "p1-consult", "patient": "p1",  "code": "CONS-NEW",                                          "status": "invoiced", "provider": "ananya", "day_offset": 0 },
-    { "key": "p2-perio-exam", "patient": "p2",  "code": "PERIO-EXAM",                                        "status": "invoiced","provider": "priya",  "day_offset": 0 },
+    { "key": "p2-perio-exam", "patient": "p2",  "code": "PERIO-EXAM",                                        "status": "invoiced","provider": "priya",  "day_offset": -3 },
     { "key": "p2-scale-ur", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UR",                       "status": "accepted", "provider": "ananya" },
     { "key": "p2-scale-ul", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UL",                       "status": "accepted", "provider": "ananya" },
     { "key": "p2-flap-ur", "patient": "p2",  "code": "PERIO-FLAP","quadrant": "UR",                       "status": "planned",  "provider": "ananya" },
@@ -293,11 +293,11 @@
     {
       "patient": "p2",
       "location": "kp",
-      "day_offset": 0,
+      "day_offset": -3,
       "sequence": 883,
       "lines": [{ "procedure": "p2-perio-exam" }],
       "payment": null,
-      "_note": "Unpaid — drives the outstanding-balance state on the patient chart"
+      "_note": "Unpaid, issued 3 days ago — drives the outstanding balance, and front desk (sneha) can't void it while a manager (ananya) can"
     }
   ]
 }
