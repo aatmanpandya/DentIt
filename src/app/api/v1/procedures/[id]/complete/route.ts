@@ -3,7 +3,7 @@ import { requireAuth, UnauthenticatedError, SessionExpiredError } from "@/server
 import { errorResponse } from "@/server/lib/api-error";
 import { PermissionDeniedError } from "@/server/lib/permissions";
 import { serializeProcedure } from "@/server/lib/serialize-clinical";
-import { completeProcedure, ProcedureNotFoundError, IllegalProcedureTransitionError } from "@/server/services/chart";
+import { completeProcedure, ProcedureNotFoundError, IllegalProcedureTransitionError, ProcedureOnOpenPlanError } from "@/server/services/chart";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,6 +19,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     if (err instanceof PermissionDeniedError) return errorResponse(403, "PERMISSION_DENIED", "You don't have permission to chart.");
     if (err instanceof ProcedureNotFoundError) return errorResponse(404, "NOT_FOUND", err.message);
     if (err instanceof IllegalProcedureTransitionError) return errorResponse(422, "PROCEDURE_ILLEGAL_TRANSITION", err.message);
+    if (err instanceof ProcedureOnOpenPlanError) return errorResponse(422, "PROCEDURE_ON_OPEN_PLAN", err.message);
     throw err;
   }
 }

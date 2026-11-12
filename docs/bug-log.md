@@ -198,3 +198,50 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
 - **Fix:** one balance calculation. `computeLedgerState` and `loadPatientLedgerRows` moved
   to `services/ledger-balance.ts` (separate from `ledger.ts` to avoid a patients ↔ ledger
   import cycle); the summary, the Ledger tab and the org ledger all use it, in paise.
+- **Commit:** `eaf7c5a`
+
+---
+
+Entries 10 onward came from a code review on 12 Nov: six read-only agents each swept one area,
+and every finding listed here was re-checked against the code before it was fixed.
+
+## 10. A plan never completes if one item is invoiced before the last is finished
+
+- **Symptom:** an accepted plan with items A and B: complete A, invoice it, complete B — the
+  plan stays `accepted` forever. That is the normal clinic order (bill each visit).
+- **How found:** review agent; confirmed by reading `derivePlanCompletion` (`chart.ts`), which
+  required every sibling to be exactly `completed`. The ledger (Phase 2) is what made
+  `invoiced` reachable, so this was latent until today. My own browser walk completed all three
+  items before invoicing, which is why it didn't show.
+- **Also:** a cancelled item blocked completion too, the check only ran on `completed`, and it
+  looked at one plan (`limit(1)`) when a procedure can sit on several.
+- **Fix:** done = every item completed, invoiced or cancelled, and at least one actually done;
+  re-derived on completion and on cancellation, for every plan containing the procedure.
+- **Tests:** "completes the plan even if an earlier item was invoiced…", "…when the last open
+  item is cancelled".
+
+## 11. Completing a procedure that's on an unaccepted plan breaks that plan
+
+- **Symptom:** a planned procedure on a draft or presented plan could be completed, accepted
+  or cancelled from the chart. Accepting the plan then failed (`TREATMENT_PLAN_ITEM_NOT_PLANNED`)
+  with a message blaming "another plan", and the completed procedure had no price.
+- **Root cause:** my bug-3 fix opened `planned → completed` without checking plan membership.
+- **Fix:** `updateProcedureStatus` refuses any change to a `planned` procedure that is on a
+  draft/presented plan, naming the plan (`PROCEDURE_ON_OPEN_PLAN`, 422). The chart panel now
+  shows refused changes instead of failing silently (it showed no errors at all before).
+
+## 12. A procedure could be marked "invoiced" with no invoice
+
+- **Symptom:** `PATCH /procedures/:id { to_status: "invoiced" }` was legal from `completed`.
+  The procedure then dropped out of "Create invoice" and, with no invoice line to void, could
+  never be billed.
+- **Fix:** `completed` has no manual transitions; only the ledger sets `invoiced`, when it
+  creates a real invoice. Tests that walked to `invoiced` through the chart now mark it the way
+  the ledger does.
+
+## 13. Deleting a procedure that's on a plan returned a 500
+
+- **Symptom:** chart **Delete** (or the charting undo) on a planned procedure already added to a
+  plan hit the `treatment_plan_items` foreign key: an unmapped Postgres 23503, so a 500.
+- **Fix:** `deleteProcedure` checks plan membership first and refuses with the plan's name
+  (`PROCEDURE_ON_PLAN`, 422).

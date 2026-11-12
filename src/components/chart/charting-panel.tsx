@@ -327,6 +327,15 @@ function HistorySection({ conditions, procedures, onChanged }: { conditions: Con
           </li>
         ))}
       </ul>
+      {/* A refused change (e.g. the treatment is on a plan not yet accepted) must say why,
+          not fail silently. */}
+      {[cancelProcedure, completeProcedureMutation, removeProcedure, resolveCondition].map((m, i) =>
+        m.isError ? (
+          <p key={i} className="text-[12px] text-bleed">
+            {(m.error as Error).message}
+          </p>
+        ) : null,
+      )}
     </div>
   );
 }

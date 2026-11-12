@@ -5,7 +5,7 @@ import { organizations, users, patients, procedureCodes, chartedProcedures, trea
 import { wipeOrganizationData } from "@/server/db/wipe-organization";
 import type { RequestActor } from "@/server/lib/request-auth";
 import { PermissionDeniedError } from "@/server/lib/permissions";
-import { createProcedure, completeProcedure, updateProcedureStatus } from "./chart";
+import { createProcedure, completeProcedure, updateProcedureStatus, deleteProcedure, ProcedureOnPlanError } from "./chart";
 import { createFeeSchedule, upsertFeeScheduleItems } from "./catalog";
 import {
   createTreatmentPlan,
@@ -328,7 +328,9 @@ describe("acceptTreatmentPlan", () => {
   it("rejects accepting an item that drifted off planned after presenting", async () => {
     const { actor, patient, code } = await setup();
     const { planId, procedure } = await presentedPlanWithItem(actor, patient.id, code.id);
-    await updateProcedureStatus(actor, procedure.id, "cancelled");
+    // The chart now refuses this (ProcedureOnOpenPlanError), so drift it underneath the
+    // service to keep accept's own defence covered.
+    await adminDb.update(chartedProcedures).set({ status: "cancelled" }).where(eq(chartedProcedures.id, procedure.id));
 
     await expect(acceptTreatmentPlan(actor, planId)).rejects.toThrow(TreatmentPlanItemNotPlannedError);
   });
@@ -522,5 +524,65 @@ describe("listOrganizationTreatmentPlans", () => {
     const rows = await listOrganizationTreatmentPlans(actor, {});
 
     expect(rows.map((r) => r.plan.name)).not.toContain("Not yours");
+  });
+});
+
+// Bugs found in the 12 Nov review (docs/bug-log.md entries 10–13).
+describe("plan and procedure lifecycle together", () => {
+  afterEach(cleanup);
+
+  async function acceptedPlanWith(n: number) {
+    const ctx = await setup();
+    const detail = await createTreatmentPlan(ctx.actor, ctx.patient.id, { name: "Plan" });
+    const procs = [];
+    for (let i = 0; i < n; i++) {
+      const p = await plannedProcedure(ctx.actor, ctx.patient.id, ctx.code.id, String(16 + i));
+      await addItemToPhase(ctx.actor, detail.phases[0].phase.id, { charted_procedure_id: p.id });
+      procs.push(p);
+    }
+    await presentTreatmentPlan(ctx.actor, detail.plan.id);
+    await acceptTreatmentPlan(ctx.actor, detail.plan.id);
+    return { ...ctx, planId: detail.plan.id, procs };
+  }
+
+  it("completes the plan even if an earlier item was invoiced before the last one was done", async () => {
+    const { actor, planId, procs } = await acceptedPlanWith(2);
+    await completeProcedure(actor, procs[0].id);
+    // The ledger moves it on to invoiced (it doesn't go through updateProcedureStatus).
+    await adminDb.update(chartedProcedures).set({ status: "invoiced" }).where(eq(chartedProcedures.id, procs[0].id));
+
+    await completeProcedure(actor, procs[1].id);
+
+    expect((await getTreatmentPlan(actor, planId)).plan.status).toBe("completed");
+  });
+
+  it("completes the plan when the last open item is cancelled instead of done", async () => {
+    const { actor, planId, procs } = await acceptedPlanWith(2);
+    await completeProcedure(actor, procs[0].id);
+    await updateProcedureStatus(actor, procs[1].id, "cancelled");
+    expect((await getTreatmentPlan(actor, planId)).plan.status).toBe("completed");
+  });
+
+  it("refuses changing a procedure that sits on a plan not yet accepted, naming the plan", async () => {
+    const { actor, patient, code } = await setup();
+    const detail = await createTreatmentPlan(actor, patient.id, { name: "Crown work" });
+    const proc = await plannedProcedure(actor, patient.id, code.id);
+    await addItemToPhase(actor, detail.phases[0].phase.id, { charted_procedure_id: proc.id });
+
+    for (const to of ["completed", "accepted", "cancelled"]) {
+      await expect(updateProcedureStatus(actor, proc.id, to)).rejects.toThrow(/Crown work/);
+    }
+    // Accept still works afterwards: the item is untouched.
+    await presentTreatmentPlan(actor, detail.plan.id);
+    await expect(acceptTreatmentPlan(actor, detail.plan.id)).resolves.toBeTruthy();
+  });
+
+  it("refuses deleting a procedure that is on a plan instead of failing with a 500", async () => {
+    const { actor, patient, code } = await setup();
+    const detail = await createTreatmentPlan(actor, patient.id, { name: "Crown work" });
+    const proc = await plannedProcedure(actor, patient.id, code.id);
+    await addItemToPhase(actor, detail.phases[0].phase.id, { charted_procedure_id: proc.id });
+
+    await expect(deleteProcedure(actor, proc.id)).rejects.toThrow(ProcedureOnPlanError);
   });
 });

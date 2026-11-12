@@ -14,6 +14,8 @@ import {
   ProcedureScopeMismatchError,
   ProcedureInvalidSurfaceError,
   IllegalProcedureTransitionError,
+  ProcedureOnOpenPlanError,
+  ProcedureOnPlanError,
   ProcedureAlreadyInvoicedError,
   ProcedureNotDeletableError,
 } from "@/server/services/chart";
@@ -54,6 +56,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (err instanceof ProcedureScopeMismatchError) return errorResponse(422, "PROCEDURE_SCOPE_MISMATCH", err.message);
     if (err instanceof ProcedureInvalidSurfaceError) return errorResponse(422, "PROCEDURE_INVALID_SURFACE", err.message);
     if (err instanceof IllegalProcedureTransitionError) return errorResponse(422, "PROCEDURE_ILLEGAL_TRANSITION", err.message);
+    if (err instanceof ProcedureOnOpenPlanError) return errorResponse(422, "PROCEDURE_ON_OPEN_PLAN", err.message);
     throw err;
   }
 }
@@ -71,6 +74,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     if (err instanceof ProcedureNotFoundError) return errorResponse(404, "NOT_FOUND", err.message);
     if (err instanceof ProcedureAlreadyInvoicedError) return errorResponse(409, "PROCEDURE_ALREADY_INVOICED", err.message);
     if (err instanceof ProcedureNotDeletableError) return errorResponse(422, "PROCEDURE_NOT_DELETABLE", err.message);
+    if (err instanceof ProcedureOnPlanError) return errorResponse(422, "PROCEDURE_ON_PLAN", err.message);
     throw err;
   }
 }

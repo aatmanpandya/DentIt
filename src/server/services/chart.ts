@@ -79,6 +79,26 @@ export class IllegalProcedureTransitionError extends Error {
 }
 
 // 409 — PROCEDURE_ALREADY_INVOICED.
+/**
+ * A `planned` procedure on a draft/presented plan belongs to that plan until it's accepted:
+ * changing it from the chart would leave the plan impossible to accept (accept requires
+ * every item to be `planned`). 422 PROCEDURE_ON_OPEN_PLAN. docs/bug-log.md entry 11.
+ */
+export class ProcedureOnOpenPlanError extends Error {
+  constructor(planName: string) {
+    super(`This treatment is on the plan "${planName}", which hasn't been accepted yet. Accept the plan, or remove the treatment from it, first.`);
+    this.name = "ProcedureOnOpenPlanError";
+  }
+}
+
+/** Deleting a procedure a plan item points at would break that plan. 422 PROCEDURE_ON_PLAN. */
+export class ProcedureOnPlanError extends Error {
+  constructor(planName: string) {
+    super(`This treatment is on the plan "${planName}". Remove it from the plan before deleting it.`);
+    this.name = "ProcedureOnPlanError";
+  }
+}
+
 export class ProcedureAlreadyInvoicedError extends Error {
   constructor() {
     super("This procedure has already been invoiced and can't be deleted.");
@@ -104,7 +124,9 @@ const LEGAL_PROCEDURE_TRANSITIONS: Record<string, string[]> = {
   planned: ["accepted", "completed", "cancelled"],
   accepted: ["scheduled", "completed", "cancelled"],
   scheduled: ["completed", "cancelled"],
-  completed: ["invoiced"],
+  // `invoiced` is set only by the ledger when it creates a real invoice (services/ledger.ts
+  // writes it directly); a hand-set `invoiced` billed nothing and could never be billed.
+  completed: [],
   invoiced: [],
   cancelled: [],
 };
@@ -453,57 +475,70 @@ export async function createProcedure(actor: RequestActor, patientId: string, in
  * completes, check whether it's the last incomplete item on some plan and flip that
  * plan if so. No cron: this is the only place a charted_procedure reaches `completed`.
  */
+const DONE_STATUSES = new Set(["completed", "invoiced", "cancelled"]);
+const WORK_DONE_STATUSES = new Set(["completed", "invoiced"]);
+
+/**
+ * An accepted plan becomes `completed` once every item's procedure is finished with —
+ * completed, already invoiced, or cancelled — and at least one was actually done. Checked
+ * for every plan the procedure is on. Previously it required every item to be exactly
+ * `completed`, so a plan whose first item was invoiced before the last was finished could
+ * never complete (docs/bug-log.md entry 10).
+ */
 async function derivePlanCompletion(tx: Tx, actor: RequestActor, chartedProcedureId: string) {
-  const [item] = await tx
-    .select({ planId: treatmentPlanPhases.treatmentPlanId })
+  const plans = await tx
+    .selectDistinct({ planId: treatmentPlanPhases.treatmentPlanId })
     .from(treatmentPlanItems)
     .innerJoin(treatmentPlanPhases, eq(treatmentPlanItems.treatmentPlanPhaseId, treatmentPlanPhases.id))
-    .where(eq(treatmentPlanItems.chartedProcedureId, chartedProcedureId))
-    .limit(1);
-  if (!item) return;
+    .where(eq(treatmentPlanItems.chartedProcedureId, chartedProcedureId));
 
-  const beforePlan = await tx
-    .select()
-    .from(treatmentPlans)
-    .where(eq(treatmentPlans.id, item.planId))
-    .limit(1)
-    .then((rows) => rows[0]);
-  if (!beforePlan || beforePlan.status !== "accepted") return;
+  for (const { planId } of plans) {
+    const [beforePlan] = await tx.select().from(treatmentPlans).where(eq(treatmentPlans.id, planId)).limit(1);
+    if (!beforePlan || beforePlan.status !== "accepted") continue;
 
-  const siblingItems = await tx
-    .select({ chartedProcedureId: treatmentPlanItems.chartedProcedureId })
+    const siblingItems = await tx
+      .select({ chartedProcedureId: treatmentPlanItems.chartedProcedureId })
+      .from(treatmentPlanItems)
+      .innerJoin(treatmentPlanPhases, eq(treatmentPlanItems.treatmentPlanPhaseId, treatmentPlanPhases.id))
+      .where(and(eq(treatmentPlanPhases.treatmentPlanId, planId), isNull(treatmentPlanItems.deletedAt)));
+
+    // A still-deferred sibling (no charted procedure) can't exist on an accepted plan —
+    // accept promotes every item — but if one does, the plan isn't finished.
+    const linkedIds = siblingItems.flatMap((s) => (s.chartedProcedureId ? [s.chartedProcedureId] : []));
+    if (linkedIds.length === 0 || linkedIds.length !== siblingItems.length) continue;
+
+    const siblings = await tx
+      .select({ status: chartedProcedures.status })
+      .from(chartedProcedures)
+      .where(inArray(chartedProcedures.id, linkedIds));
+    const finished = siblings.every((p) => DONE_STATUSES.has(p.status)) && siblings.some((p) => WORK_DONE_STATUSES.has(p.status));
+    if (!finished) continue;
+
+    const [afterPlan] = await tx
+      .update(treatmentPlans)
+      .set({ status: "completed", updatedBy: actor.userId, updatedAt: new Date() })
+      .where(eq(treatmentPlans.id, planId))
+      .returning();
+
+    await writeAudit(tx, { organizationId: actor.organizationId, actorUserId: actor.userId, actorIp: null }, {
+      entityType: "treatment_plan",
+      entityId: planId,
+      action: "update",
+      before: beforePlan,
+      after: afterPlan,
+    });
+  }
+}
+
+/** The draft/presented plan (if any) a procedure is an item on. */
+async function findPlanContaining(tx: Tx, chartedProcedureId: string, statuses?: string[]) {
+  const rows = await tx
+    .select({ name: treatmentPlans.name, status: treatmentPlans.status })
     .from(treatmentPlanItems)
     .innerJoin(treatmentPlanPhases, eq(treatmentPlanItems.treatmentPlanPhaseId, treatmentPlanPhases.id))
-    .where(eq(treatmentPlanPhases.treatmentPlanId, item.planId));
-
-  // A still-deferred sibling (chartedProcedureId null) shouldn't exist on an
-  // `accepted` plan — every item is promoted at accept, see treatment-plans.ts's
-  // acceptTreatmentPlan — but if one somehow does, that's "not all completed" by
-  // definition, not something to silently skip past.
-  const linkedIds = siblingItems.flatMap((s) => (s.chartedProcedureId ? [s.chartedProcedureId] : []));
-  if (linkedIds.length !== siblingItems.length) return;
-
-  const siblingProcedures = await tx
-    .select({ status: chartedProcedures.status })
-    .from(chartedProcedures)
-    .where(inArray(chartedProcedures.id, linkedIds));
-
-  const allCompleted = siblingProcedures.length > 0 && siblingProcedures.every((p) => p.status === "completed");
-  if (!allCompleted) return;
-
-  const [afterPlan] = await tx
-    .update(treatmentPlans)
-    .set({ status: "completed", updatedBy: actor.userId, updatedAt: new Date() })
-    .where(eq(treatmentPlans.id, item.planId))
-    .returning();
-
-  await writeAudit(tx, { organizationId: actor.organizationId, actorUserId: actor.userId, actorIp: null }, {
-    entityType: "treatment_plan",
-    entityId: item.planId,
-    action: "update",
-    before: beforePlan,
-    after: afterPlan,
-  });
+    .innerJoin(treatmentPlans, eq(treatmentPlanPhases.treatmentPlanId, treatmentPlans.id))
+    .where(and(eq(treatmentPlanItems.chartedProcedureId, chartedProcedureId), isNull(treatmentPlans.deletedAt)));
+  return rows.find((r) => !statuses || statuses.includes(r.status)) ?? null;
 }
 
 export async function updateProcedureStatus(actor: RequestActor, id: string, toStatus: string) {
@@ -513,6 +548,11 @@ export async function updateProcedureStatus(actor: RequestActor, id: string, toS
     const before = await requireProcedure(tx, actor, id);
     const legal = LEGAL_PROCEDURE_TRANSITIONS[before.status] ?? [];
     if (!legal.includes(toStatus)) throw new IllegalProcedureTransitionError(before.status, toStatus, legal);
+
+    if (before.status === "planned") {
+      const openPlan = await findPlanContaining(tx, id, ["draft", "presented"]);
+      if (openPlan) throw new ProcedureOnOpenPlanError(openPlan.name);
+    }
 
     const now = new Date();
     const patch: Partial<typeof chartedProcedures.$inferInsert> = {
@@ -533,7 +573,7 @@ export async function updateProcedureStatus(actor: RequestActor, id: string, toS
       after,
     });
 
-    if (toStatus === "completed") await derivePlanCompletion(tx, actor, id);
+    if (toStatus === "completed" || toStatus === "cancelled") await derivePlanCompletion(tx, actor, id);
 
     return after;
   });
@@ -648,6 +688,8 @@ export async function deleteProcedure(actor: RequestActor, id: string) {
     const before = await requireProcedure(tx, actor, id);
     if (before.status === "invoiced") throw new ProcedureAlreadyInvoicedError();
     if (before.status !== "planned") throw new ProcedureNotDeletableError();
+    const onPlan = await findPlanContaining(tx, id);
+    if (onPlan) throw new ProcedureOnPlanError(onPlan.name);
 
     await tx.delete(chartedProcedures).where(eq(chartedProcedures.id, id));
 

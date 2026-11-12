@@ -62,6 +62,17 @@ async function cleanup() {
   }
 }
 
+
+/** What the ledger does on invoicing — `invoiced` is no longer a manual chart transition. */
+async function markInvoiced(id: string) {
+  const [row] = await adminDb
+    .update(chartedProcedures)
+    .set({ status: "invoiced", invoicedAt: new Date() })
+    .where(eq(chartedProcedures.id, id))
+    .returning();
+  return row;
+}
+
 describe("createProcedure", () => {
   afterEach(cleanup);
 
@@ -161,10 +172,15 @@ describe("updateProcedureStatus", () => {
     const completed = await updateProcedureStatus(actor, scheduled.id, "completed");
     expect(completed.status).toBe("completed");
     expect(completed.completedAt).not.toBeNull();
+  });
 
-    const invoiced = await updateProcedureStatus(actor, completed.id, "invoiced");
-    expect(invoiced.status).toBe("invoiced");
-    expect(invoiced.invoicedAt).not.toBeNull();
+  // `invoiced` is set only by the ledger when a real invoice is created (services/ledger.ts).
+  // Setting it by hand left the procedure billed on no invoice and unbillable forever.
+  it("refuses marking a procedure invoiced by hand", async () => {
+    const { actor, patient, toothCode } = await setup();
+    const created = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "26" });
+    const completed = await updateProcedureStatus(actor, created.id, "completed");
+    await expect(updateProcedureStatus(actor, completed.id, "invoiced")).rejects.toThrow(IllegalProcedureTransitionError);
   });
 
   // `scheduled` is optional: nothing links procedures to appointments in the pilot, so work
@@ -188,9 +204,10 @@ describe("updateProcedureStatus", () => {
   it("rejects an illegal transition — an invoiced procedure can't be changed", async () => {
     const { actor, patient, toothCode } = await setup();
     let procedure = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "26" });
-    for (const to of ["accepted", "scheduled", "completed", "invoiced"] as const) {
+    for (const to of ["accepted", "scheduled", "completed"] as const) {
       procedure = await updateProcedureStatus(actor, procedure.id, to);
     }
+    procedure = await markInvoiced(procedure.id);
 
     await expect(updateProcedureStatus(actor, procedure.id, "cancelled")).rejects.toThrow(IllegalProcedureTransitionError);
   });
@@ -219,9 +236,10 @@ describe("updateProcedureContent", () => {
   it("supersedes an invoiced procedure instead of mutating it — ADR-0002", async () => {
     const { actor, patient, toothCode } = await setup();
     let procedure = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "26" });
-    for (const to of ["accepted", "scheduled", "completed", "invoiced"] as const) {
+    for (const to of ["accepted", "scheduled", "completed"] as const) {
       procedure = await updateProcedureStatus(actor, procedure.id, to);
     }
+    procedure = await markInvoiced(procedure.id);
 
     const amended = await updateProcedureContent(actor, procedure.id, { note: "Redo — margin failed" });
 
@@ -261,9 +279,10 @@ describe("deleteProcedure", () => {
   it("rejects deleting an invoiced procedure — PROCEDURE_ALREADY_INVOICED", async () => {
     const { actor, patient, toothCode } = await setup();
     let procedure = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "26" });
-    for (const to of ["accepted", "scheduled", "completed", "invoiced"] as const) {
+    for (const to of ["accepted", "scheduled", "completed"] as const) {
       procedure = await updateProcedureStatus(actor, procedure.id, to);
     }
+    procedure = await markInvoiced(procedure.id);
 
     await expect(deleteProcedure(actor, procedure.id)).rejects.toThrow(ProcedureAlreadyInvoicedError);
   });
