@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import type { Condition, Procedure, Surface } from "@/lib/chart-api";
 import {
@@ -15,7 +15,7 @@ import {
 import { validSurfacesForFdi } from "./tooth-shapes";
 import { ProcedureCodePicker } from "./procedure-code-picker";
 import { useToast } from "@/components/ui/toast";
-import type { ProcedureCode } from "@/lib/catalog-api";
+import { listProcedureCodes, type ProcedureCode } from "@/lib/catalog-api";
 
 const COMMON_CONDITION_TYPES = [
   "caries",
@@ -273,6 +273,11 @@ function HistorySection({ conditions, procedures, onChanged }: { conditions: Con
 
   const pending = resolveCondition.isPending || cancelProcedure.isPending || completeProcedureMutation.isPending || removeProcedure.isPending;
 
+  // Name each procedure — a bare status ("Accepted") doesn't say what was done. All codes,
+  // not just active ones: a procedure can outlive its code being retired from the catalogue.
+  const { data: codes } = useQuery({ queryKey: ["procedure-codes", "all"], queryFn: () => listProcedureCodes({ limit: 200 }) });
+  const codeName = (id: string) => codes?.data.find((c) => c.id === id)?.short_name ?? "Procedure";
+
   if (conditions.length === 0 && procedures.length === 0) {
     return <p className="text-[12px] text-ink-soft">No history for this tooth yet.</p>;
   }
@@ -297,11 +302,13 @@ function HistorySection({ conditions, procedures, onChanged }: { conditions: Con
         {procedures.map((p) => (
           <li key={p.id} className="flex items-center justify-between rounded-[var(--radius)] border border-rule px-2 py-1.5 text-[12px]">
             <span>
-              {STATUS_LABEL[p.status]}
+              {codeName(p.procedure_code_id)}
               {p.surfaces?.length ? ` (${p.surfaces.join("")})` : ""}
+              <span className="ml-1.5 text-ink-soft">· {STATUS_LABEL[p.status]}</span>
             </span>
             <span className="flex gap-2">
-              {p.status === "scheduled" && (
+              {/* `scheduled` is optional — work done chairside completes straight from here. */}
+              {(p.status === "planned" || p.status === "accepted" || p.status === "scheduled") && (
                 <button disabled={pending} onClick={() => completeProcedureMutation.mutate(p.id)} className="text-[11px] text-steel hover:underline">
                   Complete
                 </button>

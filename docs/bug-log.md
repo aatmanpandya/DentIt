@@ -51,3 +51,32 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
   order, not alphabetically" (failed before, passes after). Existing databases get 0 for
   every location until re-seeded or set.
 - **Commit:** `e27346f`
+
+---
+
+## 3. Accepted procedures can never be completed, so nothing can ever be invoiced
+
+- **Symptom:** walking the treatment-plan lifecycle, after accepting a plan the tooth chart's
+  History for tooth 16 showed only "Accepted" with a **Cancel** button. No way to mark the
+  work done, so the plan could never reach `completed` and no procedure could reach
+  `invoiced`, which blocks all of Phase 2.
+- **How noticed:** browser walk, Chart tab after accept. The `procedures/[id]/complete` route
+  existed, so the button's absence was suspicious.
+- **Root cause:** `LEGAL_PROCEDURE_TRANSITIONS` (`chart.ts`) is
+  `planned → accepted → scheduled → completed`, and the panel only shows **Complete** for
+  `scheduled`. Nothing anywhere moves a procedure to `scheduled`: appointments can't be linked
+  to procedures (grepped `appointments.ts` / the appointment panel, nothing).
+  `treatment-planning.md` says scheduling "stays a manual step on the existing Schedule tab",
+  but that step was never built. A lifecycle with an unreachable state. Directly-charted
+  work (`planned`, never on a plan) had the same dead end, though `odontogram.md` expects it
+  to complete and be priced at invoicing.
+- **Why tests didn't catch it:** the service test walks the lifecycle by calling
+  `updateProcedureStatus(…, "scheduled")` directly, a step no user can take.
+- **Decision (owner, 12 Nov):** complete from the chart. `scheduled` becomes optional:
+  `planned → completed` and `accepted → completed` are legal; the chart shows **Complete** for
+  planned, accepted and scheduled. Linking appointments to procedures is left for later.
+- **Also fixed:** History rows said only the status ("Accepted"); they now name the procedure
+  ("Zirconia crown · Accepted").
+- **Verified:** test "completes directly from planned or accepted" (failed before with
+  `Can't move from planned to completed`, passes after). In the browser: completed the three
+  procedures on Arjun Kulkarni's accepted plan from the chart; the plan flipped to Completed.

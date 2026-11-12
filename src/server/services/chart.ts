@@ -96,9 +96,13 @@ export class ProcedureNotDeletableError extends Error {
 
 export type Tx = Parameters<Parameters<typeof dbForRequest>[1]>[0];
 
+// `scheduled` is an optional step, not a gate: nothing links procedures to appointments in
+// the pilot, so work done chairside completes straight from the chart — from `accepted` (a
+// plan item) or from `planned` (charted and done the same visit; priced at invoicing, per
+// odontogram.md). Decided 12 Nov 2026; see docs/bug-log.md entry 3.
 const LEGAL_PROCEDURE_TRANSITIONS: Record<string, string[]> = {
-  planned: ["accepted", "cancelled"],
-  accepted: ["scheduled", "cancelled"],
+  planned: ["accepted", "completed", "cancelled"],
+  accepted: ["scheduled", "completed", "cancelled"],
   scheduled: ["completed", "cancelled"],
   completed: ["invoiced"],
   invoiced: [],

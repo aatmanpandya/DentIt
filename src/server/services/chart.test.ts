@@ -167,6 +167,24 @@ describe("updateProcedureStatus", () => {
     expect(invoiced.invoicedAt).not.toBeNull();
   });
 
+  // `scheduled` is optional: nothing links procedures to appointments in the pilot, so work
+  // done chairside must complete straight from the chart — from `accepted` (a plan item) or
+  // from `planned` (charted and done the same visit, never planned). Without this an accepted
+  // plan could never complete and nothing could ever be invoiced.
+  it("completes directly from planned or accepted, without the scheduled step", async () => {
+    const { actor, patient, toothCode } = await setup();
+
+    const walkIn = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "26" });
+    const doneToday = await updateProcedureStatus(actor, walkIn.id, "completed");
+    expect(doneToday.status).toBe("completed");
+    expect(doneToday.completedAt).not.toBeNull();
+
+    const planned = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "36" });
+    const accepted = await updateProcedureStatus(actor, planned.id, "accepted");
+    const completed = await updateProcedureStatus(actor, accepted.id, "completed");
+    expect(completed.status).toBe("completed");
+  });
+
   it("rejects an illegal transition — an invoiced procedure can't be changed", async () => {
     const { actor, patient, toothCode } = await setup();
     let procedure = await createProcedure(actor, patient.id, { procedure_code_id: toothCode.id, tooth: "26" });
