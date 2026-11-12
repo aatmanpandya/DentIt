@@ -50,6 +50,9 @@ export default function PatientLedgerPage() {
     queryClient.invalidateQueries({ queryKey: ["invoiceable", params.id] });
     queryClient.invalidateQueries({ queryKey: ["patient-summary", params.id] });
     queryClient.invalidateQueries({ queryKey: ["patient-chart", params.id] });
+    // Org-wide ledger and any open printable invoice show the same figures.
+    queryClient.invalidateQueries({ queryKey: ["organization-ledger"] });
+    queryClient.invalidateQueries({ queryKey: ["invoice"] });
   }
 
   // Same rule as the service: managers any day, front desk only on the issue day.
@@ -173,7 +176,7 @@ function InvoiceRow({
   onChanged,
 }: {
   patientId: string;
-  invoice: Invoice & { outstanding: string | null };
+  invoice: Invoice & { outstanding: string | null; paid: string };
   blockedReason: string | null;
   onChanged: () => void;
 }) {
@@ -182,7 +185,9 @@ function InvoiceRow({
   const [adjustType, setAdjustType] = useState<"discount" | "writeoff" | "correction">("discount");
   const [adjustAmount, setAdjustAmount] = useState("");
   const isVoid = invoice.status === "void";
-  const paid = invoice.outstanding !== null ? toPaise(invoice.total) - toPaise(invoice.outstanding) : 0;
+  // What was actually allocated to it — what moves to credit on void. Not total − outstanding,
+  // which counts a discount as money paid (docs/bug-log.md entry 14).
+  const paid = toPaise(invoice.paid);
 
   const voidMutation = useMutation({
     mutationFn: () => voidInvoice(invoice.id, reason.trim()),

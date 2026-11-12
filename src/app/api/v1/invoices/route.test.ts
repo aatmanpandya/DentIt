@@ -43,6 +43,20 @@ const json = (url: string, token: string, body: unknown, extra: Record<string, s
 describe("ledger routes", () => {
   afterEach(() => cleanupOrgsByName(ORG_NAME));
 
+  it("404s (not 500) for a malformed invoice id", async () => {
+    const { token } = await setup();
+    const res = await getInvoiceRoute(new NextRequest("http://localhost/api/v1/invoices/abc", { headers: authHeaders(token) }), {
+      params: Promise.resolve({ id: "abc" }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("422s (not 500) for an amount bigger than the column holds", async () => {
+    const { token, location, patient } = await setup();
+    const res = await paymentRoute(json("http://localhost/api/v1/payments", token, { patient_id: patient.id, location_id: location.id, amount: "123456789", method: "cash" }));
+    expect(res.status).toBe(422);
+  });
+
   it("401s without a token", async () => {
     const res = await createInvoiceRoute(new NextRequest("http://localhost/api/v1/invoices", { method: "POST", body: "{}" }));
     expect(res.status).toBe(401);

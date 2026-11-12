@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 // Money is a decimal string with at most two places — never a number (CLAUDE.md).
-const money = z.string().regex(/^\d+(\.\d{1,2})?$/, "Enter an amount like 1500 or 1500.50.");
-const signedMoney = z.string().regex(/^-?\d+(\.\d{1,2})?$/, "Enter an amount like -200 or 150.50.");
+// At most 8 whole digits: numeric(10,2) tops out at 99,999,999.99.
+const money = z.string().regex(/^\d{1,8}(\.\d{1,2})?$/, "Enter an amount like 1500 or 1500.50.");
+const signedMoney = z.string().regex(/^-?\d{1,8}(\.\d{1,2})?$/, "Enter an amount like -200 or 150.50.");
 
 export const createInvoiceSchema = z.object({
   patient_id: z.string().uuid(),

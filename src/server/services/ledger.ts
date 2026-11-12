@@ -103,12 +103,17 @@ export class ChargeReductionNotAllowedError extends Error {
 
 // --- shared reads ---
 
-async function requirePatient(tx: Tx, actor: RequestActor, patientId: string) {
-  const [row] = await tx
+async function requirePatient(tx: Tx, actor: RequestActor, patientId: string, opts: { lock?: boolean } = {}) {
+  const query = tx
     .select()
     .from(patients)
     .where(and(eq(patients.id, patientId), eq(patients.organizationId, actor.organizationId), isNull(patients.deletedAt)))
     .limit(1);
+  // Every ledger write locks the patient row first, so writes for one patient queue up:
+  // two payments (or two apply-credits) can't both validate against the same outstanding
+  // and over-allocate. One lock, always taken first, so no lock-order deadlocks either.
+  // docs/bug-log.md entry 15.
+  const [row] = opts.lock ? await query.for("update") : await query;
   if (!row) throw new PatientNotFoundError();
   return row;
 }
@@ -289,7 +294,7 @@ export async function createInvoice(actor: RequestActor, input: CreateInvoiceInp
   if (ids.length === 0) throw new ProcedureNotInvoiceableError();
 
   return dbForRequest(actor.organizationId, async (tx) => {
-    const patient = await requirePatient(tx, actor, input.patient_id);
+    const patient = await requirePatient(tx, actor, input.patient_id, { lock: true });
     await requireLocation(tx, actor, input.location_id);
     const org = await loadOrganization(tx, actor);
 
@@ -380,10 +385,12 @@ export async function createInvoice(actor: RequestActor, input: CreateInvoiceInp
 export async function voidInvoice(actor: RequestActor, invoiceId: string, reason: string) {
   assertCan(actor.role, "invoices_payments", "write");
   return dbForRequest(actor.organizationId, async (tx) => {
+    const unlocked = await requireInvoice(tx, actor, invoiceId);
+    await requirePatient(tx, actor, unlocked.patientId, { lock: true });
     const before = await requireInvoice(tx, actor, invoiceId, { forUpdate: true });
-    if (before.status === "void") throw new InvoiceAlreadyVoidError();
     const org = await loadOrganization(tx, actor);
     assertCanReduceCharge(actor, before, org.timezone, "void");
+    if (before.status === "void") throw new InvoiceAlreadyVoidError();
 
     const now = new Date();
     const [after] = await tx
@@ -433,7 +440,10 @@ function requestHashOf(input: RecordPaymentInput): string {
     method: input.method,
     reference: input.reference ?? null,
     note: input.note ?? null,
-    allocations: (input.allocations ?? []).map((a) => ({ invoice_id: a.invoice_id, amount: fromPaise(toPaise(a.amount)) })),
+    // Sorted: the same allocations listed in another order are the same request.
+    allocations: (input.allocations ?? [])
+      .map((a) => ({ invoice_id: a.invoice_id, amount: fromPaise(toPaise(a.amount)) }))
+      .sort((x, y) => x.invoice_id.localeCompare(y.invoice_id) || x.amount.localeCompare(y.amount)),
   });
   return createHash("sha256").update(canonical).digest("hex");
 }
@@ -485,7 +495,7 @@ export async function recordPayment(actor: RequestActor, input: RecordPaymentInp
 
   try {
     return await dbForRequest(actor.organizationId, async (tx) => {
-      await requirePatient(tx, actor, input.patient_id);
+      await requirePatient(tx, actor, input.patient_id, { lock: true });
       await requireLocation(tx, actor, input.location_id);
       const amount = toPaise(input.amount);
       if (amount <= 0) throw new PaymentExceedsBalanceError("A payment must be more than zero.");
@@ -548,7 +558,7 @@ export async function recordPayment(actor: RequestActor, input: RecordPaymentInp
 export async function applyCredit(actor: RequestActor, input: { patient_id: string; invoice_id: string; amount: string }) {
   assertCan(actor.role, "invoices_payments", "write");
   return dbForRequest(actor.organizationId, async (tx) => {
-    await requirePatient(tx, actor, input.patient_id);
+    await requirePatient(tx, actor, input.patient_id, { lock: true });
     const rows = await loadPatientLedgerRows(tx, actor, input.patient_id);
     const state = computeLedgerState(rows);
     const amount = toPaise(input.amount);
@@ -569,7 +579,12 @@ export async function applyCredit(actor: RequestActor, input: { patient_id: stri
       remaining -= take;
     }
 
-    await writeAudit(tx, auditContext(actor), { entityType: "payment_allocation", entityId: input.invoice_id, action: "create", after: { applied_credit: fromPaise(amount), allocations: created } });
+    await writeAudit(tx, auditContext(actor), {
+      entityType: "payment_allocation",
+      entityId: created[0]?.id ?? null,
+      action: "create",
+      after: { invoice_id: input.invoice_id, applied_credit: fromPaise(amount), allocations: created },
+    });
     return created;
   });
 }
@@ -586,13 +601,20 @@ export interface CreateAdjustmentInput {
 export async function createAdjustment(actor: RequestActor, input: CreateAdjustmentInput) {
   assertCan(actor.role, "invoices_payments", "write");
   return dbForRequest(actor.organizationId, async (tx) => {
+    const unlocked = await requireInvoice(tx, actor, input.invoice_id);
+    await requirePatient(tx, actor, unlocked.patientId, { lock: true });
     const invoice = await requireInvoice(tx, actor, input.invoice_id, { forUpdate: true });
-    if (invoice.status === "void") throw new AdjustmentInvalidError("This invoice is void — nothing to adjust.");
     const org = await loadOrganization(tx, actor);
     assertCanReduceCharge(actor, invoice, org.timezone, "adjust");
+    if (invoice.status === "void") throw new AdjustmentInvalidError("This invoice is void — nothing to adjust.");
 
     const amount = toPaise(input.amount);
     if (amount === 0) throw new AdjustmentInvalidError("An adjustment can't be zero.");
+    // A discount or write-off reduces what's owed; only a correction may go either way.
+    // docs/bug-log.md entry 16.
+    if (input.adjustment_type !== "correction" && amount > 0) {
+      throw new AdjustmentInvalidError(`A ${input.adjustment_type === "writeoff" ? "write-off" : "discount"} has to reduce the bill — enter it as a negative amount.`);
+    }
     const rows = await loadPatientLedgerRows(tx, actor, invoice.patientId);
     const outstanding = computeLedgerState(rows).outstandingByInvoice.get(invoice.id) ?? 0;
     if (outstanding + amount < 0) {
@@ -705,7 +727,13 @@ export async function getPatientLedger(actor: RequestActor, patientId: string) {
       entries,
       invoices: rows.invoices
         .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime())
-        .map((inv) => ({ invoice: inv, outstanding: inv.status === "void" ? null : fromPaise(state.outstandingByInvoice.get(inv.id) ?? 0) })),
+        .map((inv) => ({
+          invoice: inv,
+          outstanding: inv.status === "void" ? null : fromPaise(state.outstandingByInvoice.get(inv.id) ?? 0),
+          // Money actually allocated to it — what moves to credit if it's voided. Not
+          // total − outstanding, which counts discounts as payments (bug-log entry 14).
+          paid: fromPaise(rows.allocations.filter((a) => a.invoiceId === inv.id).reduce((sum, a) => sum + toPaise(a.amount), 0)),
+        })),
       balance: fromPaise(state.balance),
       credit: fromPaise(state.credit),
     };

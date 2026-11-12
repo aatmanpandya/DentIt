@@ -93,7 +93,7 @@ export function serializePatientLedger(l: Awaited<ReturnType<typeof getPatientLe
     balance: l.balance,
     credit: l.credit,
     entries: l.entries.map(serializeEntry),
-    invoices: l.invoices.map((i) => ({ ...serializeInvoice(i.invoice), outstanding: i.outstanding })),
+    invoices: l.invoices.map((i) => ({ ...serializeInvoice(i.invoice), outstanding: i.outstanding, paid: i.paid })),
   };
 }
 

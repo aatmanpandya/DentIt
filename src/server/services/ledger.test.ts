@@ -414,3 +414,82 @@ describe("reads", () => {
     expect(org.balances).toEqual([expect.objectContaining({ patientId: patient.id, balance: "1500.00" })]);
   });
 });
+
+// Bugs found in the 12 Nov review (docs/bug-log.md entries 14–17).
+describe("review fixes", () => {
+  afterEach(cleanup);
+
+  async function invoicedFor(total: string) {
+    const ctx = await setup();
+    const proc = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "36", snapshot: total });
+    const { invoice } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [proc.id] });
+    return { ...ctx, invoice };
+  }
+
+  it("never over-allocates an invoice when two payments arrive at once", async () => {
+    const { owner, location, patient, invoice } = await invoicedFor("1000.00");
+    const pay = (key: string) =>
+      recordPayment(owner, { patient_id: patient.id, location_id: location.id, amount: "1000.00", method: "cash", allocations: [{ invoice_id: invoice.id, amount: "1000.00" }] }, key);
+
+    const outcomes = await Promise.allSettled([pay("k1"), pay("k2")]);
+
+    expect(outcomes.filter((o) => o.status === "fulfilled")).toHaveLength(1);
+    expect((await getInvoice(owner, invoice.id)).outstanding).toBe("0.00");
+  });
+
+  it("never spends the same credit twice when two apply-credit calls race", async () => {
+    const ctx = await setup();
+    const a = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "36", snapshot: "1000.00" });
+    const b = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "37", snapshot: "1000.00" });
+    const { invoice: invA } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [a.id] });
+    const { invoice: invB } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [b.id] });
+    await recordPayment(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, amount: "1000.00", method: "cash" });
+
+    const outcomes = await Promise.allSettled([
+      applyCredit(ctx.owner, { patient_id: ctx.patient.id, invoice_id: invA.id, amount: "1000.00" }),
+      applyCredit(ctx.owner, { patient_id: ctx.patient.id, invoice_id: invB.id, amount: "1000.00" }),
+    ]);
+
+    expect(outcomes.filter((o) => o.status === "fulfilled")).toHaveLength(1);
+    expect((await getPatientLedger(ctx.owner, ctx.patient.id)).credit).toBe("0.00");
+  });
+
+  it("requires discounts and write-offs to reduce the bill", async () => {
+    const { owner, invoice } = await invoicedFor("1500.00");
+    for (const type of ["discount", "writeoff"] as const) {
+      await expect(createAdjustment(owner, { invoice_id: invoice.id, amount: "200.00", adjustment_type: type, reason: "x" })).rejects.toThrow(AdjustmentInvalidError);
+    }
+    // A correction may go either way.
+    await expect(createAdjustment(owner, { invoice_id: invoice.id, amount: "100.00", adjustment_type: "correction", reason: "Missed X-ray" })).resolves.toBeTruthy();
+  });
+
+  it("refuses amounts larger than the column can hold instead of failing in the database", async () => {
+    const { owner, location, patient } = await invoicedFor("1500.00");
+    await expect(
+      recordPayment(owner, { patient_id: patient.id, location_id: location.id, amount: "100000000.00", method: "cash" }),
+    ).rejects.toThrow(/not a valid amount/);
+  });
+
+  it("reports what was actually paid on each invoice, net of discounts", async () => {
+    const { owner, location, patient, invoice } = await invoicedFor("1000.00");
+    await createAdjustment(owner, { invoice_id: invoice.id, amount: "-200.00", adjustment_type: "discount", reason: "Senior" });
+    await recordPayment(owner, { patient_id: patient.id, location_id: location.id, amount: "800.00", method: "upi", allocations: [{ invoice_id: invoice.id, amount: "800.00" }] });
+
+    const ledger = await getPatientLedger(owner, patient.id);
+    const row = ledger.invoices.find((i) => i.invoice.id === invoice.id);
+    expect(row?.outstanding).toBe("0.00");
+    expect(row?.paid).toBe("800.00");
+  });
+
+  it("treats the same allocations in a different order as the same idempotent request", async () => {
+    const ctx = await setup();
+    const a = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "36", snapshot: "500.00" });
+    const b = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "37", snapshot: "500.00" });
+    const { invoice: invA } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [a.id] });
+    const { invoice: invB } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [b.id] });
+    const base = { patient_id: ctx.patient.id, location_id: ctx.location.id, amount: "1000.00", method: "cash" as const };
+    const first = await recordPayment(ctx.owner, { ...base, allocations: [{ invoice_id: invA.id, amount: "500.00" }, { invoice_id: invB.id, amount: "500.00" }] }, "order-key");
+    const again = await recordPayment(ctx.owner, { ...base, allocations: [{ invoice_id: invB.id, amount: "500.00" }, { invoice_id: invA.id, amount: "500.00" }] }, "order-key");
+    expect(again.payment.id).toBe(first.payment.id);
+  });
+});

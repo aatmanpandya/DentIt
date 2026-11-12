@@ -44,7 +44,7 @@ export interface PatientLedger {
   balance: string;
   credit: string;
   entries: LedgerEntry[];
-  invoices: (Invoice & { outstanding: string | null })[];
+  invoices: (Invoice & { outstanding: string | null; paid: string })[];
 }
 
 export interface InvoiceableProcedure {

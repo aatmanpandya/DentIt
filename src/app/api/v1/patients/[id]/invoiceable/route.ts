@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/server/lib/request-auth";
-import { ledgerErrorResponse } from "@/server/lib/ledger-route-errors";
+import { ledgerErrorResponse, notFoundUnlessUuid } from "@/server/lib/ledger-route-errors";
 import { serializeInvoiceable } from "@/server/lib/serialize-ledger";
 import { listInvoiceableProcedures } from "@/server/services/ledger";
 
@@ -11,6 +11,8 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     const actor = await requireAuth(req);
     const { id } = await params;
+    const badId = notFoundUnlessUuid(id);
+    if (badId) return badId;
     const rows = await listInvoiceableProcedures(actor, id);
     return NextResponse.json({ data: rows.map(serializeInvoiceable) });
   } catch (err) {

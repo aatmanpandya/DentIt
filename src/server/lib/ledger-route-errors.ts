@@ -37,3 +37,13 @@ export function ledgerErrorResponse(err: unknown): NextResponse | null {
   if (err instanceof InvalidMoneyError) return errorResponse(422, "VALIDATION_FAILED", err.message);
   return null;
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A malformed id in the URL is simply "not found" — without this check Postgres rejects the
+ * uuid cast (22P02) and the route returns a 500 (docs/bug-log.md entry 17).
+ */
+export function notFoundUnlessUuid(id: string): NextResponse | null {
+  return UUID.test(id) ? null : errorResponse(404, "NOT_FOUND", "Not found.");
+}

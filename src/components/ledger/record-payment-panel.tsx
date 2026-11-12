@@ -77,15 +77,19 @@ export function RecordPaymentPanel({
     setPrevOpen(open);
     if (open) {
       setAmount("");
+      setMethod("upi");
+      setLocationId(""); // fall back to this patient's suggested location again
       setReference("");
       setAllocations({});
       setAllocationsTouched(false);
       setIdempotencyKey(crypto.randomUUID());
-      setCreditInvoiceId(openInvoices[0]?.id ?? "");
+      setCreditInvoiceId("");
       setCreditAmount("");
     }
   }
   const effectiveLocationId = locationId || (suggestion?.location_id ?? "");
+  // Derived, not captured at open: the ledger may still be loading then, and the list can change.
+  const effectiveCreditInvoiceId = openInvoices.some((i) => i.id === creditInvoiceId) ? creditInvoiceId : (openInvoices[0]?.id ?? "");
 
   const effectiveAllocations = allocationsTouched ? allocations : autoAllocate(amount, openInvoices);
   const allocated = addMoney(Object.values(effectiveAllocations).filter((v) => MONEY.test(v)));
@@ -111,7 +115,7 @@ export function RecordPaymentPanel({
   });
 
   const creditMutation = useMutation({
-    mutationFn: () => applyCredit({ patient_id: patientId, invoice_id: creditInvoiceId, amount: creditAmount }),
+    mutationFn: () => applyCredit({ patient_id: patientId, invoice_id: effectiveCreditInvoiceId, amount: creditAmount }),
     onSuccess: () => onDone(`${formatRupees(creditAmount)} of credit applied.`),
   });
 
@@ -126,7 +130,7 @@ export function RecordPaymentPanel({
               This patient has <span className="font-medium">{formatRupees(credit)}</span> credit. Apply it to an invoice:
             </p>
             <div className="flex gap-2">
-              <select value={creditInvoiceId} onChange={(e) => setCreditInvoiceId(e.target.value)} className={`${field} flex-1`} aria-label="Invoice to apply credit to">
+              <select value={effectiveCreditInvoiceId} onChange={(e) => setCreditInvoiceId(e.target.value)} className={`${field} flex-1`} aria-label="Invoice to apply credit to">
                 {openInvoices.map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.number} · {formatRupees(i.outstanding)} due
@@ -137,7 +141,7 @@ export function RecordPaymentPanel({
             </div>
             <button
               type="button"
-              disabled={!MONEY.test(creditAmount) || !creditInvoiceId || creditMutation.isPending}
+              disabled={!MONEY.test(creditAmount) || !effectiveCreditInvoiceId || creditMutation.isPending}
               onClick={() => creditMutation.mutate()}
               className="h-7 self-start rounded-[var(--radius)] border border-rule px-3 text-[12px] font-medium text-ink hover:bg-steel-lo disabled:opacity-50"
             >

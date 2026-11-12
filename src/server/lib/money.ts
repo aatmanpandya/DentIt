@@ -18,11 +18,15 @@ export function isMoneyString(value: string): boolean {
   return MONEY_PATTERN.test(value);
 }
 
+/** numeric(10,2) holds up to 99,999,999.99; anything larger would fail in Postgres. */
+export const MAX_PAISE = 9_999_999_999;
+
 export function toPaise(value: string): number {
   if (!MONEY_PATTERN.test(value)) throw new InvalidMoneyError(value);
   const negative = value.startsWith("-");
   const [whole, fraction = ""] = (negative ? value.slice(1) : value).split(".");
   const paise = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  if (paise > MAX_PAISE) throw new InvalidMoneyError(value);
   return negative ? -paise : paise;
 }
 

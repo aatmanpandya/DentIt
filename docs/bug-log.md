@@ -245,3 +245,42 @@ and every finding listed here was re-checked against the code before it was fixe
   plan hit the `treatment_plan_items` foreign key: an unmapped Postgres 23503, so a 500.
 - **Fix:** `deleteProcedure` checks plan membership first and refuses with the plan's name
   (`PROCEDURE_ON_PLAN`, 422).
+
+## 14. The void confirmation promised the wrong amount of credit
+
+- **Symptom:** a ₹1,000 invoice with a ₹200 discount and ₹800 paid: the void step said "₹1,000
+  already paid will move to patient credit"; only ₹800 does.
+- **Root cause:** mine. The page worked out "paid" as `total − outstanding`, but outstanding
+  also subtracts adjustments, so discounts counted as payments.
+- **Fix:** the ledger returns `paid` per invoice (sum of its allocations) and the confirmation
+  uses it. Test: "reports what was actually paid on each invoice, net of discounts".
+
+## 15. Two payments at the same moment could overpay an invoice; credit could be spent twice
+
+- **Symptom (reproduced):** two concurrent payments of ₹1,000 each allocated to a ₹1,000
+  invoice both succeeded (outstanding −₹1,000); two concurrent apply-credits spent ₹1,000 of
+  credit twice. Both new tests failed before the fix.
+- **Root cause:** mine. `recordPayment`/`applyCredit` read the balance and inserted
+  allocations without a lock, so under READ COMMITTED both validated against the same state.
+  Adjustments locked the invoice; payments didn't. My earlier concurrency tests only covered
+  invoice numbering and double-billing. Found independently by two review agents.
+- **Fix:** every ledger write locks the patient row first (`SELECT … FOR UPDATE`), so one
+  patient's ledger writes queue. A single lock taken first everywhere also rules out the
+  lock-order deadlock a reviewer flagged on overlapping procedure sets.
+
+## 16. A "discount" could raise the bill; oversized amounts gave a 500
+
+- **Symptom:** `{ adjustment_type: "discount", amount: "500" }` was accepted and added ₹500.
+  Amounts over ₹99,999,999.99 passed validation and failed in Postgres (numeric overflow, 500).
+- **Fix:** discounts and write-offs must be negative (corrections may be either sign); money
+  is capped at 8 whole digits in the request schema and in `toPaise`.
+
+## 17. Smaller ledger fixes from the same review
+
+- Malformed ids in ledger URLs (`/invoices/abc`) returned 500 (Postgres 22P02); now 404.
+- After a payment or void, `/ledger` and an open printable invoice showed cached figures for
+  up to 30 s; the Ledger tab now invalidates them.
+- Idempotency hash depended on allocation order; now sorted.
+- The apply-credit audit row used the invoice id as the allocation id; fixed.
+- Record payment kept the last location/method across patients and could capture an invoice
+  for "apply credit" before the ledger loaded; both now reset or derive on each opening.
