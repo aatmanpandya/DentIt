@@ -180,3 +180,21 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
 - **Fix:** invoice lines reference seeded procedures by `key`; those procedures are seeded
   `invoiced` with `invoiced_at`; amounts go through `money.ts`/`lineTax`; numbers use the
   current year; `invoice_number_counters` starts after the highest seeded number.
+- **Commit:** `979fcfe`
+
+---
+
+## 9. The patient header balance and the Ledger tab would disagree
+
+- **Symptom:** none visible yet: caught before the Ledger UI shipped. `getPatientSummary`
+  (the patient header) computed its own balance: issued invoice totals minus allocations to
+  them, subtracted as JavaScript `Number`s. It ignored adjustments and any unallocated
+  payment, so a patient who overpaid or got a discount would show one balance in the header
+  and another on the Ledger tab.
+- **How noticed:** before replacing the Ledger tab placeholder, checked where its existing
+  "Balance" figure came from.
+- **Test first:** extended the summary test with a ₹100 unallocated payment and a ₹50
+  discount; it failed with `expected '600.00' to be '450.00'`.
+- **Fix:** one balance calculation. `computeLedgerState` and `loadPatientLedgerRows` moved
+  to `services/ledger-balance.ts` (separate from `ledger.ts` to avoid a patients ↔ ledger
+  import cycle); the summary, the Ledger tab and the org ledger all use it, in paise.

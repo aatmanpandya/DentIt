@@ -11,6 +11,7 @@ import {
   invoices,
   payments,
   paymentAllocations,
+  adjustments,
 } from "@/server/db/schema";
 import { wipeOrganizationData } from "@/server/db/wipe-organization";
 import type { RequestActor } from "@/server/lib/request-auth";
@@ -398,5 +399,12 @@ describe("getPatientSummary", () => {
     expect(summary.nextAppointment?.id).toBe(futureAppt.id);
     expect(summary.lastVisitAt).toEqual(pastAppt.startsAt);
     expect(summary.balance).toBe("600.00");
+
+    // The header balance must be the ledger's balance: unallocated money (credit) and
+    // adjustments count too. docs/bug-log.md entry 9.
+    await adminDb.insert(payments).values({ organizationId: org.id, locationId: loc.id, patientId: patient.id, amount: "100.00", method: "upi", receivedBy: user.id });
+    await adminDb.insert(adjustments).values({ organizationId: org.id, invoiceId: invoice.id, amount: "-50.00", reason: "Discount", adjustmentType: "discount" });
+    const withCreditAndDiscount = await getPatientSummary(actor, patient.id);
+    expect(withCreditAndDiscount.balance).toBe("450.00");
   });
 });

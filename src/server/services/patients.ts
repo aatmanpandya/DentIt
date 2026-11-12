@@ -1,6 +1,8 @@
 import { eq, and, isNull, gt, gte, or, ilike, notInArray, desc, asc, sql } from "drizzle-orm";
+import { computeLedgerState, loadPatientLedgerRows } from "./ledger-balance";
+import { fromPaise } from "@/server/lib/money";
 import { dbForRequest } from "@/server/db/tenant";
-import { patients, responsibleParties, patientAlerts, appointments, invoices, paymentAllocations } from "@/server/db/schema";
+import { patients, responsibleParties, patientAlerts, appointments } from "@/server/db/schema";
 import { assertCan, PermissionDeniedError } from "@/server/lib/permissions";
 import { writeAudit } from "./audit";
 import type { RequestActor } from "@/server/lib/request-auth";
@@ -432,22 +434,14 @@ export async function getPatientSummary(actor: RequestActor, id: string) {
       .orderBy(desc(appointments.startsAt))
       .limit(1);
 
-    const [{ invoiced }] = await tx
-      .select({ invoiced: sql<string>`coalesce(sum(${invoices.total}), 0)` })
-      .from(invoices)
-      .where(and(eq(invoices.patientId, id), eq(invoices.status, "issued")));
-
-    const [{ paid }] = await tx
-      .select({ paid: sql<string>`coalesce(sum(${paymentAllocations.amount}), 0)` })
-      .from(paymentAllocations)
-      .innerJoin(invoices, eq(paymentAllocations.invoiceId, invoices.id))
-      .where(and(eq(invoices.patientId, id), eq(invoices.status, "issued")));
+    // Same calculation as the Ledger tab (credit and adjustments included), in paise.
+    const ledger = computeLedgerState(await loadPatientLedgerRows(tx, actor, id));
 
     return {
       alerts,
       nextAppointment: nextAppointment ?? null,
       lastVisitAt: lastVisit?.startsAt ?? null,
-      balance: (Number(invoiced) - Number(paid)).toFixed(2),
+      balance: fromPaise(ledger.balance),
     };
   });
 }

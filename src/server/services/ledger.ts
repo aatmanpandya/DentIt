@@ -25,6 +25,9 @@ import { writeAudit } from "./audit";
 import { resolvePrice, FeeScheduleNoPriceError } from "./catalog";
 import { PatientNotFoundError } from "./patients";
 import { LocationNotFoundError } from "./locations";
+import { computeLedgerState, loadPatientLedgerRows, type LedgerRows, type LedgerState } from "./ledger-balance";
+
+export { computeLedgerState, type LedgerState };
 
 /**
  * Invoices, payments, allocations and adjustments — docs/specs/ledger.md. Append-only:
@@ -152,68 +155,7 @@ function assertCanReduceCharge(actor: RequestActor, invoice: typeof invoices.$in
   throw new ChargeReductionNotAllowedError(action);
 }
 
-// --- balance math (pure) ---
-
-interface LedgerRows {
-  invoices: (typeof invoices.$inferSelect)[];
-  allocations: (typeof paymentAllocations.$inferSelect)[];
-  adjustments: (typeof adjustments.$inferSelect)[];
-  payments: (typeof payments.$inferSelect)[];
-}
-
-export interface LedgerState {
-  outstandingByInvoice: Map<string, number>; // paise; void invoices are absent
-  creditByPayment: Map<string, number>; // paise not allocated to a non-void invoice
-  owed: number;
-  paid: number;
-  balance: number; // owed − paid; negative = credit
-  credit: number; // Σ unallocated credit
-}
-
-export function computeLedgerState(rows: LedgerRows): LedgerState {
-  const live = new Set(rows.invoices.filter((i) => i.status !== "void").map((i) => i.id));
-  const outstandingByInvoice = new Map<string, number>();
-  let owed = 0;
-  for (const inv of rows.invoices) {
-    if (!live.has(inv.id)) continue;
-    outstandingByInvoice.set(inv.id, toPaise(inv.total));
-    owed += toPaise(inv.total);
-  }
-  for (const adj of rows.adjustments) {
-    if (!live.has(adj.invoiceId)) continue;
-    outstandingByInvoice.set(adj.invoiceId, (outstandingByInvoice.get(adj.invoiceId) ?? 0) + toPaise(adj.amount));
-    owed += toPaise(adj.amount);
-  }
-  const creditByPayment = new Map<string, number>(rows.payments.map((p) => [p.id, toPaise(p.amount)]));
-  for (const alloc of rows.allocations) {
-    if (!live.has(alloc.invoiceId)) continue; // allocations to a void invoice turn back into credit
-    outstandingByInvoice.set(alloc.invoiceId, (outstandingByInvoice.get(alloc.invoiceId) ?? 0) - toPaise(alloc.amount));
-    creditByPayment.set(alloc.paymentId, (creditByPayment.get(alloc.paymentId) ?? 0) - toPaise(alloc.amount));
-  }
-  const paid = rows.payments.reduce((sum, p) => sum + toPaise(p.amount), 0);
-  const credit = [...creditByPayment.values()].reduce((sum, c) => sum + c, 0);
-  return { outstandingByInvoice, creditByPayment, owed, paid, balance: owed - paid, credit };
-}
-
-async function loadPatientLedgerRows(tx: Tx, actor: RequestActor, patientId: string): Promise<LedgerRows> {
-  const invoiceRows = await tx
-    .select()
-    .from(invoices)
-    .where(and(eq(invoices.patientId, patientId), eq(invoices.organizationId, actor.organizationId), isNull(invoices.deletedAt)));
-  const invoiceIds = invoiceRows.map((i) => i.id);
-  const paymentRows = await tx
-    .select()
-    .from(payments)
-    .where(and(eq(payments.patientId, patientId), eq(payments.organizationId, actor.organizationId), isNull(payments.deletedAt)));
-  const paymentIds = paymentRows.map((p) => p.id);
-  const allocationRows = paymentIds.length
-    ? await tx.select().from(paymentAllocations).where(inArray(paymentAllocations.paymentId, paymentIds))
-    : [];
-  const adjustmentRows = invoiceIds.length
-    ? await tx.select().from(adjustments).where(inArray(adjustments.invoiceId, invoiceIds))
-    : [];
-  return { invoices: invoiceRows, allocations: allocationRows, adjustments: adjustmentRows, payments: paymentRows };
-}
+// Balance math lives in ./ledger-balance (shared with the patient summary header).
 
 // --- location suggestion ---
 
