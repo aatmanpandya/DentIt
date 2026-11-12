@@ -9,7 +9,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const parsed = bodySchema.safeParse(await req.json());
+  const parsed = bodySchema.safeParse(await req.json().catch(() => null)); // malformed JSON → 400, not 500
   if (!parsed.success) {
     return errorResponse(400, "VALIDATION_FAILED", "Check your email and password.", parsed.error.issues);
   }

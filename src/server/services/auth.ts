@@ -2,7 +2,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { adminDb } from "@/server/db/client";
 import { users } from "@/server/db/schema";
 import { verifyPassword } from "@/server/lib/password";
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from "@/server/lib/jwt";
+import { signAccessToken, signRefreshToken, verifyRefreshToken, SESSION_ABSOLUTE_TIMEOUT_SECONDS } from "@/server/lib/jwt";
 import { writeAudit } from "./audit";
 import { randomUUID } from "node:crypto";
 
@@ -49,7 +49,10 @@ export async function login(email: string, password: string, ip: string | null) 
   const valid = await verifyPassword(password, user.passwordHash);
 
   if (!valid) {
-    const failedCount = user.failedLoginCount + 1;
+    // A lockout that has run out starts the count again; otherwise the next single wrong
+    // password (count 5 → 6) re-locked the account (docs/bug-log.md entry 20).
+    const lockExpired = user.lockedUntil !== null && user.lockedUntil <= new Date();
+    const failedCount = (lockExpired ? 0 : user.failedLoginCount) + 1;
     const lockedUntil =
       failedCount >= MAX_FAILED_ATTEMPTS
         ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000)
@@ -88,7 +91,7 @@ export async function login(email: string, password: string, ip: string | null) 
     role: user.role,
     sessionStartedAt,
   });
-  const refreshToken = await signRefreshToken({ sub: user.id, jti: randomUUID() });
+  const refreshToken = await signRefreshToken({ sub: user.id, jti: randomUUID(), sessionStartedAt });
 
   return {
     accessToken,
@@ -98,18 +101,31 @@ export async function login(email: string, password: string, ip: string | null) 
 }
 
 export async function refresh(refreshToken: string) {
-  const claims = await verifyRefreshToken(refreshToken);
+  // A bad signature, expiry or malformed token is an ordinary auth failure (401), not a
+  // crash: jose's errors used to escape the route as a 500 (docs/bug-log.md entry 19).
+  let claims;
+  try {
+    claims = await verifyRefreshToken(refreshToken);
+  } catch {
+    throw new InvalidCredentialsError();
+  }
+  // The session keeps the start time it got at login. Tokens from before this field
+  // existed have none and must sign in again; past 12h the session is over.
+  const sessionStartedAt = claims.sessionStartedAt;
+  if (typeof sessionStartedAt !== "number" || Math.floor(Date.now() / 1000) - sessionStartedAt > SESSION_ABSOLUTE_TIMEOUT_SECONDS) {
+    throw new InvalidCredentialsError();
+  }
+
   const [user] = await adminDb.select().from(users).where(eq(users.id, claims.sub)).limit(1);
   if (!user || !user.isActive || user.deletedAt) throw new InvalidCredentialsError();
 
-  const sessionStartedAt = Math.floor(Date.now() / 1000);
   const accessToken = await signAccessToken({
     sub: user.id,
     org: user.organizationId,
     role: user.role,
     sessionStartedAt,
   });
-  const newRefreshToken = await signRefreshToken({ sub: user.id, jti: randomUUID() });
+  const newRefreshToken = await signRefreshToken({ sub: user.id, jti: randomUUID(), sessionStartedAt });
 
   return { accessToken, refreshToken: newRefreshToken };
 }

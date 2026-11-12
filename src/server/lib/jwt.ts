@@ -34,6 +34,9 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenClaim
 export interface RefreshTokenClaims {
   sub: string;
   jti: string; // unique per issuance, so it can be revoked/rotated individually
+  // Carried from login through every refresh, so the 12h absolute session cap can't be
+  // reset by refreshing (docs/bug-log.md entry 19).
+  sessionStartedAt: number;
 }
 
 export async function signRefreshToken(claims: RefreshTokenClaims): Promise<string> {

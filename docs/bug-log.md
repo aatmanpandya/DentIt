@@ -284,3 +284,32 @@ and every finding listed here was re-checked against the code before it was fixe
 - The apply-credit audit row used the invoice id as the allocation id; fixed.
 - Record payment kept the last location/method across patients and could capture an invoice
   for "apply credit" before the ledger loaded; both now reset or derive on each opening.
+
+## 18. A wrong password said "Sign in to continue."
+
+- **Symptom:** on the login page, a wrong password or a locked account showed "Sign in to
+  continue." instead of "That email or password isn't right." or the lockout time.
+- **Root cause:** `apiFetch` treated every 401 as an expired access token and went into
+  refresh-and-retry, including for `/auth/login`. With no refresh token it threw its own
+  generic error (and cleared tokens); with a stale one it re-POSTed the login.
+- **Fix:** only a 401 with code `AUTH_TOKEN_EXPIRED` triggers a refresh, and never for
+  `/auth/login`; any other 401 reaches the caller as-is. Verified in the browser.
+
+## 19. Refreshing restarted the 12-hour session; a bad refresh token gave a 500
+
+- **Symptom:** every refresh minted a new `sessionStartedAt`, so the 12-hour absolute
+  session cap (pilot-foundations §7) never fired for anyone who kept refreshing. An expired,
+  tampered or malformed refresh token made jose throw inside `refresh()`, which the route
+  didn't catch: 500 instead of 401.
+- **Fix:** the refresh token carries the session start from login; refresh keeps it and
+  refuses sessions older than 12 h. Any verification error is an ordinary
+  `InvalidCredentialsError` (401). Malformed JSON bodies on login/refresh are a 400.
+  Existing sessions (tokens without the new claim) sign in once more.
+- **Not done:** refresh tokens are still not rotated or revocable server-side (no store of
+  used `jti`s) — a larger change, noted for after the pilot.
+
+## 20. An expired lockout re-locked after one more wrong password
+
+- **Symptom:** after a 15-minute lock expired, the failure count was still 5, so a single
+  wrong password made it 6 and locked the account again.
+- **Fix:** a lock that has run out starts the count from zero.

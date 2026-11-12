@@ -84,7 +84,18 @@ async function refreshAndRetry<T>(path: string, init: RequestInit): Promise<T> {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await rawFetch(path, init, getAccessToken());
 
-  if (res.status === 401) return refreshAndRetry<T>(path, init);
+  // Only an expired access token is worth a refresh. A 401 can also be a wrong password or
+  // a lockout from /auth/login, which must reach the user as-is (docs/bug-log.md entry 18).
+  if (res.status === 401) {
+    const body = await res.clone().json().catch(() => null);
+    if (path !== "/auth/login" && body?.error?.code === "AUTH_TOKEN_EXPIRED") return refreshAndRetry<T>(path, init);
+    if (path === "/auth/login") throw await toApiError(res);
+    if (body?.error?.code !== "AUTH_TOKEN_EXPIRED") {
+      // Session over (idle/absolute) or otherwise unauthenticated: same outcome as a failed refresh.
+      clearTokens();
+      throw await toApiError(res);
+    }
+  }
 
   if (!res.ok) throw await toApiError(res);
 

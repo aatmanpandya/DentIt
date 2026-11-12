@@ -88,3 +88,39 @@ describe("apiFetch auto-refresh on expired access token", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+// docs/bug-log.md entry 18: a failed login returned 401 and was treated as an expired
+// session, so the login page showed "Sign in to continue." instead of the real reason.
+describe("apiFetch does not treat every 401 as an expired session", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("surfaces a wrong-password 401 from /auth/login as-is, without trying to refresh", async () => {
+    const { apiFetch, setTokens, ApiError } = await freshApiClient();
+    setTokens("old-access", "old-refresh");
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: { code: "AUTH_INVALID_CREDENTIALS", message: "That email or password isn't right." } }), { status: 401 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const err = (await apiFetch("/auth/login", { method: "POST", body: "{}" }).catch((e) => e)) as InstanceType<typeof ApiError>;
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("AUTH_INVALID_CREDENTIALS");
+    expect(err.message).toBe("That email or password isn't right.");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces a lockout message too", async () => {
+    const { apiFetch } = await freshApiClient();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { code: "AUTH_ACCOUNT_LOCKED", message: "Too many failed attempts." } }), { status: 401 }),
+      ),
+    );
+    await expect(apiFetch("/auth/login", { method: "POST", body: "{}" })).rejects.toThrow("Too many failed attempts.");
+  });
+});

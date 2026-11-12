@@ -6,7 +6,7 @@ import { errorResponse } from "@/server/lib/api-error";
 const bodySchema = z.object({ refresh_token: z.string() });
 
 export async function POST(req: NextRequest) {
-  const parsed = bodySchema.safeParse(await req.json());
+  const parsed = bodySchema.safeParse(await req.json().catch(() => null)); // malformed JSON → 400, not 500
   if (!parsed.success) {
     return errorResponse(400, "VALIDATION_FAILED", "Missing refresh token.");
   }

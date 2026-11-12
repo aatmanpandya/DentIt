@@ -4,7 +4,8 @@ import { adminDb } from "@/server/db/client";
 import { organizations, users } from "@/server/db/schema";
 import { hashPassword } from "@/server/lib/password";
 import { wipeOrganizationData } from "@/server/db/wipe-organization";
-import { login, InvalidCredentialsError, AccountLockedError } from "./auth";
+import { login, refresh, InvalidCredentialsError, AccountLockedError } from "./auth";
+import { verifyAccessToken, signRefreshToken } from "@/server/lib/jwt";
 
 const PASSWORD = "CorrectHorseBattery9";
 
@@ -93,5 +94,45 @@ describe("login", () => {
 
   it("rejects an unknown email without revealing whether the account exists", async () => {
     await expect(login("nobody-at-all@example.test", PASSWORD, null)).rejects.toThrow(InvalidCredentialsError);
+  });
+});
+
+// docs/bug-log.md entries 19–20.
+describe("session and lockout review fixes", () => {
+  afterEach(async () => {
+    const orgs = await adminDb.select().from(organizations).where(eq(organizations.name, "__auth_test_org"));
+    for (const org of orgs) {
+      await wipeOrganizationData(adminDb, org.id);
+      await adminDb.delete(organizations).where(eq(organizations.id, org.id));
+    }
+  });
+
+  it("keeps the original session start across a refresh, so the 12h cap can't be reset", async () => {
+    await createTestOrgAndUser();
+    const first = await login("authtest@example.test", PASSWORD, null);
+    const started = (await verifyAccessToken(first.accessToken)).sessionStartedAt;
+    await new Promise((r) => setTimeout(r, 1100));
+
+    const refreshed = await refresh(first.refreshToken);
+
+    expect((await verifyAccessToken(refreshed.accessToken)).sessionStartedAt).toBe(started);
+  });
+
+  it("refuses to refresh a session older than 12 hours", async () => {
+    const { user } = await createTestOrgAndUser();
+    const thirteenHoursAgo = Math.floor(Date.now() / 1000) - 13 * 60 * 60;
+    const token = await signRefreshToken({ sub: user.id, jti: "x", sessionStartedAt: thirteenHoursAgo });
+    await expect(refresh(token)).rejects.toThrow(InvalidCredentialsError);
+  });
+
+  it("treats a garbage or tampered refresh token as a normal auth failure", async () => {
+    await expect(refresh("not-a-jwt")).rejects.toThrow(InvalidCredentialsError);
+  });
+
+  it("starts the failed-attempt count again once a lockout has expired", async () => {
+    await createTestOrgAndUser({ failedLoginCount: 5, lockedUntil: new Date(Date.now() - 60_000) });
+    // One wrong password after the lock expired is attempt 1, not attempt 6.
+    await expect(login("authtest@example.test", "wrong", null)).rejects.toThrow(InvalidCredentialsError);
+    await expect(login("authtest@example.test", PASSWORD, null)).resolves.toBeTruthy();
   });
 });
