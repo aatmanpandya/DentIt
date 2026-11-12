@@ -50,3 +50,4 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
   mock-data order, so the first entry is the main site. Test: "orders locations by display
   order, not alphabetically" (failed before, passes after). Existing databases get 0 for
   every location until re-seeded or set.
+- **Commit:** `e27346f`

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Sans_Condensed } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Sans_Condensed, Figtree } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -23,6 +23,13 @@ const plexCondensed = IBM_Plex_Sans_Condensed({
   weight: ["600"],
 });
 
+// Logo wordmark only (src/components/brand/logo.tsx) — not a UI font.
+const figtree = Figtree({
+  variable: "--font-figtree",
+  subsets: ["latin"],
+  weight: ["700"],
+});
+
 export const metadata: Metadata = {
   title: "DentIt",
   description: "Practice management for dental clinics.",
@@ -32,7 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${plexSans.variable} ${plexMono.variable} ${plexCondensed.variable} h-full antialiased`}
+      className={`${plexSans.variable} ${plexMono.variable} ${plexCondensed.variable} ${figtree.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <Providers>{children}</Providers>

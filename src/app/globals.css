@@ -45,6 +45,7 @@
   --font-data: var(--font-plex-mono);
   --font-sans: var(--font-plex-sans);
   --font-condensed: var(--font-plex-condensed);
+  --font-brand: var(--font-figtree);
 
   --radius-DEFAULT: var(--radius);
 }

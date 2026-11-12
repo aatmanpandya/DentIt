@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/brand/logo";
 import { useState, type FormEvent } from "react";
 import { useAuth, ApiError } from "@/lib/auth-context";
 
@@ -26,11 +27,8 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-2">
-          <div className="h-2 w-6 rounded-[var(--radius)] bg-band" aria-hidden />
-          <span className="font-condensed text-[15px] uppercase tracking-wide text-ink">
-            DentIt
-          </span>
+        <div className="mb-8 flex items-center">
+          <Logo height={26} />
         </div>
 
         <div className="rounded-[var(--radius)] border border-rule bg-surface p-8">
