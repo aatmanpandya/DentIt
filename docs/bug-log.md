@@ -400,3 +400,22 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** dates are computed in the clinic's calendar and clock times converted with
   `zonedDateTimeToInstant`. Verified by seeding with `TZ=UTC`: today's appointments still start
   at 09:30 IST.
+
+## 30. Renaming the demo clinic left the old one behind, and the seed crashed
+
+- **Symptom:** after rebranding the seed to Suman Dental Care, `npm run seed` stopped with
+  `null value in column "location_id" of relation "appointments"`, and the database now held
+  both the old "Sunrise Dental Care" and a half-built Suman org.
+- **Root cause:** two assumptions in `seed/index.ts`. It found the previous run by the
+  organisation's *name*, so a renamed clinic never matched the old one; and it derived an
+  appointment's location from the operatory key prefix (`bn…` → Baner), which broke when the
+  demo went to a single location.
+- **Fix:** an appointment takes its location from its operatory's own record; the seed wipes
+  every org named in `name` or `previous_names` (backed up first, as always).
+
+## 31. A reversed payment still printed as "Paid" on the invoice
+
+- **Symptom:** caught while redesigning the printout: `getInvoice` returned every allocation to
+  the invoice, including those of reversed payments, and the print page summed them as "Paid".
+- **Fix:** `getInvoice` drops reversed payments' allocations, and returns the payments
+  themselves (date, method, reference) for the new "Payments received" block.

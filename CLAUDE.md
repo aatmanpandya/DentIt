@@ -45,8 +45,8 @@ Postgres runs on host port **55432**, not 5432 — something else on this machin
 5432. If that's no longer true in your environment, `docker-compose.yml` and `.env.example` can
 both move back to 5432.
 
-Demo login (any user from `seed/mock-data.json`): `ananya@sunrisedental.test` /
-`DemoPassword123`.
+Demo login (any user from `seed/mock-data.json`): `nimisha@sumandental.test` /
+`DemoPassword123` (owner). Front desk: `sneha@sumandental.test`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

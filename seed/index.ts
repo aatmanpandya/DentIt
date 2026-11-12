@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { adminDb } from "../src/server/db/client";
 import { wipeOrganizationData } from "../src/server/db/wipe-organization";
 import { hashPassword } from "../src/server/lib/password";
@@ -76,9 +76,12 @@ async function main() {
   console.log(`Seeding "${data.organization.name}"...`);
 
   // --- wipe any prior run of this demo org ---
-  const [existing] = await adminDb.select().from(organizations).where(eq(organizations.name, data.organization.name));
-  if (existing) {
-    console.log("Removing previous seed run...");
+  // Found by name, so a renamed demo clinic lists its old names too — otherwise the previous
+  // run survives a rename and the database ends up with both (docs/bug-log.md entry 30).
+  const demoNames = [data.organization.name, ...(data.organization.previous_names ?? [])];
+  const existingOrgs = await adminDb.select().from(organizations).where(inArray(organizations.name, demoNames));
+  for (const existing of existingOrgs) {
+    console.log(`Removing previous seed run ("${existing.name}")...`);
     await wipeOrganizationData(adminDb, existing.id);
     await adminDb.delete(organizations).where(eq(organizations.id, existing.id));
   }
@@ -88,6 +91,8 @@ async function main() {
     name: data.organization.name,
     gstRegistered: data.organization.gst_registered,
     gstin: data.organization.gstin,
+    logoUrl: data.organization.logo_url,
+    email: data.organization.email,
     toothNotationDisplay: data.organization.tooth_notation_display as "fdi" | "universal",
     deploymentTarget: data.organization.deployment_target as "cloud" | "onsite",
     timezone: data.organization.timezone,
@@ -255,7 +260,9 @@ async function main() {
 
     const [row] = await adminDb.insert(appointments).values({
       organizationId: org.id,
-      locationId: locationIds[a.operatory.startsWith("bn") ? "baner" : "kp"],
+      // The operatory's own location — not a hard-coded key prefix (which broke when the demo
+      // clinic went to a single location; docs/bug-log.md entry 30).
+      locationId: locationIds[data.operatories.find((o) => o.key === a.operatory)!.location],
       operatoryId: operatoryIds[a.operatory],
       patientId: patientIds[a.patient],
       providerId: userIds[a.provider],
@@ -277,7 +284,7 @@ async function main() {
       surfaces: c.surfaces ?? null,
       conditionType: c.condition_type,
       note: c.note ?? null,
-      chartedBy: userIds.ananya,
+      chartedBy: userIds.nimisha,
     });
   }
 
@@ -315,7 +322,7 @@ async function main() {
       status: tp.status as typeof treatmentPlans.$inferInsert.status,
       presentedAt: "presented_offset" in tp && tp.presented_offset !== undefined ? atOffset(tp.presented_offset) : null,
       acceptedAt: "accepted_offset" in tp && tp.accepted_offset !== undefined ? atOffset(tp.accepted_offset) : null,
-      createdBy: userIds.ananya,
+      createdBy: userIds.nimisha,
     }).returning();
     for (const [phaseIndex, phase] of tp.phases.entries()) {
       const [phaseRow] = await adminDb.insert(treatmentPlanPhases).values({
@@ -450,7 +457,10 @@ async function main() {
         organizationId: org.id,
         invoiceId: invoiceRow.id,
         chartedProcedureId: chartedProcedureIds[l.cp.key as string],
-        description: l.code.short_name,
+        // Same wording the ledger service writes ("Composite filling · 14 OD").
+        description: [l.code.short_name, l.cp.tooth ? `${l.cp.tooth}${l.cp.surfaces?.length ? ` ${l.cp.surfaces.join("")}` : ""}` : null]
+          .filter(Boolean)
+          .join(" · "),
         quantity: 1,
         unitPrice: fromPaise(l.unit),
         taxClass: l.code.tax_class as typeof invoiceLines.$inferInsert.taxClass,

@@ -146,7 +146,7 @@ write for owner, admin, front desk, accountant.
 **Voids and adjustments reduce what a patient owes, so they have one stricter rule** (one helper,
 `assertCanReduceCharge`): owner, admin and accountant at any time; **front desk only on the same IST
 calendar day the invoice was issued** ("Invoices from earlier days can only be voided by a
-manager."). The UI disables the control with that reason. Demo: `ananya` (owner) vs `sneha`
+manager."). The UI disables the control with that reason. Demo: `nimisha` (owner) vs `sneha`
 (front desk).
 
 Every write goes to the audit log in the same transaction, like the other services.

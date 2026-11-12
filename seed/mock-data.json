@@ -2,8 +2,11 @@
   "_readme": "Mock data for local dev and demos. Dates are day-offsets from the seed run date, substituted by seed/index.ts. See docs/specs/seed-data.md.",
 
   "organization": {
-    "key": "sunrise",
-    "name": "Sunrise Dental Care",
+    "key": "suman",
+    "name": "Suman Dental Care",
+    "previous_names": ["Sunrise Dental Care"],
+    "logo_url": "/clinic-logos/suman-dental-care.png",
+    "email": "drpandyanimisha@yahoo.in",
     "gst_registered": false,
     "gstin": null,
     "tooth_notation_display": "fdi",
@@ -15,21 +18,12 @@
   "locations": [
     {
       "key": "kp",
-      "name": "Koregaon Park",
-      "address_line1": "2nd Floor, Lane 6, Koregaon Park",
-      "city": "Pune",
-      "state": "Maharashtra",
-      "postal_code": "411001",
-      "phone": "+912026150022"
-    },
-    {
-      "key": "baner",
-      "name": "Baner",
-      "address_line1": "Shop 4, Sai Chowk, Baner Road",
-      "city": "Pune",
-      "state": "Maharashtra",
-      "postal_code": "411045",
-      "phone": "+912027290144"
+      "name": "Ambawadi",
+      "address_line1": "G-10, Swiss Plaza, nr. Devdarshan Tower, opp. BOB–Manekbaug Hall, Nehrunagar, Ambawadi",
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "postal_code": "380015",
+      "phone": "+918160072704"
     }
   ],
 
@@ -37,20 +31,20 @@
     { "key": "kp1", "location": "kp", "name": "Op 1", "display_order": 1 },
     { "key": "kp2", "location": "kp", "name": "Op 2", "display_order": 2 },
     { "key": "kp3", "location": "kp", "name": "Hygiene", "display_order": 3 },
-    { "key": "bn1", "location": "baner", "name": "Op 1", "display_order": 1 },
-    { "key": "bn2", "location": "baner", "name": "Op 2", "display_order": 2 }
+    { "key": "bn1", "location": "kp", "name": "Op 3", "display_order": 4 },
+    { "key": "bn2", "location": "kp", "name": "Op 4", "display_order": 5 }
   ],
 
   "users": [
     {
-      "key": "ananya",
-      "full_name": "Dr Ananya Rao",
-      "email": "ananya@sunrisedental.test",
+      "key": "nimisha",
+      "full_name": "Dr Nimisha Pandya",
+      "email": "nimisha@sumandental.test",
       "role": "owner",
       "password": "DemoPassword123",
       "provider_profile": {
-        "registration_number": "MH-DENT-24817",
-        "qualification": "BDS, MDS (Periodontics)",
+        "registration_number": null,
+        "qualification": "BDS",
         "default_operatory": "kp1",
         "color": "#33556E"
       }
@@ -58,11 +52,11 @@
     {
       "key": "vikram",
       "full_name": "Dr Vikram Menon",
-      "email": "vikram@sunrisedental.test",
+      "email": "vikram@sumandental.test",
       "role": "provider",
       "password": "DemoPassword123",
       "provider_profile": {
-        "registration_number": "MH-DENT-31902",
+        "registration_number": "GJ-DENT-31902",
         "qualification": "BDS",
         "default_operatory": "kp2",
         "color": "#2E7D5B"
@@ -71,7 +65,7 @@
     {
       "key": "priya",
       "full_name": "Priya Nair",
-      "email": "priya@sunrisedental.test",
+      "email": "priya@sumandental.test",
       "role": "hygienist",
       "password": "DemoPassword123",
       "provider_profile": {
@@ -80,16 +74,16 @@
         "color": "#C77A0A"
       }
     },
-    { "key": "sneha", "full_name": "Sneha Kulkarni", "email": "sneha@sunrisedental.test", "role": "front_desk", "password": "DemoPassword123" },
-    { "key": "rahul", "full_name": "Rahul Deshpande", "email": "rahul@sunrisedental.test", "role": "assistant", "password": "DemoPassword123" },
-    { "key": "meera", "full_name": "Meera Joshi", "email": "meera@sunrisedental.test", "role": "accountant", "password": "DemoPassword123" }
+    { "key": "sneha", "full_name": "Sneha Kulkarni", "email": "sneha@sumandental.test", "role": "front_desk", "password": "DemoPassword123" },
+    { "key": "rahul", "full_name": "Rahul Deshpande", "email": "rahul@sumandental.test", "role": "assistant", "password": "DemoPassword123" },
+    { "key": "meera", "full_name": "Meera Joshi", "email": "meera@sumandental.test", "role": "accountant", "password": "DemoPassword123" }
   ],
 
   "provider_schedules": [
-    { "provider": "ananya", "location": "kp", "days": [1, 2, 3, 4, 5], "start_time": "09:30", "end_time": "18:00" },
-    { "provider": "ananya", "location": "kp", "days": [6], "start_time": "09:30", "end_time": "14:00" },
+    { "provider": "nimisha", "location": "kp", "days": [1, 2, 3, 4, 5], "start_time": "09:30", "end_time": "18:00" },
+    { "provider": "nimisha", "location": "kp", "days": [6], "start_time": "09:30", "end_time": "14:00" },
     { "provider": "vikram", "location": "kp", "days": [1, 3, 5], "start_time": "10:00", "end_time": "19:00" },
-    { "provider": "vikram", "location": "baner", "days": [2, 4], "start_time": "10:00", "end_time": "18:00" },
+    { "provider": "vikram", "location": "kp", "days": [2, 4], "start_time": "10:00", "end_time": "18:00" },
     { "provider": "priya", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "09:30", "end_time": "17:00" }
   ],
 
@@ -137,18 +131,18 @@
   },
 
   "patients": [
-    { "key": "p1",  "patient_number": "P-0401", "first_name": "Arjun",   "last_name": "Kulkarni", "date_of_birth": "1989-03-14", "sex": "male",   "phone": "+919822014477", "email": "arjun.k@example.test", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p2",  "patient_number": "P-0402", "first_name": "Meenakshi","last_name": "Iyer",    "date_of_birth": "1974-11-02", "sex": "female", "phone": "+919960221188", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p3",  "patient_number": "P-0403", "first_name": "Rohan",   "last_name": "Shetty",   "date_of_birth": "1996-07-21", "sex": "male",   "phone": "+919511339922", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p4",  "patient_number": "P-0404", "first_name": "Fatima",  "last_name": "Shaikh",   "date_of_birth": "1982-01-30", "sex": "female", "phone": "+919730558811", "city": "Pune", "preferred_location": "baner" },
-    { "key": "p5",  "patient_number": "P-0405", "first_name": "Devendra","last_name": "Pawar",    "date_of_birth": "1961-09-08", "sex": "male",   "phone": "+919823447700", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p6",  "patient_number": "P-0406", "first_name": "Ishita",  "last_name": "Banerjee", "date_of_birth": "2015-05-19", "sex": "female", "phone": "+919822774411", "city": "Pune", "preferred_location": "kp", "responsible_party": { "full_name": "Sudipto Banerjee", "phone": "+919822774411", "relationship": "Father" } },
-    { "key": "p7",  "patient_number": "P-0407", "first_name": "Nikhil",  "last_name": "Rane",     "date_of_birth": null,        "sex": "male",   "phone": "+919049883322", "city": "Pune", "preferred_location": "baner" },
-    { "key": "p8",  "patient_number": "P-0408", "first_name": "Sunita",  "last_name": "Deshmukh", "date_of_birth": "1958-04-25", "sex": "female", "phone": "+919881220055", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p9",  "patient_number": "P-0409", "first_name": "Tanvi",   "last_name": "Gokhale",  "date_of_birth": "2001-12-11", "sex": "female", "phone": "+917756441100", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p10", "patient_number": "P-0410", "first_name": "Imran",   "last_name": "Qureshi",  "date_of_birth": "1993-08-03", "sex": "male",   "phone": "+918806551122", "city": "Pune", "preferred_location": "baner" },
-    { "key": "p11", "patient_number": "P-0411", "first_name": "Lakshmi", "last_name": "Venkatesh","date_of_birth": "1979-02-17", "sex": "female", "phone": "+917020334455", "city": "Pune", "preferred_location": "kp" },
-    { "key": "p12", "patient_number": "P-0412", "first_name": "Aditya",  "last_name": "Chavan",   "date_of_birth": "1990-06-29", "sex": "male",   "phone": "+918390667788", "city": "Pune", "preferred_location": "kp" }
+    { "key": "p1",  "patient_number": "P-0401", "first_name": "Arjun",   "last_name": "Kulkarni", "date_of_birth": "1989-03-14", "sex": "male",   "phone": "+919822014477", "email": "arjun.k@example.test", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p2",  "patient_number": "P-0402", "first_name": "Meenakshi","last_name": "Iyer",    "date_of_birth": "1974-11-02", "sex": "female", "phone": "+919960221188", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p3",  "patient_number": "P-0403", "first_name": "Rohan",   "last_name": "Shetty",   "date_of_birth": "1996-07-21", "sex": "male",   "phone": "+919511339922", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p4",  "patient_number": "P-0404", "first_name": "Fatima",  "last_name": "Shaikh",   "date_of_birth": "1982-01-30", "sex": "female", "phone": "+919730558811", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p5",  "patient_number": "P-0405", "first_name": "Devendra","last_name": "Pawar",    "date_of_birth": "1961-09-08", "sex": "male",   "phone": "+919823447700", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p6",  "patient_number": "P-0406", "first_name": "Ishita",  "last_name": "Banerjee", "date_of_birth": "2015-05-19", "sex": "female", "phone": "+919822774411", "city": "Ahmedabad", "preferred_location": "kp", "responsible_party": { "full_name": "Sudipto Banerjee", "phone": "+919822774411", "relationship": "Father" } },
+    { "key": "p7",  "patient_number": "P-0407", "first_name": "Nikhil",  "last_name": "Rane",     "date_of_birth": null,        "sex": "male",   "phone": "+919049883322", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p8",  "patient_number": "P-0408", "first_name": "Sunita",  "last_name": "Deshmukh", "date_of_birth": "1958-04-25", "sex": "female", "phone": "+919881220055", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p9",  "patient_number": "P-0409", "first_name": "Tanvi",   "last_name": "Gokhale",  "date_of_birth": "2001-12-11", "sex": "female", "phone": "+917756441100", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p10", "patient_number": "P-0410", "first_name": "Imran",   "last_name": "Qureshi",  "date_of_birth": "1993-08-03", "sex": "male",   "phone": "+918806551122", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p11", "patient_number": "P-0411", "first_name": "Lakshmi", "last_name": "Venkatesh","date_of_birth": "1979-02-17", "sex": "female", "phone": "+917020334455", "city": "Ahmedabad", "preferred_location": "kp" },
+    { "key": "p12", "patient_number": "P-0412", "first_name": "Aditya",  "last_name": "Chavan",   "date_of_birth": "1990-06-29", "sex": "male",   "phone": "+918390667788", "city": "Ahmedabad", "preferred_location": "kp" }
   ],
 
   "patient_alerts": [
@@ -162,22 +156,22 @@
   ],
 
   "appointments": [
-    { "patient": "p1",  "provider": "ananya", "operatory": "kp1", "type": "consult",    "day_offset": 0, "start": "09:30", "status": "completed" },
+    { "patient": "p1",  "provider": "nimisha", "operatory": "kp1", "type": "consult",    "day_offset": 0, "start": "09:30", "status": "completed" },
     { "patient": "p2",  "provider": "priya",  "operatory": "kp3", "type": "perio",      "day_offset": 0, "start": "09:30", "status": "completed" },
     { "patient": "p3",  "provider": "vikram", "operatory": "kp2", "type": "filling",    "day_offset": 0, "start": "10:00", "status": "completed" },
-    { "patient": "p9",  "provider": "ananya", "operatory": "kp1", "type": "cleaning",   "day_offset": 0, "start": "10:15", "status": "seated" },
+    { "patient": "p9",  "provider": "nimisha", "operatory": "kp1", "type": "cleaning",   "day_offset": 0, "start": "10:15", "status": "seated" },
     { "patient": "p5",  "provider": "vikram", "operatory": "kp2", "type": "extraction", "day_offset": 0, "start": "11:00", "status": "arrived" },
     { "patient": "p6",  "provider": "priya",  "operatory": "kp3", "type": "cleaning",   "day_offset": 0, "start": "11:15", "status": "confirmed" },
-    { "patient": "p12", "provider": "ananya", "operatory": "kp1", "type": "rct",        "day_offset": 0, "start": "12:00", "status": "confirmed" },
-    { "patient": "p8",  "provider": "ananya", "operatory": "kp1", "type": "review",     "day_offset": 0, "start": "15:00", "status": "scheduled" },
+    { "patient": "p12", "provider": "nimisha", "operatory": "kp1", "type": "rct",        "day_offset": 0, "start": "12:00", "status": "confirmed" },
+    { "patient": "p8",  "provider": "nimisha", "operatory": "kp1", "type": "review",     "day_offset": 0, "start": "15:00", "status": "scheduled" },
     { "patient": "p11", "provider": "vikram", "operatory": "kp2", "type": "consult",    "day_offset": 0, "start": "15:30", "status": "scheduled" },
     { "patient": "p3",  "provider": "priya",  "operatory": "kp3", "type": "cleaning",   "day_offset": 0, "start": "16:00", "status": "scheduled" },
     { "patient": "p7",  "provider": "vikram", "operatory": "bn1", "type": "consult",    "day_offset": 1, "start": "10:00", "status": "scheduled" },
     { "patient": "p4",  "provider": "vikram", "operatory": "bn1", "type": "filling",    "day_offset": 1, "start": "11:00", "status": "scheduled" },
-    { "patient": "p1",  "provider": "ananya", "operatory": "kp1", "type": "filling",    "day_offset": 2, "start": "09:30", "status": "scheduled" },
-    { "patient": "p2",  "provider": "ananya", "operatory": "kp1", "type": "perio",      "day_offset": 3, "start": "10:30", "status": "scheduled" },
+    { "patient": "p1",  "provider": "nimisha", "operatory": "kp1", "type": "filling",    "day_offset": 2, "start": "09:30", "status": "scheduled" },
+    { "patient": "p2",  "provider": "nimisha", "operatory": "kp1", "type": "perio",      "day_offset": 3, "start": "10:30", "status": "scheduled" },
     { "patient": "p10", "provider": "vikram", "operatory": "bn2", "type": "consult",    "day_offset": -7, "start": "10:00", "status": "no_show" },
-    { "patient": "p12", "provider": "ananya", "operatory": "kp1", "type": "consult",    "day_offset": -14, "start": "11:30", "status": "completed" },
+    { "patient": "p12", "provider": "nimisha", "operatory": "kp1", "type": "consult",    "day_offset": -14, "start": "11:30", "status": "completed" },
     { "patient": "p2",  "provider": "priya",  "operatory": "kp3", "type": "perio",      "day_offset": -180, "start": "10:00", "status": "completed" }
   ],
 
@@ -198,19 +192,19 @@
   ],
 
   "charted_procedures": [
-    { "patient": "p1",  "code": "FILL-COMP", "tooth": "26", "surfaces": ["O"],      "status": "planned",  "provider": "ananya" },
-    { "patient": "p1",  "code": "FILL-COMP", "tooth": "36", "surfaces": ["M", "O"], "status": "planned",  "provider": "ananya" },
-    { "key": "p1-consult", "patient": "p1",  "code": "CONS-NEW",                                          "status": "invoiced", "provider": "ananya", "day_offset": 0 },
+    { "patient": "p1",  "code": "FILL-COMP", "tooth": "26", "surfaces": ["O"],      "status": "planned",  "provider": "nimisha" },
+    { "patient": "p1",  "code": "FILL-COMP", "tooth": "36", "surfaces": ["M", "O"], "status": "planned",  "provider": "nimisha" },
+    { "key": "p1-consult", "patient": "p1",  "code": "CONS-NEW",                                          "status": "invoiced", "provider": "nimisha", "day_offset": 0 },
     { "key": "p2-perio-exam", "patient": "p2",  "code": "PERIO-EXAM",                                        "status": "invoiced","provider": "priya",  "day_offset": -3 },
-    { "key": "p2-scale-ur", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UR",                       "status": "accepted", "provider": "ananya" },
-    { "key": "p2-scale-ul", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UL",                       "status": "accepted", "provider": "ananya" },
-    { "key": "p2-flap-ur", "patient": "p2",  "code": "PERIO-FLAP","quadrant": "UR",                       "status": "planned",  "provider": "ananya" },
-    { "key": "p2-crown-26", "patient": "p2",  "code": "CROWN-ZIR", "tooth": "26",                          "status": "planned",  "provider": "ananya", "note": "Replacement — margin recurrent caries" },
-    { "key": "p3-fill-14", "patient": "p3",  "code": "FILL-COMP", "tooth": "14", "surfaces": ["O", "D"],  "status": "invoiced","provider": "vikram", "day_offset": 0 },
+    { "key": "p2-scale-ur", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UR",                       "status": "accepted", "provider": "nimisha" },
+    { "key": "p2-scale-ul", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UL",                       "status": "accepted", "provider": "nimisha" },
+    { "key": "p2-flap-ur", "patient": "p2",  "code": "PERIO-FLAP","quadrant": "UR",                       "status": "planned",  "provider": "nimisha" },
+    { "key": "p2-crown-26", "patient": "p2",  "code": "CROWN-ZIR", "tooth": "26",                          "status": "planned",  "provider": "nimisha", "note": "Replacement — margin recurrent caries" },
+    { "key": "p3-fill-14", "patient": "p3",  "code": "FILL-COMP", "tooth": "14", "surfaces": ["O", "D"],  "status": "invoiced","provider": "nimisha", "day_offset": 0 },
     { "patient": "p5",  "code": "EXT-SURG",  "tooth": "48",                          "status": "scheduled","provider": "vikram" },
-    { "key": "p8-denture-lower", "patient": "p8",  "code": "DENT-COMP", "arch": "lower",                        "status": "planned",  "provider": "ananya" },
-    { "key": "p12-rct-21", "patient": "p12", "code": "RCT-ANT",   "tooth": "21",                          "status": "accepted", "provider": "ananya" },
-    { "key": "p12-crown-21", "patient": "p12", "code": "CROWN-ZIR", "tooth": "21",                          "status": "planned",  "provider": "ananya" }
+    { "key": "p8-denture-lower", "patient": "p8",  "code": "DENT-COMP", "arch": "lower",                        "status": "planned",  "provider": "nimisha" },
+    { "key": "p12-rct-21", "patient": "p12", "code": "RCT-ANT",   "tooth": "21",                          "status": "accepted", "provider": "nimisha" },
+    { "key": "p12-crown-21", "patient": "p12", "code": "CROWN-ZIR", "tooth": "21",                          "status": "planned",  "provider": "nimisha" }
   ],
 
   "treatment_plans": [
@@ -267,10 +261,10 @@
   "_site_tuple_format": "[pocket_depth, gingival_margin, bleeding_on_probing, suppuration, plaque]",
 
   "clinical_notes": [
-    { "patient": "p1", "provider": "ananya", "day_offset": 0, "signed": true, "body": "New patient. Chief complaint: sensitivity upper left on cold. O/E moderate occlusal caries 26, mesio-occlusal caries 36. No perio involvement. Advised composite restorations both. Allergy to penicillin noted and flagged." },
+    { "patient": "p1", "provider": "nimisha", "day_offset": 0, "signed": true, "body": "New patient. Chief complaint: sensitivity upper left on cold. O/E moderate occlusal caries 26, mesio-occlusal caries 36. No perio involvement. Advised composite restorations both. Allergy to penicillin noted and flagged." },
     { "patient": "p2", "provider": "priya",  "day_offset": 0, "signed": true, "body": "Full mouth perio charting completed. Generalised moderate chronic periodontitis, localised severe upper right. Grade II furcation 16 buccal. Compared against baseline exam: UR quadrant deteriorated 1-2mm despite home care advice. Diabetic — HbA1c 7.8. Referred to Dr Rao for quadrant SRP and possible flap surgery UR." },
     { "patient": "p3", "provider": "vikram", "day_offset": 0, "signed": true, "body": "Composite restoration 14 OD under LA. Uneventful. Occlusion checked and adjusted. Post-op instructions given." },
-    { "patient": "p12","provider": "ananya", "day_offset": -14, "signed": true, "body": "Trauma to 21, cricket ball injury 2 weeks prior. Enamel-dentine fracture mesio-incisal. Tooth tender to percussion, negative to cold. Diagnosis: pulp necrosis. RCT advised followed by zirconia crown. Patient consented to RCT today, crown to follow." }
+    { "patient": "p12","provider": "nimisha", "day_offset": -14, "signed": true, "body": "Trauma to 21, cricket ball injury 2 weeks prior. Enamel-dentine fracture mesio-incisal. Tooth tender to percussion, negative to cold. Diagnosis: pulp necrosis. RCT advised followed by zirconia crown. Patient consented to RCT today, crown to follow." }
   ],
 
   "invoices": [
@@ -297,7 +291,7 @@
       "sequence": 883,
       "lines": [{ "procedure": "p2-perio-exam" }],
       "payment": null,
-      "_note": "Unpaid, issued 3 days ago — drives the outstanding balance, and front desk (sneha) can't void it while a manager (ananya) can"
+      "_note": "Unpaid, issued 3 days ago — drives the outstanding balance, and front desk (sneha) can't void it while a manager (nimisha) can"
     }
   ]
 }

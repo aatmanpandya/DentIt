@@ -10,6 +10,10 @@ export const organizations = pgTable("organizations", {
   name: text("name").notNull(),
   gstRegistered: boolean("gst_registered").notNull().default(false),
   gstin: text("gstin"),
+  // Printed on invoices and the patient-facing plan page. A path under /public or a full URL.
+  logoUrl: text("logo_url"),
+  // Clinic contact email, printed on invoices.
+  email: text("email"),
   // Fee-schedule prices already include GST (the clinic quotes the patient one figure).
   // false = prices are before tax and GST is added on the invoice. See docs/specs/ledger.md.
   pricesIncludeTax: boolean("prices_include_tax").notNull().default(true),

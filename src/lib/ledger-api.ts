@@ -71,7 +71,9 @@ export interface InvoiceDetail extends Invoice {
   location: { id: string; name: string; address_line1: string | null; address_line2: string | null; city: string | null; state: string | null; postal_code: string | null; phone: string | null } | null;
   patient: { id: string; first_name: string; last_name: string; patient_number: string; phone: string };
   responsible_party: { full_name: string; relationship: string; phone: string } | null;
-  organization: { name: string; gst_registered: boolean; gstin: string | null; timezone: string };
+  organization: { name: string; gst_registered: boolean; gstin: string | null; timezone: string; logo_url: string | null; email: string | null };
+  providers: { full_name: string; qualification: string | null; registration_number: string | null }[];
+  payments: { amount: string; received_at: string; method: string; reference: string | null }[];
 }
 
 export interface OrganizationLedger {

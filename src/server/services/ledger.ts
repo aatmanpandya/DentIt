@@ -17,6 +17,8 @@ import {
   procedureCodes,
   responsibleParties,
   userLocationAccess,
+  users,
+  providerProfiles,
 } from "@/server/db/schema";
 import { assertCan, PermissionDeniedError } from "@/server/lib/permissions";
 import type { RequestActor } from "@/server/lib/request-auth";
@@ -719,14 +721,40 @@ export async function getInvoice(actor: RequestActor, invoiceId: string) {
       : null;
     const rows = await loadPatientLedgerRows(tx, actor, invoice.patientId);
     const state = computeLedgerState(rows);
+    // Reversed payments no longer count (docs/specs/ledger.md) — not even on a reprint.
+    const reversed = new Set(rows.reversals.map((r) => r.paymentId));
+    const allocations = rows.allocations.filter((a) => a.invoiceId === invoiceId && !reversed.has(a.paymentId));
+    const paymentById = new Map(rows.payments.map((p) => [p.id, p]));
+
+    // Treating dentist(s): the providers on the invoiced procedures, with their qualification
+    // and registration number when the clinic has recorded them.
+    const procedureIds = lines.flatMap((l) => (l.chartedProcedureId ? [l.chartedProcedureId] : []));
+    const providers = procedureIds.length
+      ? await tx
+          .selectDistinct({
+            fullName: users.fullName,
+            qualification: providerProfiles.qualification,
+            registrationNumber: providerProfiles.registrationNumber,
+          })
+          .from(chartedProcedures)
+          .innerJoin(users, eq(users.id, chartedProcedures.providerId))
+          .leftJoin(providerProfiles, eq(providerProfiles.userId, users.id))
+          .where(inArray(chartedProcedures.id, procedureIds))
+      : [];
+
     return {
       invoice,
       lines,
       location,
       patient,
       responsibleParty,
-      organization: { name: org.name, gstRegistered: org.gstRegistered, gstin: org.gstin, timezone: org.timezone },
-      allocations: rows.allocations.filter((a) => a.invoiceId === invoiceId),
+      providers,
+      organization: { name: org.name, gstRegistered: org.gstRegistered, gstin: org.gstin, timezone: org.timezone, logoUrl: org.logoUrl, email: org.email },
+      allocations,
+      payments: allocations.map((a) => {
+        const p = paymentById.get(a.paymentId);
+        return { amount: a.amount, receivedAt: p?.receivedAt ?? a.createdAt, method: p ? METHOD_LABEL[p.method] : "", reference: p?.reference ?? null };
+      }),
       adjustments: rows.adjustments.filter((a) => a.invoiceId === invoiceId),
       outstanding: invoice.status === "void" ? null : fromPaise(state.outstandingByInvoice.get(invoiceId) ?? 0),
     };

@@ -81,7 +81,16 @@ export function serializeInvoiceDetail(d: Awaited<ReturnType<typeof getInvoice>>
       ? { full_name: d.responsibleParty.fullName, relationship: d.responsibleParty.relationship, phone: d.responsibleParty.phone }
       : null,
     // Tax status as recorded on the invoice at issue, not the clinic's current setting.
-    organization: { name: d.organization.name, gst_registered: d.invoice.gstRegistered, gstin: d.invoice.gstin, timezone: d.organization.timezone },
+    organization: {
+      name: d.organization.name,
+      gst_registered: d.invoice.gstRegistered,
+      gstin: d.invoice.gstin,
+      timezone: d.organization.timezone,
+      logo_url: d.organization.logoUrl,
+      email: d.organization.email,
+    },
+    providers: d.providers.map((p) => ({ full_name: p.fullName, qualification: p.qualification, registration_number: p.registrationNumber })),
+    payments: d.payments.map((p) => ({ amount: p.amount, received_at: p.receivedAt.toISOString(), method: p.method, reference: p.reference })),
   };
 }
 

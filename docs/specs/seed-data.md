@@ -17,10 +17,10 @@ Three jobs, and they pull in different directions — this data set is tuned for
 
 | Entity | Count | Notes |
 |---|---|---|
-| Organization | 1 | Sunrise Dental Care, Pune. **Not GST-registered** — the common case |
-| Locations | 2 | Koregaon Park, Baner |
+| Organization | 1 | Suman Dental Care, Ahmedabad (the partner clinic's real name, address, phone, email and logo; `public/clinic-logos/`). **Not GST-registered** — the common case |
+| Locations | 1 | Ambawadi (the real clinic; it has one site, so no invented branch). Five operatories |
 | Operatories | 5 | Including a dedicated hygiene room |
-| Users | 6 | One per role: owner, provider, hygienist, front desk, assistant, accountant |
+| Users | 6 | One per role. The owner is Dr Nimisha Pandya, BDS (real; registration number not yet recorded). The other five are invented staff |
 | Procedure codes | 23 | Real Indian dental treatments at realistic ₹ prices |
 | Patients | 12 | |
 | Alerts | 7 | Allergies, diabetes, blood thinners |
