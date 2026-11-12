@@ -23,6 +23,8 @@ export const locations = pgTable("locations", {
   postalCode: text("postal_code"),
   phone: text("phone"),
   isActive: boolean("is_active").notNull().default(true),
+  // Lowest first. The pilot schedule shows only the first location, so 0 is the main site.
+  displayOrder: integer("display_order").notNull().default(0),
 });
 
 export const operatories = pgTable("operatories", {

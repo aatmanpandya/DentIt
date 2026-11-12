@@ -1,0 +1,52 @@
+# Bug log
+
+Every real bug hit while finishing the pilot, written when it happened. Newest last.
+Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
+
+---
+
+## 1. CI typecheck fails on `LayoutProps`, passes locally
+
+- **Symptom:** the first push of `main` (`6be1939`) failed GitHub Actions at `npm run typecheck`:
+  `src/app/layout.tsx(31,50): error TS2304: Cannot find name 'LayoutProps'`. Locally
+  `npm run typecheck` was clean and all 440 tests passed.
+- **How noticed:** `gh run list` showed the run red; the failing step was typecheck, before
+  lint and tests ran.
+- **What didn't work:** nothing was tried blind. Running `tsc --noEmit` again locally just
+  passed again, which is what pointed at environment rather than code.
+- **Root cause:** `LayoutProps` / `PageProps` / `RouteContext` are global types that Next 16
+  generates into `.next/types/` during `next dev`, `next build` or `next typegen`
+  (`node_modules/next/dist/docs/01-app/01-getting-started/03-layouts-and-pages.md`). This
+  machine has a `.next/` left over from running the dev server; a fresh CI checkout doesn't,
+  and `.next/` is gitignored. So the code depended on an artifact of having run the app once.
+- **Reproduced:** cloned the repo into a scratch directory (no `.next/`), ran `tsc --noEmit`:
+  same TS2304. Ran `next typegen` then `tsc --noEmit`: clean.
+- **Fix:** `"typecheck": "next typegen && tsc --noEmit"` in `package.json`, so the types are
+  always generated before checking, locally and in CI, with no workflow change.
+- **Commit:** `849987a`
+
+---
+
+## 2. Schedule opens on the wrong clinic, so "today" looks empty
+
+- **Symptom:** after re-seeding (so appointments land on today), `/schedule` still showed an
+  empty day. The database had 10 appointments today.
+- **How noticed:** browser walk. The network tab showed
+  `GET /api/v1/appointments?location_id=25aa…&date=2026-11-12 → 200` with nothing in it; a
+  query showed `25aa…` is **Baner**, while all 10 of today's appointments are at **Koregaon
+  Park**. So the handoff's "schedule is empty" had two causes: stale seed dates (fixed by
+  re-seeding; the seed was already relative to today) and this.
+- **Root cause:** the pilot schedule is single-location by design and takes
+  `listLocations()[0]`, commented as "the org's first active location". `listLocations`
+  sorted by **name**, so the branch "Baner" outranked the main site "Koregaon Park".
+- **What didn't work:** first fix ordered by `locations.createdAt`. Every test in the file
+  then failed with `PostgresError: syntax error at or near "asc"`. `locations` is one of the
+  few tables not built with `tenantColumns()` and has no `created_at`; Vitest doesn't
+  type-check, so `locations.createdAt` was `undefined` and drizzle emitted a bare `asc`.
+  `created_at` would have been the wrong fix anyway: adding it to existing rows gives them
+  all one timestamp, the tie falls back to name, and Baner wins again.
+- **Fix:** `locations.display_order` (migration `0008`), the same pattern `operatories`
+  already uses; `listLocations` orders by `display_order, name`; seed sets it from
+  mock-data order, so the first entry is the main site. Test: "orders locations by display
+  order, not alphabetically" (failed before, passes after). Existing databases get 0 for
+  every location until re-seeded or set.

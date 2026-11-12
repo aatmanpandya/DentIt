@@ -24,6 +24,9 @@ export class ProviderNotFoundError extends Error {
  * pilot-foundations.md §4 ("org_settings" is owner-only and would wrongly lock out
  * front desk/clinical roles from seeing where they can even book). These three readers
  * are gated on authentication only, the same tier procedure_codes reads sit at.
+ *
+ * Ordered by display_order: the pilot schedule shows only the first location, which must
+ * be the main site, not whichever branch sorts first by name.
  */
 export async function listLocations(actor: RequestActor) {
   return dbForRequest(actor.organizationId, async (tx) => {
@@ -31,7 +34,7 @@ export async function listLocations(actor: RequestActor) {
       .select()
       .from(locations)
       .where(and(eq(locations.organizationId, actor.organizationId), eq(locations.isActive, true)))
-      .orderBy(asc(locations.name));
+      .orderBy(asc(locations.displayOrder), asc(locations.name));
   });
 }
 

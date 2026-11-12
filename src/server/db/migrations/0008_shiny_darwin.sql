@@ -1,0 +1,1 @@
+ALTER TABLE "locations" ADD COLUMN "display_order" integer DEFAULT 0 NOT NULL;

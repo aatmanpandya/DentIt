@@ -85,10 +85,11 @@ async function main() {
 
   // --- locations & operatories ---
   const locationIds: Record<string, string> = {};
-  for (const loc of data.locations) {
+  for (const [index, loc] of data.locations.entries()) {
     const [row] = await adminDb.insert(locations).values({
       organizationId: org.id,
       name: loc.name,
+      displayOrder: index, // mock-data order: the first entry is the main site
       addressLine1: loc.address_line1,
       city: loc.city,
       state: loc.state,

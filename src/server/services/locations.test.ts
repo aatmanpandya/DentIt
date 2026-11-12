@@ -49,6 +49,21 @@ describe("listLocations", () => {
     expect(result.map((l) => l.name)).toEqual(["Sunrise Main"]);
   });
 
+  // The pilot schedule shows the org's first location only (schedule/page.tsx). "First" must
+  // mean the main clinic, not alphabetical, or a branch named "Baner" outranks the main
+  // "Koregaon Park" site and the schedule opens on the wrong clinic.
+  it("orders locations by display order, not alphabetically", async () => {
+    const { org, actor } = await createTestOrgAndActor("front_desk");
+    await adminDb.insert(locations).values([
+      { organizationId: org.id, name: "Koregaon Park", displayOrder: 0 },
+      { organizationId: org.id, name: "Baner", displayOrder: 1 },
+    ]);
+
+    const result = await listLocations(actor);
+
+    expect(result.map((l) => l.name)).toEqual(["Koregaon Park", "Baner"]);
+  });
+
   it("never returns another org's locations", async () => {
     const { actor } = await createTestOrgAndActor("front_desk");
     const [otherOrg] = await adminDb.insert(organizations).values({ name: "__locations_other_org" }).returning();
