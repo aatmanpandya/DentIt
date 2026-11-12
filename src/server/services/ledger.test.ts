@@ -25,6 +25,9 @@ import {
   IdempotencyKeyReusedError,
   AdjustmentInvalidError,
   ChargeReductionNotAllowedError,
+  reversePayment,
+  PaymentNotFoundError,
+  PaymentAlreadyReversedError,
 } from "./ledger";
 
 const TEST_ORG_NAME = "__ledger_service_test";
@@ -517,5 +520,78 @@ describe("tax status is recorded on the invoice at issue", () => {
     const proc = await completed(owner, patient.id, code.CROWN.id, { tooth: "46", snapshot: "12000.00" });
     const { invoice } = await createInvoice(owner, { patient_id: patient.id, location_id: location.id, charted_procedure_ids: [proc.id] });
     expect(invoice).toMatchObject({ gstRegistered: true, gstin: "27AAAAA0000A1Z5" });
+  });
+});
+
+// Reversing a payment recorded by mistake (docs/specs/ledger.md, "Reversing a payment").
+describe("reversePayment", () => {
+  afterEach(cleanup);
+
+  async function paidInvoice() {
+    const ctx = await setup();
+    const proc = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "36", snapshot: "1500.00" });
+    const { invoice } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [proc.id] });
+    const { payment } = await recordPayment(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, amount: "500.00", method: "upi", allocations: [{ invoice_id: invoice.id, amount: "500.00" }] });
+    return { ...ctx, invoice, payment };
+  }
+
+  it("takes the money back off the invoice and the balance, keeping the payment on record", async () => {
+    const { owner, patient, invoice, payment } = await paidInvoice();
+    expect((await getPatientLedger(owner, patient.id)).balance).toBe("1000.00");
+
+    await reversePayment(owner, payment.id, "Recorded against the wrong patient");
+
+    const ledger = await getPatientLedger(owner, patient.id);
+    expect(ledger.balance).toBe("1500.00");
+    expect(ledger.invoices.find((i) => i.invoice.id === invoice.id)).toMatchObject({ outstanding: "1500.00", paid: "0.00" });
+    expect(ledger.entries.map((e) => [e.kind, e.amount, e.balance])).toEqual([
+      ["invoice", "1500.00", "1500.00"],
+      ["payment", "-500.00", "1000.00"],
+      ["reversal", "500.00", "1500.00"],
+    ]);
+    // The payment row itself is untouched (append-only).
+    expect(await adminDb.select().from(payments).where(eq(payments.id, payment.id))).toHaveLength(1);
+  });
+
+  it("also undoes credit from that payment that was applied to another invoice", async () => {
+    const ctx = await setup();
+    const proc = await completed(ctx.owner, ctx.patient.id, ctx.code.FILL.id, { tooth: "36", snapshot: "1000.00" });
+    const { invoice } = await createInvoice(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, charted_procedure_ids: [proc.id] });
+    const { payment } = await recordPayment(ctx.owner, { patient_id: ctx.patient.id, location_id: ctx.location.id, amount: "1000.00", method: "cash" });
+    await applyCredit(ctx.owner, { patient_id: ctx.patient.id, invoice_id: invoice.id, amount: "1000.00" });
+    expect((await getInvoice(ctx.owner, invoice.id)).outstanding).toBe("0.00");
+
+    await reversePayment(ctx.owner, payment.id, "Cheque bounced");
+
+    expect((await getInvoice(ctx.owner, invoice.id)).outstanding).toBe("1000.00");
+    expect((await getPatientLedger(ctx.owner, ctx.patient.id)).credit).toBe("0.00");
+  });
+
+  it("can't reverse the same payment twice", async () => {
+    const { owner, payment } = await paidInvoice();
+    await reversePayment(owner, payment.id, "Mistake");
+    await expect(reversePayment(owner, payment.id, "Again")).rejects.toThrow(PaymentAlreadyReversedError);
+  });
+
+  it("lets front desk reverse only on the day the money was received; managers any day", async () => {
+    const { owner, frontDesk, provider, payment } = await paidInvoice();
+    await expect(reversePayment(provider, payment.id, "x")).rejects.toThrow(PermissionDeniedError);
+    // Age the payment through the admin connection (the app role can't update payments).
+    await adminDb.update(payments).set({ receivedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }).where(eq(payments.id, payment.id));
+    await expect(reversePayment(frontDesk, payment.id, "Late")).rejects.toThrow(ChargeReductionNotAllowedError);
+    await expect(reversePayment(owner, payment.id, "Late")).resolves.toBeTruthy();
+  });
+
+  it("refuses another organisation's payment", async () => {
+    const a = await paidInvoice();
+    const b = await setup();
+    await expect(reversePayment(b.owner, a.payment.id, "Not mine")).rejects.toThrow(PaymentNotFoundError);
+  });
+
+  it("keeps the org ledger in step", async () => {
+    const { owner, patient, payment } = await paidInvoice();
+    await reversePayment(owner, payment.id, "Mistake");
+    const org = await getOrganizationLedger(owner);
+    expect(org.balances.find((b) => b.patientId === patient.id)?.balance).toBe("1500.00");
   });
 });

@@ -78,6 +78,13 @@
       "when": 1794502698017,
       "tag": "0010_unknown_electro",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794504648097,
+      "tag": "0011_orange_genesis",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { dbForRequest } from "@/server/db/tenant";
-import { adjustments, invoices, paymentAllocations, payments } from "@/server/db/schema";
+import { adjustments, invoices, paymentAllocations, paymentReversals, payments } from "@/server/db/schema";
 import type { RequestActor } from "@/server/lib/request-auth";
 import { toPaise } from "@/server/lib/money";
 
@@ -18,6 +18,7 @@ export interface LedgerRows {
   allocations: (typeof paymentAllocations.$inferSelect)[];
   adjustments: (typeof adjustments.$inferSelect)[];
   payments: (typeof payments.$inferSelect)[];
+  reversals: (typeof paymentReversals.$inferSelect)[];
 }
 
 export interface LedgerState {
@@ -43,13 +44,18 @@ export function computeLedgerState(rows: LedgerRows): LedgerState {
     outstandingByInvoice.set(adj.invoiceId, (outstandingByInvoice.get(adj.invoiceId) ?? 0) + toPaise(adj.amount));
     owed += toPaise(adj.amount);
   }
-  const creditByPayment = new Map<string, number>(rows.payments.map((p) => [p.id, toPaise(p.amount)]));
+  // A reversed payment no longer counts at all: not as paid, not as credit, and none of its
+  // allocations pay anything down (docs/specs/ledger.md, "Reversing a payment").
+  const reversed = new Set(rows.reversals.map((r) => r.paymentId));
+  const livePayments = rows.payments.filter((p) => !reversed.has(p.id));
+  const creditByPayment = new Map<string, number>(livePayments.map((p) => [p.id, toPaise(p.amount)]));
   for (const alloc of rows.allocations) {
+    if (reversed.has(alloc.paymentId)) continue;
     if (!live.has(alloc.invoiceId)) continue; // allocations to a void invoice turn back into credit
     outstandingByInvoice.set(alloc.invoiceId, (outstandingByInvoice.get(alloc.invoiceId) ?? 0) - toPaise(alloc.amount));
     creditByPayment.set(alloc.paymentId, (creditByPayment.get(alloc.paymentId) ?? 0) - toPaise(alloc.amount));
   }
-  const paid = rows.payments.reduce((sum, p) => sum + toPaise(p.amount), 0);
+  const paid = livePayments.reduce((sum, p) => sum + toPaise(p.amount), 0);
   const credit = [...creditByPayment.values()].reduce((sum, c) => sum + c, 0);
   return { outstandingByInvoice, creditByPayment, owed, paid, balance: owed - paid, credit };
 }
@@ -71,6 +77,9 @@ export async function loadPatientLedgerRows(tx: Tx, actor: RequestActor, patient
   const adjustmentRows = invoiceIds.length
     ? await tx.select().from(adjustments).where(inArray(adjustments.invoiceId, invoiceIds))
     : [];
-  return { invoices: invoiceRows, allocations: allocationRows, adjustments: adjustmentRows, payments: paymentRows };
+  const reversalRows = paymentIds.length
+    ? await tx.select().from(paymentReversals).where(inArray(paymentReversals.paymentId, paymentIds))
+    : [];
+  return { invoices: invoiceRows, allocations: allocationRows, adjustments: adjustmentRows, payments: paymentRows, reversals: reversalRows };
 }
 

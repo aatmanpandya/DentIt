@@ -49,3 +49,7 @@ export const suggestLocationQuerySchema = z.object({
     .transform((v) => (v ? v.split(",").filter(Boolean) : []))
     .pipe(z.array(z.string().uuid())),
 });
+
+export const reversePaymentSchema = z.object({
+  reason: z.string().trim().min(1, "Give a reason for reversing this payment."),
+});

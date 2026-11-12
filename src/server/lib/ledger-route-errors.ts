@@ -14,6 +14,8 @@ import {
   IdempotencyKeyReusedError,
   AdjustmentInvalidError,
   ChargeReductionNotAllowedError,
+  PaymentNotFoundError,
+  PaymentAlreadyReversedError,
 } from "@/server/services/ledger";
 
 /**
@@ -25,7 +27,8 @@ export function ledgerErrorResponse(err: unknown): NextResponse | null {
   if (err instanceof SessionExpiredError) return errorResponse(401, "AUTH_SESSION_IDLE_TIMEOUT", err.message);
   if (err instanceof PermissionDeniedError) return errorResponse(403, "PERMISSION_DENIED", "You don't have permission to do that in the ledger.");
   if (err instanceof ChargeReductionNotAllowedError) return errorResponse(403, "PERMISSION_DENIED", err.message);
-  if (err instanceof InvoiceNotFoundError || err instanceof PatientNotFoundError || err instanceof LocationNotFoundError) {
+  if (err instanceof PaymentAlreadyReversedError) return errorResponse(422, "PAYMENT_ALREADY_REVERSED", err.message);
+  if (err instanceof InvoiceNotFoundError || err instanceof PatientNotFoundError || err instanceof LocationNotFoundError || err instanceof PaymentNotFoundError) {
     return errorResponse(404, "NOT_FOUND", err.message);
   }
   if (err instanceof ProcedureNotInvoiceableError) return errorResponse(422, "PROCEDURE_NOT_INVOICEABLE", err.message);

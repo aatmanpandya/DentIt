@@ -8,7 +8,7 @@ import clsx from "clsx";
 import { Printer, Receipt } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
-import { createAdjustment, getPatientLedger, voidInvoice, type Invoice } from "@/lib/ledger-api";
+import { createAdjustment, getPatientLedger, reversePayment, voidInvoice, type Invoice, type LedgerEntry } from "@/lib/ledger-api";
 import { formatRupees, fromPaise, toPaise } from "@/lib/format-money";
 import { CreateInvoicePanel } from "@/components/ledger/create-invoice-panel";
 import { RecordPaymentPanel } from "@/components/ledger/record-payment-panel";
@@ -55,12 +55,15 @@ export default function PatientLedgerPage() {
     queryClient.invalidateQueries({ queryKey: ["invoice"] });
   }
 
-  // Same rule as the service: managers any day, front desk only on the issue day.
-  function reduceBlockedReason(invoice: Invoice): string | null {
-    if (!user || !canWrite) return "You don't have permission to change invoices.";
+  // Same rule as the service: managers any day, front desk only on the day it was recorded.
+  function changeBlockedReason(recordedAt: string, earlierDayMessage: string): string | null {
+    if (!user || !canWrite) return "You don't have permission to change the ledger.";
     if (MANAGER_ROLES.has(user.role)) return null;
-    if (dayIn(invoice.issued_at, timeZone) === dayIn(new Date(), timeZone)) return null;
-    return "Invoices from earlier days can only be changed by a manager.";
+    if (dayIn(recordedAt, timeZone) === dayIn(new Date(), timeZone)) return null;
+    return earlierDayMessage;
+  }
+  function reduceBlockedReason(invoice: Invoice): string | null {
+    return changeBlockedReason(invoice.issued_at, "Invoices from earlier days can only be changed by a manager.");
   }
 
   const balancePaise = ledger ? toPaise(ledger.balance) : 0;
@@ -126,16 +129,18 @@ export default function PatientLedgerPage() {
                     <th className="py-1.5 font-medium">Entry</th>
                     <th className="py-1.5 text-right font-medium">Amount</th>
                     <th className="py-1.5 text-right font-medium">Balance</th>
+                    <th className="w-20 py-1.5" aria-label="Actions" />
                   </tr>
                 </thead>
                 <tbody>
                   {ledger.entries.map((e) => (
-                    <tr key={e.id} className="border-b border-rule last:border-b-0">
-                      <td className="py-1.5 font-data text-ink-soft">{dateLabel(e.at)}</td>
-                      <td className="py-1.5 text-ink">{e.label}</td>
-                      <td className={clsx("py-1.5 text-right font-data", e.amount.startsWith("-") ? "text-healthy" : "text-ink")}>{formatRupees(e.amount)}</td>
-                      <td className="py-1.5 text-right font-data text-ink">{formatRupees(e.balance)}</td>
-                    </tr>
+                    <ActivityRow
+                      key={e.id}
+                      entry={e}
+                      // Same rule as voids: managers any day, front desk only on the day it was received.
+                      reverseBlockedReason={e.kind === "payment" ? changeBlockedReason(e.at, "Payments from earlier days can only be reversed by a manager.") : null}
+                      onChanged={refresh}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -297,5 +302,81 @@ function InvoiceRow({
         </div>
       )}
     </li>
+  );
+}
+
+/**
+ * One line of the Activity list. Payments carry a "Reverse" action for money recorded by
+ * mistake; reversing is irreversible, so it asks for a reason inline (ui-design.md). A
+ * reversed payment stays listed, struck through, next to its "Payment reversed" entry.
+ */
+function ActivityRow({ entry, reverseBlockedReason, onChanged }: { entry: LedgerEntry; reverseBlockedReason: string | null; onChanged: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [reason, setReason] = useState("");
+  const mutation = useMutation({
+    mutationFn: () => reversePayment(entry.id, reason.trim()),
+    onSuccess: () => {
+      setConfirming(false);
+      setReason("");
+      onChanged();
+    },
+  });
+  const canReverse = entry.kind === "payment" && !entry.reversed;
+
+  return (
+    <>
+      <tr className="border-b border-rule last:border-b-0">
+        <td className="py-1.5 font-data text-ink-soft">{dateLabel(entry.at)}</td>
+        <td className={clsx("py-1.5 text-ink", entry.reversed && "text-ink-soft line-through")}>{entry.label}</td>
+        <td className={clsx("py-1.5 text-right font-data", entry.amount.startsWith("-") ? "text-healthy" : "text-ink")}>{formatRupees(entry.amount)}</td>
+        <td className="py-1.5 text-right font-data text-ink">{formatRupees(entry.balance)}</td>
+        <td className="py-1.5 text-right">
+          {canReverse && !confirming && (
+            <button
+              type="button"
+              disabled={!!reverseBlockedReason}
+              title={reverseBlockedReason ?? undefined}
+              onClick={() => setConfirming(true)}
+              className="text-[12px] text-bleed hover:underline disabled:cursor-not-allowed disabled:text-ink-soft disabled:no-underline"
+            >
+              Reverse
+            </button>
+          )}
+        </td>
+      </tr>
+      {confirming && (
+        <tr className="border-b border-rule">
+          <td colSpan={5} className="py-2">
+            <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-rule bg-surface p-2.5">
+              <p className="text-[12px] text-ink">
+                Reversing takes this {formatRupees(entry.amount.replace("-", ""))} back off the ledger — anything it paid becomes due again.
+                The payment stays on record. This can&apos;t be undone.
+              </p>
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason (required) — e.g. recorded against the wrong patient"
+                className="h-7 rounded-[var(--radius)] border border-rule bg-surface px-2 text-[12px] text-ink outline-none focus-visible:border-steel"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={!reason.trim() || mutation.isPending}
+                  onClick={() => mutation.mutate()}
+                  className="h-7 rounded-[var(--radius)] bg-bleed px-3 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  Reverse payment
+                </button>
+                <button type="button" onClick={() => setConfirming(false)} className="h-7 px-2 text-[12px] text-ink-soft">
+                  Keep payment
+                </button>
+              </div>
+              {mutation.isError && <p className="text-[12px] text-bleed">{(mutation.error as Error).message}</p>}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

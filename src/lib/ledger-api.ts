@@ -31,13 +31,14 @@ export interface InvoiceLine {
 }
 
 export interface LedgerEntry {
-  kind: "invoice" | "void" | "payment" | "adjustment";
+  kind: "invoice" | "void" | "payment" | "adjustment" | "reversal";
   at: string;
   id: string;
   label: string;
   amount: string;
   balance: string;
   invoice_id: string | null;
+  reversed: boolean; // payment entries: already reversed
 }
 
 export interface PatientLedger {
@@ -110,4 +111,8 @@ export function applyCredit(input: { patient_id: string; invoice_id: string; amo
 
 export function createAdjustment(input: { invoice_id: string; amount: string; adjustment_type: "discount" | "writeoff" | "correction"; reason: string }) {
   return apiFetch("/adjustments", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function reversePayment(id: string, reason: string) {
+  return apiFetch(`/payments/${id}/reverse`, { method: "POST", body: JSON.stringify({ reason }) });
 }

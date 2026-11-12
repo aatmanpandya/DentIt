@@ -120,3 +120,22 @@ export const invoiceNumberCounters = pgTable(
   },
   (t) => [uniqueIndex("invoice_number_counters_org_year_idx").on(t.organizationId, t.year)],
 );
+
+// A payment recorded by mistake (wrong patient, wrong amount, never received) is reversed,
+// never edited or deleted: one row here cancels it. The payment row stays as it was, so the
+// ledger still shows what was recorded and when it was taken back. docs/specs/ledger.md.
+export const paymentReversals = pgTable(
+  "payment_reversals",
+  {
+    ...tenantColumns(),
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => payments.id),
+    reason: text("reason").notNull(),
+    reversedAt: timestamp("reversed_at", { withTimezone: true }).notNull(),
+    reversedBy: uuid("reversed_by")
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [uniqueIndex("payment_reversals_payment_idx").on(t.paymentId)],
+);

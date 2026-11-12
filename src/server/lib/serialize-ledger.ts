@@ -86,7 +86,7 @@ export function serializeInvoiceDetail(d: Awaited<ReturnType<typeof getInvoice>>
 }
 
 function serializeEntry(e: LedgerEntry) {
-  return { kind: e.kind, at: e.at.toISOString(), id: e.id, label: e.label, amount: e.amount, balance: e.balance, invoice_id: e.invoiceId };
+  return { kind: e.kind, at: e.at.toISOString(), id: e.id, label: e.label, amount: e.amount, balance: e.balance, invoice_id: e.invoiceId, reversed: e.reversed ?? false };
 }
 
 export function serializePatientLedger(l: Awaited<ReturnType<typeof getPatientLedger>>) {

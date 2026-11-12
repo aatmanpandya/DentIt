@@ -60,7 +60,7 @@ revoke update, delete on audit_log from dentit_app;
 -- The ledger is append-only (docs/specs/ledger.md): enforced here, not just by the absence
 -- of PATCH/DELETE routes. Invoices keep UPDATE because voiding sets status/voided_at on the
 -- row; nothing in the ledger is ever deleted.
-revoke update, delete on invoice_lines, payments, payment_allocations, adjustments from dentit_app;
+revoke update, delete on invoice_lines, payments, payment_allocations, adjustments, payment_reversals from dentit_app;
 revoke delete on invoices from dentit_app;
 
 -- user_location_access has no organization_id (it's keyed by user + location), so the loop

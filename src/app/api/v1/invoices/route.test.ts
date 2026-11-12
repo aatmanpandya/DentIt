@@ -9,6 +9,7 @@ import { POST as createInvoiceRoute } from "./route";
 import { GET as getInvoiceRoute } from "./[id]/route";
 import { POST as voidRoute } from "./[id]/void/route";
 import { POST as paymentRoute } from "../payments/route";
+import { POST as reverseRoute } from "../payments/[id]/reverse/route";
 import { GET as patientLedgerRoute } from "../patients/[id]/ledger/route";
 
 const ORG_NAME = "__ledger_routes_test";
@@ -55,6 +56,19 @@ describe("ledger routes", () => {
     const { token, location, patient } = await setup();
     const res = await paymentRoute(json("http://localhost/api/v1/payments", token, { patient_id: patient.id, location_id: location.id, amount: "123456789", method: "cash" }));
     expect(res.status).toBe(422);
+  });
+
+  it("reverses a payment (201) and refuses a second reversal (422)", async () => {
+    const { token, location, patient } = await setup();
+    const paid = await paymentRoute(json("http://localhost/api/v1/payments", token, { patient_id: patient.id, location_id: location.id, amount: "500.00", method: "upi" }));
+    const paymentId = (await paid.json()).id;
+    const ctx = { params: Promise.resolve({ id: paymentId }) };
+
+    const first = await reverseRoute(json(`http://localhost/api/v1/payments/${paymentId}/reverse`, token, { reason: "Wrong patient" }), ctx);
+    expect(first.status).toBe(201);
+    const second = await reverseRoute(json(`http://localhost/api/v1/payments/${paymentId}/reverse`, token, { reason: "Again" }), ctx);
+    expect(second.status).toBe(422);
+    expect((await second.json()).error.code).toBe("PAYMENT_ALREADY_REVERSED");
   });
 
   it("401s without a token", async () => {

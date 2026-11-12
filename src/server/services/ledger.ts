@@ -11,6 +11,7 @@ import {
   locations,
   organizations,
   paymentAllocations,
+  paymentReversals,
   payments,
   patients,
   procedureCodes,
@@ -89,13 +90,29 @@ export class AdjustmentInvalidError extends Error {
   }
 }
 
+export class PaymentNotFoundError extends Error {
+  constructor() {
+    super("Payment not found.");
+    this.name = "PaymentNotFoundError";
+  }
+}
+
+export class PaymentAlreadyReversedError extends Error {
+  constructor() {
+    super("This payment has already been reversed.");
+    this.name = "PaymentAlreadyReversedError";
+  }
+}
+
 /** Front desk voiding/adjusting an invoice from an earlier day. A 403 at the route. */
 export class ChargeReductionNotAllowedError extends Error {
-  constructor(action: "void" | "adjust") {
+  constructor(action: "void" | "adjust" | "reverse") {
     super(
       action === "void"
         ? "Invoices from earlier days can only be voided by a manager."
-        : "Invoices from earlier days can only be adjusted by a manager.",
+        : action === "adjust"
+          ? "Invoices from earlier days can only be adjusted by a manager."
+          : "Payments from earlier days can only be reversed by a manager.",
     );
     this.name = "ChargeReductionNotAllowedError";
   }
@@ -154,9 +171,14 @@ function auditContext(actor: RequestActor) {
  * docs/specs/ledger.md, "Who can do what".
  */
 function assertCanReduceCharge(actor: RequestActor, invoice: typeof invoices.$inferSelect, timeZone: string, action: "void" | "adjust") {
+  assertCanChangeMoneyRecord(actor, invoice.issuedAt, timeZone, action);
+}
+
+/** One rule for voids, adjustments and payment reversals: managers any day, front desk same day. */
+function assertCanChangeMoneyRecord(actor: RequestActor, recordedAt: Date, timeZone: string, action: "void" | "adjust" | "reverse") {
   assertCan(actor.role, "invoices_payments", "write");
   if (actor.role === "owner" || actor.role === "admin" || actor.role === "accountant") return;
-  if (actor.role === "front_desk" && zonedDateString(invoice.issuedAt, timeZone) === zonedDateString(new Date(), timeZone)) return;
+  if (actor.role === "front_desk" && zonedDateString(recordedAt, timeZone) === zonedDateString(new Date(), timeZone)) return;
   throw new ChargeReductionNotAllowedError(action);
 }
 
@@ -591,6 +613,46 @@ export async function applyCredit(actor: RequestActor, input: { patient_id: stri
   });
 }
 
+// --- reversing a payment ---
+
+/**
+ * Takes back a payment recorded by mistake (wrong patient, wrong amount, a bounced cheque).
+ * Append-only: a payment_reversals row cancels it; the payment row is never touched. The
+ * balance logic then ignores the payment and all of its allocations. docs/specs/ledger.md.
+ */
+export async function reversePayment(actor: RequestActor, paymentId: string, reason: string) {
+  assertCan(actor.role, "invoices_payments", "write");
+  return dbForRequest(actor.organizationId, async (tx) => {
+    const [unlocked] = await tx
+      .select()
+      .from(payments)
+      .where(and(eq(payments.id, paymentId), eq(payments.organizationId, actor.organizationId), isNull(payments.deletedAt)))
+      .limit(1);
+    if (!unlocked) throw new PaymentNotFoundError();
+    await requirePatient(tx, actor, unlocked.patientId, { lock: true });
+    const org = await loadOrganization(tx, actor);
+    assertCanChangeMoneyRecord(actor, unlocked.receivedAt, org.timezone, "reverse");
+
+    const [already] = await tx.select().from(paymentReversals).where(eq(paymentReversals.paymentId, paymentId)).limit(1);
+    if (already) throw new PaymentAlreadyReversedError();
+
+    const [reversal] = await tx
+      .insert(paymentReversals)
+      .values({
+        organizationId: actor.organizationId,
+        paymentId,
+        reason,
+        reversedAt: new Date(), // app clock, like every other ledger timestamp (bug-log entry 7)
+        reversedBy: actor.userId,
+        createdBy: actor.userId,
+      })
+      .returning();
+
+    await writeAudit(tx, auditContext(actor), { entityType: "payment", entityId: paymentId, action: "void", before: unlocked, after: reversal });
+    return reversal;
+  });
+}
+
 // --- adjustments ---
 
 export interface CreateAdjustmentInput {
@@ -680,7 +742,7 @@ const METHOD_LABEL: Record<(typeof payments.$inferSelect)["method"], string> = {
   other: "Other",
 };
 
-export type LedgerEntryKind = "invoice" | "void" | "payment" | "adjustment";
+export type LedgerEntryKind = "invoice" | "void" | "payment" | "adjustment" | "reversal";
 
 export interface LedgerEntry {
   kind: LedgerEntryKind;
@@ -690,6 +752,8 @@ export interface LedgerEntry {
   amount: string; // signed effect on the balance
   balance: string; // running balance after this entry
   invoiceId: string | null;
+  /** On a payment entry: whether it has since been reversed (the UI hides "Reverse"). */
+  reversed?: boolean;
 }
 
 /** Patient Ledger tab: date-ordered entries with a running balance, plus open invoices and credit. */
@@ -712,11 +776,16 @@ export async function getPatientLedger(actor: RequestActor, patientId: string) {
     for (const adj of rows.adjustments) {
       raw.push({ kind: "adjustment", at: adj.createdAt, id: adj.id, label: `${adj.adjustmentType} on ${invoiceById.get(adj.invoiceId)?.invoiceNumber ?? ""} — ${adj.reason}`, amount: adj.amount, invoiceId: adj.invoiceId });
     }
+    const reversalByPayment = new Map(rows.reversals.map((r) => [r.paymentId, r]));
     for (const p of rows.payments) {
-      raw.push({ kind: "payment", at: p.receivedAt, id: p.id, label: `Payment · ${METHOD_LABEL[p.method]}${p.reference ? ` · ${p.reference}` : ""}`, amount: fromPaise(-toPaise(p.amount)), invoiceId: null });
+      raw.push({ kind: "payment", at: p.receivedAt, id: p.id, label: `Payment · ${METHOD_LABEL[p.method]}${p.reference ? ` · ${p.reference}` : ""}`, amount: fromPaise(-toPaise(p.amount)), invoiceId: null, reversed: reversalByPayment.has(p.id) });
+      const reversal = reversalByPayment.get(p.id);
+      if (reversal) {
+        raw.push({ kind: "reversal", at: reversal.reversedAt, id: reversal.id, label: `Payment reversed (${METHOD_LABEL[p.method]} ₹${p.amount}) — ${reversal.reason}`, amount: p.amount, invoiceId: null });
+      }
     }
     // Ties (same instant, e.g. seeded rows) keep a stable, readable order: charges before payments.
-    const order: Record<LedgerEntryKind, number> = { invoice: 0, adjustment: 1, void: 2, payment: 3 };
+    const order: Record<LedgerEntryKind, number> = { invoice: 0, adjustment: 1, void: 2, payment: 3, reversal: 4 };
     raw.sort((a, b) => a.at.getTime() - b.at.getTime() || order[a.kind] - order[b.kind]);
 
     let running = 0;
@@ -734,7 +803,11 @@ export async function getPatientLedger(actor: RequestActor, patientId: string) {
           outstanding: inv.status === "void" ? null : fromPaise(state.outstandingByInvoice.get(inv.id) ?? 0),
           // Money actually allocated to it — what moves to credit if it's voided. Not
           // total − outstanding, which counts discounts as payments (bug-log entry 14).
-          paid: fromPaise(rows.allocations.filter((a) => a.invoiceId === inv.id).reduce((sum, a) => sum + toPaise(a.amount), 0)),
+          paid: fromPaise(
+            rows.allocations
+              .filter((a) => a.invoiceId === inv.id && !reversalByPayment.has(a.paymentId))
+              .reduce((sum, a) => sum + toPaise(a.amount), 0),
+          ),
         })),
       balance: fromPaise(state.balance),
       credit: fromPaise(state.credit),
@@ -759,11 +832,12 @@ export async function getOrganizationLedger(actor: RequestActor) {
 
     // Pilot scale (one clinic, hundreds of rows): compute every patient's balance in memory
     // through the same computeLedgerState the patient tab uses.
-    const [allInvoices, allPayments, allAllocations, allAdjustments] = await Promise.all([
+    const [allInvoices, allPayments, allAllocations, allAdjustments, allReversals] = await Promise.all([
       tx.select().from(invoices).where(and(eq(invoices.organizationId, actor.organizationId), isNull(invoices.deletedAt))),
       tx.select().from(payments).where(and(eq(payments.organizationId, actor.organizationId), isNull(payments.deletedAt))),
       tx.select().from(paymentAllocations).where(eq(paymentAllocations.organizationId, actor.organizationId)),
       tx.select().from(adjustments).where(eq(adjustments.organizationId, actor.organizationId)),
+      tx.select().from(paymentReversals).where(eq(paymentReversals.organizationId, actor.organizationId)),
     ]);
     const patientIds = [...new Set([...allInvoices.map((i) => i.patientId), ...allPayments.map((p) => p.patientId)])];
     const invoicePatient = new Map(allInvoices.map((i) => [i.id, i.patientId]));
@@ -776,6 +850,7 @@ export async function getOrganizationLedger(actor: RequestActor) {
         payments: allPayments.filter((p) => p.patientId === patientId),
         allocations: allAllocations.filter((a) => paymentPatient.get(a.paymentId) === patientId),
         adjustments: allAdjustments.filter((a) => invoicePatient.get(a.invoiceId) === patientId),
+        reversals: allReversals.filter((r) => paymentPatient.get(r.paymentId) === patientId),
       });
       if (state.balance !== 0) balances.push({ patientId, balance: fromPaise(state.balance), credit: fromPaise(state.credit) });
     }

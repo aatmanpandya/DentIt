@@ -117,6 +117,21 @@ counter past the seeded invoices.
   allocation rows against the patient's payments that have credit, oldest first. The Record
   payment panel offers it when the patient has credit.
 
+## Reversing a payment
+
+`POST /payments/:id/reverse { reason }`. Added 12 Nov after the first real use: a payment
+recorded against the wrong patient or for the wrong amount had no way back, since the ledger
+is append-only and `rls.sql` refuses UPDATE/DELETE on payments.
+
+- A reversal is a new row in `payment_reversals` (one per payment, reason required). The
+  payment row is untouched.
+- A reversed payment no longer counts: it drops out of `paid`, its allocations stop paying
+  down invoices (including allocations made by "apply credit"), and its unallocated credit
+  disappears. The ledger keeps the payment entry and adds a "Payment reversed" entry, so the
+  running balance shows both.
+- Same permission rule as voids and adjustments: managers any time; front desk only on the
+  IST day the money was received. Already reversed: `PAYMENT_ALREADY_REVERSED` (422). Audited.
+
 ## Adjustments
 
 `POST /adjustments { invoice_id, amount, adjustment_type, reason }`. Signed amount (a discount or

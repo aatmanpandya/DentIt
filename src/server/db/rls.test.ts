@@ -56,7 +56,7 @@ describe("Row-level security enforcement", () => {
       select table_name, privilege_type from information_schema.role_table_grants
       where grantee = 'dentit_app'
         and (
-          (table_name in ('invoice_lines', 'payments', 'payment_allocations', 'adjustments')
+          (table_name in ('invoice_lines', 'payments', 'payment_allocations', 'adjustments', 'payment_reversals')
             and privilege_type in ('UPDATE', 'DELETE'))
           or (table_name = 'invoices' and privilege_type = 'DELETE')
         )
