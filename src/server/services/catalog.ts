@@ -1,6 +1,7 @@
-import { eq, and, isNull, gt, gte, lte, or, ilike, sql } from "drizzle-orm";
+import { eq, and, isNull, gt, gte, lte, or, ilike, sql, inArray } from "drizzle-orm";
 import { dbForRequest } from "@/server/db/tenant";
-import { procedureCodes, feeSchedules, feeScheduleItems } from "@/server/db/schema";
+import { procedureCodes, feeSchedules, feeScheduleItems, organizations } from "@/server/db/schema";
+import { zonedDateString } from "@/server/lib/timezone";
 import { assertCan } from "@/server/lib/permissions";
 import { writeAudit } from "./audit";
 import type { RequestActor } from "@/server/lib/request-auth";
@@ -372,7 +373,9 @@ export interface GetPricingInput {
  * shared computation.
  */
 export async function resolvePrice(tx: Tx, actor: RequestActor, input: GetPricingInput) {
-  const onDate = input.on_date ?? new Date().toISOString().slice(0, 10);
+  // "Today" in the clinic's timezone, not UTC: between 00:00 and 05:30 IST the UTC date is
+  // still yesterday (docs/bug-log.md entry 27).
+  const onDate = input.on_date ?? (await orgToday(tx, actor));
   const effectiveToCondition = or(isNull(feeSchedules.effectiveTo), gte(feeSchedules.effectiveTo, onDate));
 
   const candidates = await tx
@@ -387,25 +390,37 @@ export async function resolvePrice(tx: Tx, actor: RequestActor, input: GetPricin
       ),
     );
 
-  const locationMatch = input.location_id ? candidates.filter((c) => c.locationId === input.location_id) : [];
-  const orgWide = candidates.filter((c) => c.locationId === null);
-  const pool = locationMatch.length > 0 ? locationMatch : orgWide;
-  const chosen =
-    pool.find((c) => c.isDefault) ??
-    [...pool].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
+  // Preference order: this location's schedules, then org-wide ones; within each, the
+  // default first, then newest. The first schedule that actually prices the code wins — a
+  // location schedule listing a handful of codes must not hide the org-wide price for the
+  // rest (docs/bug-log.md entry 24).
+  const ordered = (pool: typeof candidates) =>
+    [...pool].sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || b.effectiveFrom.localeCompare(a.effectiveFrom));
+  const preference = [
+    ...(input.location_id ? ordered(candidates.filter((c) => c.locationId === input.location_id)) : []),
+    ...ordered(candidates.filter((c) => c.locationId === null)),
+  ];
+  if (preference.length === 0) throw new FeeScheduleNoPriceError();
 
-  if (!chosen) throw new FeeScheduleNoPriceError();
-
-  const [item] = await tx
+  const items = await tx
     .select()
     .from(feeScheduleItems)
     .where(
-      and(eq(feeScheduleItems.feeScheduleId, chosen.id), eq(feeScheduleItems.procedureCodeId, input.procedure_code_id)),
-    )
-    .limit(1);
-  if (!item) throw new FeeScheduleNoPriceError();
+      and(
+        inArray(feeScheduleItems.feeScheduleId, preference.map((c) => c.id)),
+        eq(feeScheduleItems.procedureCodeId, input.procedure_code_id),
+      ),
+    );
+  for (const schedule of preference) {
+    const item = items.find((i) => i.feeScheduleId === schedule.id);
+    if (item) return { procedure_code_id: input.procedure_code_id, fee_schedule_id: schedule.id, price: item.price };
+  }
+  throw new FeeScheduleNoPriceError();
+}
 
-  return { procedure_code_id: input.procedure_code_id, fee_schedule_id: chosen.id, price: item.price };
+async function orgToday(tx: Tx, actor: RequestActor): Promise<string> {
+  const [org] = await tx.select({ timezone: organizations.timezone }).from(organizations).where(eq(organizations.id, actor.organizationId)).limit(1);
+  return zonedDateString(new Date(), org?.timezone ?? "Asia/Kolkata");
 }
 
 /**

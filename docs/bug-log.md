@@ -350,3 +350,33 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Noted while testing:** one unrelated appointment test timed out at 5 s during the full run
   and passed in 345 ms alone — the machine's load average was ~68 at the time (Spotlight and the
   Docker VM), not a code problem.
+
+## 24. A location's fee schedule hid clinic-wide prices it didn't list
+
+- **Symptom:** a branch schedule pricing a few codes made every other code at that branch
+  "no price", although the org-wide default priced it. Likewise when the default schedule
+  lacked a code that another effective schedule had.
+- **Root cause:** `resolvePrice` chose one schedule and stopped if it lacked the code.
+- **Fix:** walk the effective schedules in preference order (location's, then org-wide;
+  default first, then newest) and take the first that prices the code. Two new tests.
+
+## 25. `?active=false` returned active procedure codes
+
+- `z.coerce.boolean()` turns any non-empty string, including `"false"`, into `true`. Now an
+  explicit `"true" | "false"` enum. Schema test added.
+
+## 26. Patient numbers broke past P-9999, and simultaneous creates could collide
+
+- **Symptom:** the max was found by sorting the text column, so after `P-9999` the next
+  number came out as `P-10000` every time (unique-index 500 on the second). Two creates at the
+  same moment read the same max.
+- **Fix:** order by the numeric part, and take a per-organisation advisory lock
+  (`pg_advisory_xact_lock`) for the allocation. Tests: "counts past P-9999 numerically",
+  "gives simultaneous creates distinct numbers".
+
+## 27. "Today" was the UTC date
+
+- **Symptom:** between 00:00 and 05:30 IST the UTC date is still yesterday: pricing looked up
+  yesterday's fee schedule and new perio exams were dated the day before.
+- **Fix:** the server's default pricing date and the perio / fee-schedule pages use the
+  clinic's timezone (`zonedDateString`, `src/lib/dates.ts`).

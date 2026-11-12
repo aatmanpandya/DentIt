@@ -12,6 +12,7 @@ import {
   payments,
   paymentAllocations,
   adjustments,
+  patients,
 } from "@/server/db/schema";
 import { wipeOrganizationData } from "@/server/db/wipe-organization";
 import type { RequestActor } from "@/server/lib/request-auth";
@@ -406,5 +407,34 @@ describe("getPatientSummary", () => {
     await adminDb.insert(adjustments).values({ organizationId: org.id, invoiceId: invoice.id, amount: "-50.00", reason: "Discount", adjustmentType: "discount" });
     const withCreditAndDiscount = await getPatientSummary(actor, patient.id);
     expect(withCreditAndDiscount.balance).toBe("450.00");
+  });
+});
+
+// docs/bug-log.md entry 26: numbers were sorted as text ("P-9999" > "P-10000"), and two
+// simultaneous creates could read the same max and collide on the unique index.
+describe("patient numbering", () => {
+  afterEach(async () => {
+    const orgs = await adminDb.select().from(organizations).where(eq(organizations.name, TEST_ORG_NAME));
+    for (const org of orgs) {
+      await wipeOrganizationData(adminDb, org.id);
+      await adminDb.delete(organizations).where(eq(organizations.id, org.id));
+    }
+  });
+
+  it("counts past P-9999 numerically", async () => {
+    const { actor, org } = await createTestOrgAndActor("owner");
+    await adminDb.insert(patients).values({ organizationId: org.id, patientNumber: "P-9999", firstName: "A", lastName: "B", phone: "+910000000001" });
+    const tenThousandth = await createPatient(actor, { first_name: "C", last_name: "D", phone: "+910000000002" });
+    const next = await createPatient(actor, { first_name: "E", last_name: "F", phone: "+910000000003" });
+    expect(tenThousandth.patientNumber).toBe("P-10000");
+    expect(next.patientNumber).toBe("P-10001");
+  });
+
+  it("gives simultaneous creates distinct numbers", async () => {
+    const { actor } = await createTestOrgAndActor("owner");
+    const created = await Promise.all(
+      [1, 2, 3, 4].map((i) => createPatient(actor, { first_name: `P${i}`, last_name: "Race", phone: `+91000000010${i}` })),
+    );
+    expect(new Set(created.map((p) => p.patientNumber)).size).toBe(4);
   });
 });

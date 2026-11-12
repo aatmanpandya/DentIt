@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
+import { todayIn } from "@/lib/dates";
 import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listProcedureCodes, type ProcedureCode } from "@/lib/catalog-api";
@@ -37,9 +39,10 @@ export default function FeeSchedulePage() {
   });
   const items = itemsData?.data ?? [];
 
+  const { user } = useAuth();
   const createDefaultSchedule = useMutation({
     mutationFn: () =>
-      createFeeSchedule({ name: "Standard", effective_from: new Date().toISOString().slice(0, 10), is_default: true }),
+      createFeeSchedule({ name: "Standard", effective_from: todayIn(user?.organization.timezone), is_default: true }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fee-schedules"] }),
   });
 

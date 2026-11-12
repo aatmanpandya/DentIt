@@ -43,7 +43,8 @@ export const updateProcedureCodeSchema = createProcedureCodeSchema.partial().ext
 export const listProcedureCodesQuerySchema = z.object({
   category: procedureCategoryEnum.optional(),
   q: z.string().min(1).optional(),
-  active: z.coerce.boolean().optional(),
+  // Not z.coerce.boolean(): that turns the string "false" into true (bug-log entry 25).
+  active: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(200).optional(),
 });

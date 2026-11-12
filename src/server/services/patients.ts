@@ -57,11 +57,15 @@ export interface CreatePatientInput {
  * duplicate; this just picks a plausible next value inside the same transaction.
  */
 async function nextPatientNumber(tx: Parameters<Parameters<typeof dbForRequest>[1]>[0], organizationId: string) {
+  // Serialise number allocation per organisation for the rest of this transaction, so two
+  // simultaneous creates can't read the same max (docs/bug-log.md entry 26).
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`patient_number:${organizationId}`}))`);
+  // Numeric order, not text: "P-9999" sorts above "P-10000" as text.
   const [row] = await tx
     .select({ patientNumber: patients.patientNumber })
     .from(patients)
     .where(eq(patients.organizationId, organizationId))
-    .orderBy(sql`${patients.patientNumber} desc`)
+    .orderBy(sql`nullif(regexp_replace(${patients.patientNumber}, '[^0-9]', '', 'g'), '')::bigint desc nulls last`)
     .limit(1);
 
   const lastSeq = row ? Number(row.patientNumber.replace(/^P-/, "")) : 0;

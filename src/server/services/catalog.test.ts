@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { eq, isNull } from "drizzle-orm";
 import { adminDb } from "@/server/db/client";
-import { organizations, users, procedureCodes } from "@/server/db/schema";
+import { organizations, users, procedureCodes, locations } from "@/server/db/schema";
 import { wipeOrganizationData } from "@/server/db/wipe-organization";
 import type { RequestActor } from "@/server/lib/request-auth";
 import { PermissionDeniedError } from "@/server/lib/permissions";
@@ -285,6 +285,33 @@ describe("getPricing", () => {
     const code = await createProcedureCode(actor, { code: "TEST-UNPRICED", short_name: "Unpriced", category: "diagnostic", applies_to: "mouth" });
 
     await expect(getPricing(actor, { procedure_code_id: code.id })).rejects.toThrow(FeeScheduleNoPriceError);
+  });
+
+  // docs/bug-log.md entry 24: the resolver picked one schedule and gave up if that schedule
+  // didn't list the code, even when another effective schedule priced it.
+  it("falls back to the org-wide schedule when the location's schedule doesn't list the code", async () => {
+    const { actor, org } = await createTestOrgAndActor();
+    const [loc] = await adminDb.insert(locations).values({ organizationId: org.id, name: "Branch" }).returning();
+    const code = await createProcedureCode(actor, { code: "TEST-FALLBACK", short_name: "Fallback", category: "diagnostic", applies_to: "mouth" });
+    const other = await createProcedureCode(actor, { code: "TEST-OTHER", short_name: "Other", category: "diagnostic", applies_to: "mouth" });
+    const orgWide = await createFeeSchedule(actor, { name: "Default", effective_from: "2026-01-01", is_default: true });
+    await upsertFeeScheduleItems(actor, orgWide.id, [{ procedure_code_id: code.id, price: "450.00" }]);
+    const branch = await createFeeSchedule(actor, { name: "Branch", effective_from: "2026-01-01", location_id: loc.id });
+    await upsertFeeScheduleItems(actor, branch.id, [{ procedure_code_id: other.id, price: "100.00" }]);
+
+    const result = await getPricing(actor, { procedure_code_id: code.id, location_id: loc.id, on_date: "2026-06-01" });
+
+    expect(result).toMatchObject({ price: "450.00", fee_schedule_id: orgWide.id });
+  });
+
+  it("falls back to another effective org schedule when the default doesn't list the code", async () => {
+    const { actor } = await createTestOrgAndActor();
+    const code = await createProcedureCode(actor, { code: "TEST-OLDSCHED", short_name: "Old", category: "diagnostic", applies_to: "mouth" });
+    await createFeeSchedule(actor, { name: "Default", effective_from: "2026-06-01", is_default: true });
+    const older = await createFeeSchedule(actor, { name: "Older", effective_from: "2026-01-01" });
+    await upsertFeeScheduleItems(actor, older.id, [{ procedure_code_id: code.id, price: "300.00" }]);
+
+    expect((await getPricing(actor, { procedure_code_id: code.id, on_date: "2026-07-01" })).price).toBe("300.00");
   });
 
   it("ignores a schedule that isn't effective yet on the given date", async () => {

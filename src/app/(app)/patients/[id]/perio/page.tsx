@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth-context";
+import { todayIn } from "@/lib/dates";
 import {
   listPatientPerioExams,
   createPerioExam,
@@ -24,10 +25,6 @@ import { PerioOverlay } from "@/components/perio/perio-overlay";
 // get write access here (they transcribe called-out readings), confirmed with the partner
 // clinic per docs/specs/pilot-foundations.md §2.
 const PERIO_WRITE_ROLES = new Set(["owner", "provider", "hygienist", "assistant"]);
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function formatDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { dateStyle: "medium" });
@@ -83,7 +80,7 @@ export default function PatientPerioPage() {
   }, [queryClient, activeExamId]);
 
   const createMutation = useMutation({
-    mutationFn: (providerId: string | null) => createPerioExam(params.id, { exam_date: todayIso(), provider_id: providerId }),
+    mutationFn: (providerId: string | null) => createPerioExam(params.id, { exam_date: todayIn(user?.organization.timezone), provider_id: providerId }),
     onSuccess: (exam) => {
       setSelectedExamId(exam.id);
       refetchExams();
