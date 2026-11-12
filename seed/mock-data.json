@@ -202,15 +202,30 @@
     { "patient": "p1",  "code": "FILL-COMP", "tooth": "36", "surfaces": ["M", "O"], "status": "planned",  "provider": "ananya" },
     { "patient": "p1",  "code": "CONS-NEW",                                          "status": "invoiced", "provider": "ananya", "day_offset": 0 },
     { "patient": "p2",  "code": "PERIO-EXAM",                                        "status": "completed","provider": "priya",  "day_offset": 0 },
-    { "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UR",                       "status": "accepted", "provider": "ananya" },
-    { "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UL",                       "status": "accepted", "provider": "ananya" },
-    { "patient": "p2",  "code": "PERIO-FLAP","quadrant": "UR",                       "status": "planned",  "provider": "ananya" },
-    { "patient": "p2",  "code": "CROWN-ZIR", "tooth": "26",                          "status": "planned",  "provider": "ananya", "note": "Replacement — margin recurrent caries" },
-    { "patient": "p3",  "code": "FILL-COMP", "tooth": "14", "surfaces": ["O", "D"],  "status": "completed","provider": "vikram", "day_offset": 0 },
+    { "key": "p2-scale-ur", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UR",                       "status": "accepted", "provider": "ananya" },
+    { "key": "p2-scale-ul", "patient": "p2",  "code": "SCALE-DEEP","quadrant": "UL",                       "status": "accepted", "provider": "ananya" },
+    { "key": "p2-flap-ur", "patient": "p2",  "code": "PERIO-FLAP","quadrant": "UR",                       "status": "planned",  "provider": "ananya" },
+    { "key": "p2-crown-26", "patient": "p2",  "code": "CROWN-ZIR", "tooth": "26",                          "status": "planned",  "provider": "ananya", "note": "Replacement — margin recurrent caries" },
+    { "key": "p3-fill-14", "patient": "p3",  "code": "FILL-COMP", "tooth": "14", "surfaces": ["O", "D"],  "status": "completed","provider": "vikram", "day_offset": 0 },
     { "patient": "p5",  "code": "EXT-SURG",  "tooth": "48",                          "status": "scheduled","provider": "vikram" },
-    { "patient": "p8",  "code": "DENT-COMP", "arch": "lower",                        "status": "planned",  "provider": "ananya" },
-    { "patient": "p12", "code": "RCT-ANT",   "tooth": "21",                          "status": "accepted", "provider": "ananya" },
-    { "patient": "p12", "code": "CROWN-ZIR", "tooth": "21",                          "status": "planned",  "provider": "ananya" }
+    { "key": "p8-denture-lower", "patient": "p8",  "code": "DENT-COMP", "arch": "lower",                        "status": "planned",  "provider": "ananya" },
+    { "key": "p12-rct-21", "patient": "p12", "code": "RCT-ANT",   "tooth": "21",                          "status": "accepted", "provider": "ananya" },
+    { "key": "p12-crown-21", "patient": "p12", "code": "CROWN-ZIR", "tooth": "21",                          "status": "planned",  "provider": "ananya" }
+  ],
+
+  "treatment_plans": [
+    { "patient": "p2",  "name": "Periodontal therapy", "status": "accepted",  "presented_offset": -9, "accepted_offset": -7,
+      "phases": [ { "name": "Deep cleaning", "items": ["p2-scale-ur", "p2-scale-ul"] } ] },
+    { "patient": "p2",  "name": "Surgery & crown",     "status": "presented", "presented_offset": -1,
+      "phases": [ { "name": "Flap surgery", "items": ["p2-flap-ur"] }, { "name": "Crown", "items": ["p2-crown-26"] } ] },
+    { "patient": "p12", "name": "Root canal 21",       "status": "accepted",  "presented_offset": -6, "accepted_offset": -6,
+      "phases": [ { "name": "Phase 1", "items": ["p12-rct-21"] } ] },
+    { "patient": "p12", "name": "Crown on 21",         "status": "draft",
+      "phases": [ { "name": "Phase 1", "items": ["p12-crown-21"] } ] },
+    { "patient": "p8",  "name": "Lower denture",       "status": "declined",  "presented_offset": -12,
+      "phases": [ { "name": "Phase 1", "items": ["p8-denture-lower"] } ] },
+    { "patient": "p3",  "name": "Filling 14",          "status": "completed", "presented_offset": -3, "accepted_offset": -3,
+      "phases": [ { "name": "Phase 1", "items": ["p3-fill-14"] } ] }
   ],
 
   "perio_exams": [

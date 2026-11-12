@@ -162,6 +162,8 @@ different product.
 ## Treatment planning
 
 ```
+GET    /treatment-plans                       ?status= — org-wide list (patient, total, item and
+                                               unpriced counts), most recently updated first
 GET    /patients/:id/treatment-plans
 POST   /patients/:id/treatment-plans
 GET    /treatment-plans/:id

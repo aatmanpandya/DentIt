@@ -21,6 +21,9 @@ import {
   feeScheduleItems,
   chartedConditions,
   chartedProcedures,
+  treatmentPlans,
+  treatmentPlanPhases,
+  treatmentPlanItems,
   perioExams,
   perioToothRecords,
   perioSiteMeasurements,
@@ -270,8 +273,10 @@ async function main() {
     });
   }
 
+  // Keyed procedures are the ones sample treatment plans point at (below).
+  const chartedProcedureIds: Record<string, string> = {};
   for (const cp of data.charted_procedures) {
-    await adminDb.insert(chartedProcedures).values({
+    const [cpRow] = await adminDb.insert(chartedProcedures).values({
       organizationId: org.id,
       patientId: patientIds[cp.patient],
       procedureCodeId: procedureCodeIds[cp.code],
@@ -285,7 +290,42 @@ async function main() {
       feeScheduleId: cp.status !== "planned" ? feeSchedule.id : null,
       note: cp.note ?? null,
       completedAt: cp.status === "completed" || cp.status === "invoiced" ? atOffset(cp.day_offset ?? 0) : null,
-    });
+    }).returning();
+    if ("key" in cp && cp.key) chartedProcedureIds[cp.key] = cpRow.id;
+  }
+
+  // --- treatment plans ---
+  // One per lifecycle status, all linked to procedures seeded above (whose status and
+  // price snapshot already match the plan's status). Arjun Kulkarni's planned fillings
+  // are left off every plan on purpose: the demo builds a plan from them live.
+  for (const tp of data.treatment_plans) {
+    const [planRow] = await adminDb.insert(treatmentPlans).values({
+      organizationId: org.id,
+      patientId: patientIds[tp.patient],
+      name: tp.name,
+      status: tp.status as typeof treatmentPlans.$inferInsert.status,
+      presentedAt: "presented_offset" in tp && tp.presented_offset !== undefined ? atOffset(tp.presented_offset) : null,
+      acceptedAt: "accepted_offset" in tp && tp.accepted_offset !== undefined ? atOffset(tp.accepted_offset) : null,
+      createdBy: userIds.ananya,
+    }).returning();
+    for (const [phaseIndex, phase] of tp.phases.entries()) {
+      const [phaseRow] = await adminDb.insert(treatmentPlanPhases).values({
+        organizationId: org.id,
+        treatmentPlanId: planRow.id,
+        name: phase.name,
+        sequence: phaseIndex,
+      }).returning();
+      for (const [itemIndex, key] of phase.items.entries()) {
+        const chartedProcedureId = chartedProcedureIds[key];
+        if (!chartedProcedureId) throw new Error(`treatment_plans: no charted procedure with key "${key}"`);
+        await adminDb.insert(treatmentPlanItems).values({
+          organizationId: org.id,
+          treatmentPlanPhaseId: phaseRow.id,
+          chartedProcedureId,
+          sequence: itemIndex,
+        });
+      }
+    }
   }
 
   // --- perio exams ---
@@ -423,7 +463,7 @@ async function main() {
 
   console.log(`Seeded organization ${org.id} — "${org.name}"`);
   console.log(`  ${data.locations.length} locations, ${data.users.length} users, ${data.patients.length} patients`);
-  console.log(`  ${data.appointments.length} appointments, ${data.perio_exams.length} perio exams`);
+  console.log(`  ${data.appointments.length} appointments, ${data.perio_exams.length} perio exams, ${data.treatment_plans.length} treatment plans`);
   console.log(`\nLog in with any user's email above and password: DemoPassword123`);
 }
 

@@ -96,5 +96,14 @@ render as skipped rather than as zeros.
 
 ## Not included
 
-Documents and images (no binaries in the repo), treatment plans (build them by hand when testing
-day 18–19), audit log entries (generated naturally by the loader writing through the services).
+Documents and images (no binaries in the repo), audit log entries (generated naturally by the
+loader writing through the services).
+
+## Treatment plans
+
+Six sample plans, one per lifecycle status, each linked by `key` to a procedure already seeded
+in `charted_procedures` whose status and price snapshot match the plan: Meenakshi Iyer has an
+accepted "Periodontal therapy" and a presented two-phase "Surgery & crown"; Aditya Chavan has an
+accepted "Root canal 21" and a draft "Crown on 21"; Sunita Deshmukh a declined "Lower denture";
+Rohan Shetty a completed "Filling 14". **Arjun Kulkarni's two planned fillings are deliberately
+on no plan**: the demo builds a plan from them live.
