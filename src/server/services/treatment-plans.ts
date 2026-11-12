@@ -330,6 +330,54 @@ export async function getTreatmentPlan(actor: RequestActor, id: string): Promise
   });
 }
 
+export interface OrganizationTreatmentPlanRow {
+  plan: typeof treatmentPlans.$inferSelect;
+  patient: { id: string; firstName: string; lastName: string };
+  // Each item's price through the same path the builder uses (live while editable, the
+  // accept-time snapshot after) — null when unpriced. The serializer turns these into a
+  // total with the same "never a partial figure" rule as the plan detail.
+  itemPrices: (string | null)[];
+}
+
+const ORG_PLAN_LIST_LIMIT = 200;
+
+/**
+ * GET /treatment-plans — every patient's plans in the org, most recently updated first,
+ * optionally filtered by status. Backs the side rail's "Treatment plans" page. Capped at
+ * 200 rows: pilot clinics have a few dozen open plans, and pricing each is a per-item
+ * fee-schedule lookup.
+ */
+export async function listOrganizationTreatmentPlans(
+  actor: RequestActor,
+  filter: { status?: (typeof treatmentPlans.$inferSelect)["status"] },
+): Promise<OrganizationTreatmentPlanRow[]> {
+  assertCan(actor.role, "treatment_plans", "read");
+
+  return dbForRequest(actor.organizationId, async (tx) => {
+    const rows = await tx
+      .select({ plan: treatmentPlans, patient: { id: patients.id, firstName: patients.firstName, lastName: patients.lastName } })
+      .from(treatmentPlans)
+      .innerJoin(patients, eq(patients.id, treatmentPlans.patientId))
+      .where(
+        and(
+          eq(treatmentPlans.organizationId, actor.organizationId),
+          isNull(treatmentPlans.deletedAt),
+          isNull(patients.deletedAt),
+          filter.status ? eq(treatmentPlans.status, filter.status) : undefined,
+        ),
+      )
+      .orderBy(desc(treatmentPlans.updatedAt), desc(treatmentPlans.createdAt))
+      .limit(ORG_PLAN_LIST_LIMIT);
+
+    const result: OrganizationTreatmentPlanRow[] = [];
+    for (const row of rows) {
+      const detail = await loadDetail(tx, actor, row.plan);
+      result.push({ plan: row.plan, patient: row.patient, itemPrices: detail.phases.flatMap((p) => p.items.map((i) => i.price)) });
+    }
+    return result;
+  });
+}
+
 // --- Write: plan ---
 
 export interface CreateTreatmentPlanInput {

@@ -51,6 +51,17 @@ export interface TreatmentPlanDetail extends TreatmentPlan {
   total: string | null;
 }
 
+export interface OrganizationTreatmentPlanRow extends TreatmentPlan {
+  patient: { id: string; first_name: string; last_name: string };
+  item_count: number;
+  unpriced_count: number;
+  total: string | null; // null when any item is unpriced
+}
+
+export function listTreatmentPlans(status?: TreatmentPlanStatus) {
+  return apiFetch<{ data: OrganizationTreatmentPlanRow[] }>(`/treatment-plans${status ? `?status=${status}` : ""}`);
+}
+
 export function listPatientTreatmentPlans(patientId: string) {
   return apiFetch<{ data: TreatmentPlan[] }>(`/patients/${patientId}/treatment-plans`);
 }

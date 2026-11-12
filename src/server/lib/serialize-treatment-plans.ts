@@ -1,5 +1,5 @@
 import type { treatmentPlans, treatmentPlanPhases, treatmentPlanItems } from "@/server/db/schema";
-import type { TreatmentPlanDetail, TreatmentPlanPhaseDetail } from "@/server/services/treatment-plans";
+import type { OrganizationTreatmentPlanRow, TreatmentPlanDetail, TreatmentPlanPhaseDetail } from "@/server/services/treatment-plans";
 
 // snake_case in JSON, matching the database — see docs/specs/api-surface.md.
 export function serializeTreatmentPlan(plan: typeof treatmentPlans.$inferSelect) {
@@ -69,5 +69,16 @@ export function serializeTreatmentPlanDetail(detail: TreatmentPlanDetail) {
     ...serializeTreatmentPlan(detail.plan),
     phases,
     total: sumMoney(allPrices),
+  };
+}
+
+/** A row of the org-wide /plans list. Total follows sumMoney's rule: null if any item is unpriced. */
+export function serializeOrganizationTreatmentPlanRow(row: OrganizationTreatmentPlanRow) {
+  return {
+    ...serializeTreatmentPlan(row.plan),
+    patient: { id: row.patient.id, first_name: row.patient.firstName, last_name: row.patient.lastName },
+    item_count: row.itemPrices.length,
+    unpriced_count: row.itemPrices.filter((p) => p === null).length,
+    total: sumMoney(row.itemPrices),
   };
 }

@@ -5,6 +5,10 @@ export const createTreatmentPlanSchema = z.object({
   name: z.string().min(1),
 });
 
+export const listTreatmentPlansQuerySchema = z.object({
+  status: z.enum(["draft", "presented", "accepted", "declined", "completed"]).optional(),
+});
+
 export const updateTreatmentPlanSchema = z.object({
   name: z.string().min(1).optional(),
   // Only `declined` reaches this path — `present`/`accept` are dedicated endpoints.

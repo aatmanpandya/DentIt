@@ -15,6 +15,7 @@ import {
   reorderPhase,
   reorderItem,
   getTreatmentPlan,
+  listOrganizationTreatmentPlans,
   presentTreatmentPlan,
   acceptTreatmentPlan,
   updateTreatmentPlan,
@@ -426,5 +427,84 @@ describe("derived plan completion", () => {
     await completeProcedure(actor, procB.id);
     refreshed = await getTreatmentPlan(actor, detail.plan.id);
     expect(refreshed.plan.status).toBe("completed");
+  });
+});
+
+// The org-wide /plans list. Totals must come out of the same pricing path as the
+// builder (live while draft/presented, accept-time snapshot after), not a second copy.
+describe("listOrganizationTreatmentPlans", () => {
+  afterEach(cleanup);
+
+  it("lists plans across every patient in the org, most recently updated first, with patient names", async () => {
+    const { org, actor, patient, code } = await setup();
+    const [second] = await adminDb
+      .insert(patients)
+      .values({ organizationId: org.id, patientNumber: "P-0002", firstName: "Asha", lastName: "Rao", phone: "9000000001" })
+      .returning();
+
+    const older = await createTreatmentPlan(actor, patient.id, { name: "Older plan" });
+    const newer = await createTreatmentPlan(actor, second.id, { name: "Newer plan" });
+    const proc = await plannedProcedure(actor, second.id, code.id);
+    await addItemToPhase(actor, newer.phases[0].phase.id, { charted_procedure_id: proc.id });
+
+    const rows = await listOrganizationTreatmentPlans(actor, {});
+
+    expect(rows.map((r) => r.plan.name)).toEqual(["Newer plan", "Older plan"]);
+    expect(rows[0].patient).toMatchObject({ id: second.id, firstName: "Asha", lastName: "Rao" });
+    expect(rows[0].itemPrices).toEqual(["500.00"]);
+    expect(rows[1].itemPrices).toEqual([]);
+    expect(rows[1].plan.id).toBe(older.plan.id);
+  });
+
+  it("filters by status", async () => {
+    const { actor, patient, code } = await setup();
+    const draft = await createTreatmentPlan(actor, patient.id, { name: "Still a draft" });
+    const presented = await createTreatmentPlan(actor, patient.id, { name: "Shown to patient" });
+    const proc = await plannedProcedure(actor, patient.id, code.id);
+    await addItemToPhase(actor, presented.phases[0].phase.id, { charted_procedure_id: proc.id });
+    await presentTreatmentPlan(actor, presented.plan.id);
+
+    const rows = await listOrganizationTreatmentPlans(actor, { status: "presented" });
+
+    expect(rows.map((r) => r.plan.id)).toEqual([presented.plan.id]);
+    expect(rows.map((r) => r.plan.id)).not.toContain(draft.plan.id);
+  });
+
+  it("reports an unpriced item as null, and accepted plans use the snapshot", async () => {
+    const { actor, patient, code, unpricedCode, schedule } = await setup();
+    const unpriced = await createTreatmentPlan(actor, patient.id, { name: "Has unpriced" });
+    await addItemToPhase(actor, unpriced.phases[0].phase.id, { new_procedure: { procedure_code_id: unpricedCode.id, tooth: "26", chart_now: false } });
+
+    const accepted = await createTreatmentPlan(actor, patient.id, { name: "Accepted" });
+    const proc = await plannedProcedure(actor, patient.id, code.id);
+    await addItemToPhase(actor, accepted.phases[0].phase.id, { charted_procedure_id: proc.id });
+    await presentTreatmentPlan(actor, accepted.plan.id);
+    await acceptTreatmentPlan(actor, accepted.plan.id);
+    // A later price rise must not change what the patient agreed to.
+    await upsertFeeScheduleItems(actor, schedule.id, [{ procedure_code_id: code.id, price: "900.00" }]);
+
+    const rows = await listOrganizationTreatmentPlans(actor, {});
+    const byName = new Map(rows.map((r) => [r.plan.name, r]));
+
+    expect(byName.get("Has unpriced")?.itemPrices).toEqual([null]);
+    expect(byName.get("Accepted")?.itemPrices).toEqual(["500.00"]);
+  });
+
+  it("never returns another org's plans", async () => {
+    const { actor } = await setup();
+    const [otherOrg] = await adminDb.insert(organizations).values({ name: TEST_ORG_NAME }).returning();
+    const [otherPatient] = await adminDb
+      .insert(patients)
+      .values({ organizationId: otherOrg.id, patientNumber: "P-0001", firstName: "Other", lastName: "Org", phone: "9000000002" })
+      .returning();
+    const [otherOwner] = await adminDb
+      .insert(users)
+      .values({ organizationId: otherOrg.id, email: `other-${Date.now()}@example.test`, fullName: "Other", role: "owner" })
+      .returning();
+    await createTreatmentPlan({ userId: otherOwner.id, organizationId: otherOrg.id, role: "owner" }, otherPatient.id, { name: "Not yours" });
+
+    const rows = await listOrganizationTreatmentPlans(actor, {});
+
+    expect(rows.map((r) => r.plan.name)).not.toContain("Not yours");
   });
 });

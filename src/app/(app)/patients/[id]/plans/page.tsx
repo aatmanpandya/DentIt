@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -70,7 +70,11 @@ export default function PatientPlansPage() {
     queryFn: () => listPatientTreatmentPlans(params.id),
   });
   const plans = useMemo(() => plansData?.data ?? [], [plansData]);
-  const activePlanId = selectedPlanId ?? plans[0]?.id ?? null;
+  // `?plan=` comes from the org-wide /plans list linking straight to one plan.
+  const searchParams = useSearchParams();
+  const linkedPlanId = searchParams.get("plan");
+  const activePlanId =
+    selectedPlanId ?? (linkedPlanId && plans.some((p) => p.id === linkedPlanId) ? linkedPlanId : null) ?? plans[0]?.id ?? null;
 
   const { data: plan } = useQuery({
     queryKey: ["treatment-plan", activePlanId],
