@@ -100,3 +100,24 @@ Format: symptom, how it was noticed, what didn't work, root cause, fix, commit.
   `ProcedureCodePicker` takes an opt-in `autoFocus`; only the plan builder uses it.
 - **Verified in browser:** confirm appears; switching plans closes it; "Decline plan"
   declines; typing after "+ Add item" lands in search.
+- **Commit:** `94e9da6`
+
+---
+
+## 5. Unpriced items show as a dash, and accept fails only after the patient signs
+
+- **Symptom:** a plan item whose code has no fee-schedule price showed "—" for its price,
+  its phase subtotal and the plan total; the accept prompt read "see **Total —** below". The
+  patient could sign, press Confirm, and only then get "No price is set for this procedure
+  yet.", which doesn't say *which* procedure.
+- **How noticed:** browser walk of the unpriced path: added catalogue code `INLAY-CER` with no
+  price, put it on a plan for Meenakshi Iyer, presented, tried to accept.
+- **What was already right:** the server refuses cleanly (`FEE_SCHEDULE_NO_PRICE`, 422,
+  nothing partially applied), and the serializer deliberately returns `null` for any total
+  containing an unpriced item rather than a misleading partial sum. Both kept.
+- **Root cause:** UI only. The builder's `money()` rendered `null` as "—", which
+  `treatment-planning.md` rules out ("shows plainly as unpriced, not a blank"). The
+  presentation page already said "Not yet priced".
+- **Fix:** builder shows "Unpriced" per item and subtotal, "Total: N items unpriced" for the
+  plan. The accept panel names the unpriced items, links to Settings → Fee schedule, and
+  disables Confirm, so the patient never signs a plan that can't be accepted.

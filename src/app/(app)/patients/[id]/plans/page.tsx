@@ -45,8 +45,10 @@ const STATUS_LABEL: Record<TreatmentPlan["status"], string> = {
   completed: "Completed",
 };
 
+// null = no price in the fee schedule. Said plainly, never a blank or a dash —
+// treatment-planning.md: "a code with no price shows plainly as unpriced".
 function money(value: string | null): string {
-  return value === null ? "—" : `₹${value}`;
+  return value === null ? "Unpriced" : `₹${value}`;
 }
 
 export default function PatientPlansPage() {
@@ -206,6 +208,9 @@ export default function PatientPlansPage() {
   }
 
   const editable = plan?.status === "draft" || plan?.status === "presented";
+  // Accept snapshots a price onto every item and refuses (FEE_SCHEDULE_NO_PRICE) if any is
+  // missing. Say which items up front instead of letting the user sign and then fail.
+  const unpricedItems = plan?.phases.flatMap((ph) => ph.items).filter((i) => i.price === null) ?? [];
 
   return (
     <div className="flex gap-4 p-4">
@@ -339,15 +344,27 @@ export default function PatientPlansPage() {
 
             {acceptOpen && (
               <div className="flex flex-col gap-2 rounded-[var(--radius)] border border-rule bg-surface p-3">
-                <p className="text-[12px] text-ink">
-                  Accepting locks this plan and snapshots today&apos;s prices onto each item — see{" "}
-                  <span className="font-medium">Total {money(plan.total)}</span> below.
-                </p>
+                {unpricedItems.length > 0 ? (
+                  <p className="text-[12px] text-bleed">
+                    Can&apos;t accept yet — no price is set for{" "}
+                    {unpricedItems.map((i) => `${i.procedure_short_name}${i.tooth ? ` (${i.tooth})` : ""}`).join(", ")}. Add{" "}
+                    {unpricedItems.length === 1 ? "it" : "them"} in{" "}
+                    <Link href="/settings/fee-schedule" className="underline">
+                      Settings → Fee schedule
+                    </Link>
+                    , or remove {unpricedItems.length === 1 ? "the item" : "those items"} from the plan.
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-ink">
+                    Accepting locks this plan and snapshots today&apos;s prices onto each item —{" "}
+                    <span className="font-medium">Total {money(plan.total)}</span>.
+                  </p>
+                )}
                 <SignaturePad onChange={setSignature} />
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    disabled={acceptMutation.isPending}
+                    disabled={acceptMutation.isPending || unpricedItems.length > 0}
                     onClick={() => acceptMutation.mutate()}
                     className="h-7 rounded-[var(--radius)] bg-steel px-3 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
                   >
@@ -495,7 +512,11 @@ export default function PatientPlansPage() {
               )}
 
               <div className="flex justify-end border-t border-rule pt-2">
-                <span className="text-[13px] font-medium text-ink">Total {money(plan.total)}</span>
+                <span className="text-[13px] font-medium text-ink">
+                  {plan.total === null
+                    ? `Total: ${unpricedItems.length} item${unpricedItems.length === 1 ? "" : "s"} unpriced`
+                    : `Total ${money(plan.total)}`}
+                </span>
               </div>
             </div>
           </>
