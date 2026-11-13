@@ -1,0 +1,665 @@
+{
+  "recorded_at": "2026-11-13T16:17:21.390Z",
+  "lang": "en-IN",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+  "results": [
+    {
+      "id": "t01",
+      "say": "three two three",
+      "expect": [
+        "3",
+        "2",
+        "3"
+      ],
+      "alternatives": [
+        {
+          "transcript": "323",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 7765
+    },
+    {
+      "id": "t02",
+      "say": "two two two",
+      "expect": [
+        "2",
+        "2",
+        "2"
+      ],
+      "alternatives": [
+        {
+          "transcript": "222",
+          "confidence": 0
+        },
+        {
+          "transcript": "2222",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1939
+    },
+    {
+      "id": "t03",
+      "say": "four three five",
+      "expect": [
+        "4",
+        "3",
+        "5"
+      ],
+      "alternatives": [
+        {
+          "transcript": "435",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2241
+    },
+    {
+      "id": "t04",
+      "say": "three four four",
+      "expect": [
+        "3",
+        "4",
+        "4"
+      ],
+      "alternatives": [
+        {
+          "transcript": "344",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1950
+    },
+    {
+      "id": "t05",
+      "say": "five six four",
+      "expect": [
+        "5",
+        "6",
+        "4"
+      ],
+      "alternatives": [
+        {
+          "transcript": "564",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2714
+    },
+    {
+      "id": "t06",
+      "say": "two one two",
+      "expect": [
+        "2",
+        "1",
+        "2"
+      ],
+      "alternatives": [
+        {
+          "transcript": "212",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2203
+    },
+    {
+      "id": "t07",
+      "say": "eight seven six",
+      "expect": [
+        "8",
+        "7",
+        "6"
+      ],
+      "alternatives": [
+        {
+          "transcript": "876",
+          "confidence": 0
+        },
+        {
+          "transcript": "87 sets",
+          "confidence": 0
+        },
+        {
+          "transcript": "87 sex",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2184
+    },
+    {
+      "id": "t08",
+      "say": "three three two",
+      "expect": [
+        "3",
+        "3",
+        "2"
+      ],
+      "alternatives": [
+        {
+          "transcript": "332",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2464
+    },
+    {
+      "id": "t09",
+      "say": "nine eight seven",
+      "expect": [
+        "9",
+        "8",
+        "7"
+      ],
+      "alternatives": [
+        {
+          "transcript": "987",
+          "confidence": 0
+        },
+        {
+          "transcript": "98",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2653
+    },
+    {
+      "id": "t10",
+      "say": "two three two, three two three",
+      "expect": [
+        "2",
+        "3",
+        "2",
+        "3",
+        "2",
+        "3"
+      ],
+      "alternatives": [
+        {
+          "transcript": "232323",
+          "confidence": 0
+        },
+        {
+          "transcript": "232 32323",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3167
+    },
+    {
+      "id": "t11",
+      "say": "four four four",
+      "expect": [
+        "4",
+        "4",
+        "4"
+      ],
+      "alternatives": [
+        {
+          "transcript": "444",
+          "confidence": 0
+        },
+        {
+          "transcript": "4444",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1748
+    },
+    {
+      "id": "t12",
+      "say": "one zero one",
+      "expect": [
+        "1",
+        "0",
+        "1"
+      ],
+      "alternatives": [
+        {
+          "transcript": "101",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2493
+    },
+    {
+      "id": "d01",
+      "say": "three twelve four",
+      "expect": [
+        "3",
+        "12",
+        "4"
+      ],
+      "alternatives": [
+        {
+          "transcript": "3124",
+          "confidence": 0
+        },
+        {
+          "transcript": "3/4",
+          "confidence": 0
+        },
+        {
+          "transcript": "324",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2147
+    },
+    {
+      "id": "d02",
+      "say": "ten six five",
+      "expect": [
+        "10",
+        "6",
+        "5"
+      ],
+      "alternatives": [
+        {
+          "transcript": "1065",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2194
+    },
+    {
+      "id": "r01",
+      "say": "three two three, recession one zero one",
+      "expect": [
+        "3",
+        "2",
+        "3",
+        "recession",
+        "1",
+        "0",
+        "1"
+      ],
+      "alternatives": [
+        {
+          "transcript": "323 recession 101",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2871
+    },
+    {
+      "id": "r02",
+      "say": "four five four, recession two two one",
+      "expect": [
+        "4",
+        "5",
+        "4",
+        "recession",
+        "2",
+        "2",
+        "1"
+      ],
+      "alternatives": [
+        {
+          "transcript": "454 recession 221",
+          "confidence": 0
+        },
+        {
+          "transcript": "454 session 221",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3172
+    },
+    {
+      "id": "r03",
+      "say": "recession minus one zero zero",
+      "expect": [
+        "recession",
+        "-1",
+        "0",
+        "0"
+      ],
+      "alternatives": [
+        {
+          "transcript": "recession -100",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2941
+    },
+    {
+      "id": "f01",
+      "say": "bleeding all",
+      "expect": [
+        "bleeding",
+        "all"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding all",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding roll",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding role",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding oil",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding on",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2461
+    },
+    {
+      "id": "f02",
+      "say": "bleeding mesial",
+      "expect": [
+        "bleeding",
+        "mesial"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding museum",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding music",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding musical",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding NaCl",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3148
+    },
+    {
+      "id": "f03",
+      "say": "bleeding distal and middle",
+      "expect": [
+        "bleeding",
+        "distal",
+        "middle"
+      ],
+      "alternatives": [
+        {
+          "transcript": "leading digital and middle",
+          "confidence": 0
+        },
+        {
+          "transcript": "leading distal and middle",
+          "confidence": 0
+        },
+        {
+          "transcript": "leading digital and medicine",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2902
+    },
+    {
+      "id": "f04",
+      "say": "suppuration mesial",
+      "expect": [
+        "suppuration",
+        "mesial"
+      ],
+      "alternatives": [
+        {
+          "transcript": "separation museum",
+          "confidence": 0
+        },
+        {
+          "transcript": "separation measure",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2849
+    },
+    {
+      "id": "f05",
+      "say": "plaque all",
+      "expect": [
+        "plaque",
+        "all"
+      ],
+      "alternatives": [
+        {
+          "transcript": "delete all",
+          "confidence": 0
+        },
+        {
+          "transcript": "play it all",
+          "confidence": 0
+        },
+        {
+          "transcript": "play it on",
+          "confidence": 0
+        },
+        {
+          "transcript": "plate on",
+          "confidence": 0
+        },
+        {
+          "transcript": "plate all",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2364
+    },
+    {
+      "id": "m01",
+      "say": "mobility two",
+      "expect": [
+        "mobility",
+        "2"
+      ],
+      "alternatives": [
+        {
+          "transcript": "mobility to",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2190
+    },
+    {
+      "id": "m02",
+      "say": "furcation one",
+      "expect": [
+        "furcation",
+        "1"
+      ],
+      "alternatives": [
+        {
+          "transcript": "purchasing one",
+          "confidence": 0
+        },
+        {
+          "transcript": "purchasing 1",
+          "confidence": 0
+        },
+        {
+          "transcript": "furcation 1",
+          "confidence": 0
+        },
+        {
+          "transcript": "percussion 1",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2537
+    },
+    {
+      "id": "j01",
+      "say": "jump to one six cheek side",
+      "expect": [
+        "jump",
+        "16",
+        "cheek"
+      ],
+      "alternatives": [
+        {
+          "transcript": "jump to 16 Street side",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 16 seat side",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 16 streetside",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 16 Street site",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 16 seat height",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2785
+    },
+    {
+      "id": "j02",
+      "say": "go to two four tongue side",
+      "expect": [
+        "jump",
+        "24",
+        "tongue"
+      ],
+      "alternatives": [
+        {
+          "transcript": "2224 Dark Side",
+          "confidence": 0
+        },
+        {
+          "transcript": "2224 Darkside",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3028
+    },
+    {
+      "id": "j03",
+      "say": "back",
+      "expect": [
+        "back"
+      ],
+      "alternatives": [
+        {
+          "transcript": "back",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1651
+    },
+    {
+      "id": "s01",
+      "say": "one eight is missing",
+      "expect": [
+        "18",
+        "missing"
+      ],
+      "alternatives": [
+        {
+          "transcript": "18 is missing",
+          "confidence": 0
+        },
+        {
+          "transcript": "18 years missing",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2519
+    },
+    {
+      "id": "c01",
+      "say": "no, make that four",
+      "expect": [
+        "correction",
+        "4"
+      ],
+      "alternatives": [
+        {
+          "transcript": "no makes that 4",
+          "confidence": 0
+        },
+        {
+          "transcript": "no makes that four",
+          "confidence": 0
+        },
+        {
+          "transcript": "no make that 4",
+          "confidence": 0
+        },
+        {
+          "transcript": "no makes that for",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2291
+    },
+    {
+      "id": "c02",
+      "say": "undo",
+      "expect": [
+        "undo"
+      ],
+      "alternatives": [
+        {
+          "transcript": "undo",
+          "confidence": 0
+        },
+        {
+          "transcript": "Pandu",
+          "confidence": 0
+        },
+        {
+          "transcript": "undu",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1707
+    }
+  ]
+}

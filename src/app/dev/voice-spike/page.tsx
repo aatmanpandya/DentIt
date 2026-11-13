@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import callouts from "../../../../evals/voice/spike-callouts.json";
+import { Suspense, useEffect, useRef, useState } from "react";
+import round1 from "../../../../evals/voice/spike-callouts.json";
+import round2 from "../../../../evals/voice/spike-callouts-round2.json";
+import { useSearchParams } from "next/navigation";
 
 /**
  * Speech-to-text reading test (docs/specs/voice-perio.md, "Feasibility"). One person reads 30
@@ -32,8 +34,19 @@ function makeRecognition(): Recognition | null {
   return Ctor ? new Ctor() : null;
 }
 
+// useSearchParams needs a Suspense boundary, or `next build` refuses to prerender the page.
 export default function VoiceSpikePage() {
-  const lines = callouts.lines;
+  return (
+    <Suspense>
+      <VoiceSpike />
+    </Suspense>
+  );
+}
+
+function VoiceSpike() {
+  // ?round=2 reads the follow-up set (replacement words for the ones round 1 misheard).
+  const round = useSearchParams().get("round") === "2" ? 2 : 1;
+  const lines = (round === 2 ? round2 : round1).lines;
   const [index, setIndex] = useState(0);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
@@ -86,7 +99,7 @@ export default function VoiceSpikePage() {
     const res = await fetch("/api/dev/voice-spike", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ recorded_at: new Date().toISOString(), lang: "en-IN", user_agent: navigator.userAgent, results: Object.values(results) }),
+      body: JSON.stringify({ round, recorded_at: new Date().toISOString(), lang: "en-IN", user_agent: navigator.userAgent, results: Object.values(results) }),
     });
     const body = await res.json();
     setSaved(res.ok ? body.saved : `Save failed: ${body?.error?.message ?? res.status}`);
@@ -110,7 +123,7 @@ export default function VoiceSpikePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 bg-paper px-6 py-10 text-ink">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-[18px] font-medium">Voice reading test</h1>
+        <h1 className="text-[18px] font-medium">Voice reading test{round === 2 ? " · round 2" : ""}</h1>
         <span className="font-data text-[12px] text-ink-soft">
           {done} / {lines.length} recorded
         </span>

@@ -1,0 +1,20 @@
+{
+  "about": "Round 2 of the reading test: candidate replacements for the words Chrome misheard in round 1 (mesial -> museum, cheek side -> street side, plaque -> delete, suppuration -> separation, furcation -> purchasing, 'go to' -> 22), plus a way to say a pocket of 10-15 mm that can't be confused with two single digits.",
+  "lines": [
+    { "id": "w01", "category": "sides", "say": "jump to one six buccal", "expect": ["jump", "16", "buccal"] },
+    { "id": "w02", "category": "sides", "say": "jump to two four lingual", "expect": ["jump", "24", "lingual"] },
+    { "id": "w03", "category": "sides", "say": "jump to one four palatal", "expect": ["jump", "14", "palatal"] },
+    { "id": "w04", "category": "sides", "say": "jump to three six outside", "expect": ["jump", "36", "outside"] },
+    { "id": "w05", "category": "sides", "say": "jump to four six inside", "expect": ["jump", "46", "inside"] },
+    { "id": "w06", "category": "sites", "say": "bleeding first", "expect": ["bleeding", "first"] },
+    { "id": "w07", "category": "sites", "say": "bleeding last", "expect": ["bleeding", "last"] },
+    { "id": "w08", "category": "sites", "say": "bleeding middle", "expect": ["bleeding", "middle"] },
+    { "id": "w09", "category": "sites", "say": "bleeding mesial", "expect": ["bleeding", "mesial"] },
+    { "id": "w10", "category": "sites", "say": "bleeding distal", "expect": ["bleeding", "distal"] },
+    { "id": "w11", "category": "flags", "say": "plaque present", "expect": ["plaque", "all"] },
+    { "id": "w12", "category": "flags", "say": "pus first", "expect": ["suppuration", "first"] },
+    { "id": "w13", "category": "flags", "say": "furcation grade two", "expect": ["furcation", "2"] },
+    { "id": "w14", "category": "deep", "say": "deep twelve", "expect": ["12"] },
+    { "id": "w15", "category": "deep", "say": "three, deep eleven, four", "expect": ["3", "11", "4"] }
+  ]
+}
