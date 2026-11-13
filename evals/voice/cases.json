@@ -1325,6 +1325,320 @@
     "furcation grade 5"
    ],
    "expect": null
+  },
+  {
+   "id": "live-01",
+   "source": "live dictation 13 Nov",
+   "said": "jump to one one inside",
+   "category": "navigation",
+   "alternatives": [
+    "jump 21 inside",
+    "jump to one inside",
+    "jump to 1 inside",
+    "J1 inside",
+    "jump 21 in"
+   ],
+   "expect": null
+  },
+  {
+   "id": "live-02",
+   "source": "live dictation 13 Nov",
+   "said": "furcation grade one",
+   "category": "tooth_values",
+   "alternatives": [
+    "for Asian grade 1",
+    "forcian grade 1",
+    "for Asian Grade One",
+    "for grade 1",
+    "forcian Grade One"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "live-03",
+   "source": "live dictation 13 Nov",
+   "said": "furcation grade one",
+   "category": "tooth_values",
+   "alternatives": [
+    "for grade 1",
+    "forcian grade 1",
+    "forcion grade 1",
+    "forcian Grade One",
+    "f and grade 1"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "live-04",
+   "source": "live dictation 13 Nov",
+   "said": "bleeding first",
+   "category": "flags",
+   "alternatives": [
+    "lead in first",
+    "leading first"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "first"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-05",
+   "source": "live dictation 13 Nov",
+   "said": "plaque all",
+   "category": "flags",
+   "alternatives": [
+    "black wall",
+    "black"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-06",
+   "source": "live dictation 13 Nov",
+   "said": "plaque all",
+   "category": "flags",
+   "alternatives": [
+    "black all",
+    "black wall",
+    "black hole",
+    "black"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-07",
+   "source": "live dictation 13 Nov",
+   "said": "suppuration middle",
+   "category": "flags",
+   "alternatives": [
+    "separation middle"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "suppuration",
+     "sites": [
+      "middle"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-08",
+   "source": "live dictation 13 Nov",
+   "said": "three deep twelve four",
+   "category": "deep",
+   "alternatives": [
+    "3D 24",
+    "3D 124",
+    "3d24",
+    "3 / 4",
+    "3 d12 4"
+   ],
+   "expect": null
+  },
+  {
+   "id": "live-09",
+   "source": "live dictation 13 Nov",
+   "said": "three deep twelve four",
+   "category": "deep",
+   "alternatives": [
+    "3 deep 124",
+    "3 deep 12",
+    "3D 12 4",
+    "3D 124",
+    "3 deep 124"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      12,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-10",
+   "source": "live dictation 13 Nov",
+   "said": "four three four, recession two one one",
+   "category": "recession",
+   "alternatives": [
+    "434 resection 211",
+    "434 recession 211",
+    "434 recession 2 1 1",
+    "434 section 211",
+    "434 recession 2 11"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      3,
+      4
+     ]
+    },
+    {
+     "type": "recession",
+     "values": [
+      2,
+      1,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-11",
+   "source": "live dictation 13 Nov",
+   "said": "three four three, recession one zero one",
+   "category": "recession",
+   "alternatives": [
+    "343 recession 101",
+    "43 recession 101",
+    "343101",
+    "34301",
+    "343 101"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      4,
+      3
+     ]
+    },
+    {
+     "type": "recession",
+     "values": [
+      1,
+      0,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-12",
+   "source": "live dictation 13 Nov",
+   "said": "no, make that five",
+   "category": "correction",
+   "alternatives": [
+    "no make that 5",
+    "no make that five",
+    "no make that file",
+    "no make that files",
+    "no make at 5"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": "live-13",
+   "source": "live dictation 13 Nov",
+   "said": "undo",
+   "category": "undo",
+   "alternatives": [
+    "Andu Andu",
+    "Andu undu",
+    "undo",
+    "Andu undo"
+   ],
+   "expect": [
+    {
+     "type": "undo"
+    }
+   ]
+  },
+  {
+   "id": "live-14",
+   "source": "live dictation 13 Nov",
+   "said": "one two one",
+   "category": "depths",
+   "alternatives": [
+    "121",
+    "121",
+    "12",
+    "1",
+    "12"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      1,
+      2,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-15",
+   "source": "live dictation 13 Nov",
+   "said": "five four five",
+   "category": "depths",
+   "alternatives": [
+    "545",
+    "54545",
+    "545 4545",
+    "545 45",
+    "5454545"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      5,
+      4,
+      5
+     ]
+    }
+   ]
   }
  ]
 }

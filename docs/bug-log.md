@@ -605,3 +605,34 @@ tests and in the browser. The first three were noted in the 12 Nov review and pa
   not the eval set, so it's now a test.
 - The one remaining miss is safe: "jump to two four lingual" came back "jump to do for lingual",
   the tooth number lost; nothing is written and the dentist says it again.
+
+---
+
+## 38. Voice perio, first live dictation: a jump landed one tooth off; a split phrase wrote recession as depths
+
+The first real dictation (the owner, Chrome, a full upper-right quadrant, 37 phrases logged to
+`evals/voice/session-log.jsonl`) found two ways to write wrong data that the 73-case eval set
+didn't contain.
+
+- **"jump to one one inside" → "jump 21 inside".** Chrome swallowed "to" into the number. The
+  cursor went to 21, and every value after it landed one tooth off (the 11 numbers on 21, the 12
+  numbers on 11, …). Chrome's other guesses ("jump to one inside") showed it wasn't sure. Fix: if
+  the guesses disagree about the jump's tooth, the jump is refused and the dentist is asked to
+  say it again, without "to" ("jump one one inside"). One case is allowed: a guess that's the
+  other with its last digit lost ("1" beside "16", "six" heard as "side") can't land on a
+  different tooth. The guard applies whichever guess ends up used.
+- **"434 recession" … pause … "211".** Chrome splits a phrase at a pause. The first half was
+  rightly rejected; the second, "211", was then read on its own as pocket depths and written to
+  the next tooth. Fix: a phrase that stops where numbers are due (recession, mobility, furcation,
+  jump, "deep", or one or two bare numbers) now waits, shown amber, and the next phrase within
+  6 s is read joined to it. If the join doesn't read but the new phrase does on its own (the
+  dentist repeated it), that's used; "undo" is never joined. The same fix turns Chrome's "33" |
+  "3" into 3 3 3 instead of two rejections.
+- **Misses (nothing written, but annoying):** furcation came back "for Asian grade 1", "forcian",
+  "for grade 1"; "plaque all" as "black wall"; "undo" as "Andu Andu"; recession as "resection".
+  Added to the word lists, matched only in their slot.
+- **Before/after:** live session, 2 phrases wrote wrong data and 4 were missed. The 15
+  distinctive live phrases are now eval cases (`live-*`): eval 87/88 exact, 0 wrong values; the
+  remaining miss is still "jump to do for lingual" (tooth number lost), which writes nothing.
+- Lesson recorded in the spec: reading rounds tested single phrases read carefully; only real
+  dictation, with its pauses and pace, exposed the split phrase.

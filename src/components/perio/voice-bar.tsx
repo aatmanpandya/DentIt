@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { Mic, MicOff, Undo2 } from "lucide-react";
 import { createWebSpeech, speechSupported, type SpeechToText } from "@/lib/voice/stt";
-import { parseAlternatives } from "@/lib/voice/grammar";
+import { readPhrase } from "@/lib/voice/grammar";
 import { planPhrase, INITIAL_VOICE_STATE, type ToothChange, type VoiceState } from "./voice-apply";
 import { buildRoute, type ProbingRoute } from "./voice-route";
 import { hasFurcation } from "./tooth-furcation";
@@ -29,7 +29,11 @@ interface Heard {
   text: string;
   ok: boolean;
   note: string;
+  waiting?: boolean;
 }
+
+// How long a cut-off phrase ("434 recession") waits to be joined to the next one.
+const JOIN_WINDOW_MS = 6000;
 
 const ROUTE_KEY = "dentit.voiceRoute";
 const ROUTE_LABEL: Record<ProbingRoute, string> = { outside_first: "Outside first", each_jaw: "Each jaw first" };
@@ -86,10 +90,24 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     }).catch(() => {});
   }
 
-  function handlePhrase(alternatives: string[]) {
+  // A phrase that stopped where numbers were still due. Chrome splits a phrase at a pause: live,
+  // "434 recession" | "211" wrote 2 1 1 as pocket depths on the next tooth. Now the first half
+  // waits, and the next phrase is read joined to it. A ref, not state: two phrases can land
+  // before a re-render.
+  const pendingRef = useRef<{ text: string; at: number } | null>(null);
+
+  function handlePhrase(heardAlternatives: string[]) {
     setInterim("");
-    const parsed = parseAlternatives(alternatives);
+    const pending = pendingRef.current && Date.now() - pendingRef.current.at < JOIN_WINDOW_MS ? pendingRef.current.text : null;
+    pendingRef.current = null;
+    const { parsed, alternatives } = readPhrase(heardAlternatives, pending);
     const text = parsed.ok && parsed.used ? parsed.used : (alternatives[0] ?? "");
+    if (!parsed.ok && parsed.incomplete) {
+      pendingRef.current = { text: alternatives[0] ?? "", at: Date.now() };
+      setHeard({ text, ok: false, waiting: true, note: parsed.reason });
+      logPhrase(alternatives, "waiting", parsed.reason);
+      return;
+    }
     if (!parsed.ok) {
       setHeard({ text, ok: false, note: `${parsed.reason} Nothing written.` });
       logPhrase(alternatives, "rejected", parsed.reason);
@@ -110,7 +128,8 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     applyVoice(plan.changes, plan.skips);
     setHistory((h) => [...h.slice(-49), { changes: plan.changes, skips: plan.skips, voiceBefore: voice, text, cells: plan.cells }]);
     setVoice(plan.voice);
-    setHeard({ text, ok: true, note: plan.changes.length + plan.skips.length === 0 ? "Already recorded." : "" });
+    const onlyMoved = parsed.commands.every((c) => c.type === "jump" || c.type === "back");
+    setHeard({ text, ok: true, note: plan.changes.length + plan.skips.length === 0 && !onlyMoved ? "Already recorded." : "" });
     onHighlight(plan.cells);
   }
 
@@ -220,8 +239,8 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
         {listening && interim ? (
           <span className="text-ink-soft">{interim}…</span>
         ) : heard ? (
-          <span className={heard.ok ? "text-healthy" : "text-bleed"}>
-            {heard.ok ? "✓" : "✕"} “{heard.text}”{heard.note ? ` — ${heard.note}` : ""}
+          <span className={heard.ok ? "text-healthy" : heard.waiting ? "text-caution" : "text-bleed"}>
+            {heard.ok ? "✓" : heard.waiting ? "…" : "✕"} “{heard.text}”{heard.note ? ` — ${heard.note}` : ""}
           </span>
         ) : listening ? (
           <span className="text-ink-soft">Listening…</span>
@@ -239,7 +258,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
           <li>“bleeding all / first / middle / last”</li>
           <li>“suppuration …”, “plaque …” — same</li>
           <li>“mobility two”, “furcation grade one”</li>
-          <li>“jump to one six outside / inside”</li>
+          <li>“jump one six outside / inside” (no “to”)</li>
           <li>“one eight is missing”</li>
           <li>“no, make that four” — the last depth</li>
           <li>“back”, “undo”</li>

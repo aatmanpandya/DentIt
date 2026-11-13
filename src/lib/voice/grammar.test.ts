@@ -75,3 +75,26 @@ describe("parse", () => {
     expect(parseAlternatives(["xyz", "323", "324"]).ok).toBe(false);
   });
 });
+
+describe("readPhrase: a phrase cut at a pause", () => {
+  // Live, 13 Nov: "434 recession" | "211" — the second half was written as pocket depths.
+  it("waits on '434 recession' and joins it to '211'", async () => {
+    const { readPhrase } = await import("./grammar");
+    const first = readPhrase(["434 recession", "34 recession"], null);
+    expect(first.parsed).toMatchObject({ ok: false, incomplete: true });
+    expect(readPhrase(["211"], "434 recession").parsed).toMatchObject({
+      ok: true,
+      commands: [{ type: "depths", values: [4, 3, 4] }, { type: "recession", values: [2, 1, 1] }],
+    });
+  });
+
+  it("uses a repeated whole phrase on its own when the join doesn't read", async () => {
+    const { readPhrase } = await import("./grammar");
+    expect(readPhrase(["333"], "33 3 3").parsed).toMatchObject({ ok: true, commands: [{ type: "depths", values: [3, 3, 3] }] });
+  });
+
+  it("never joins undo", async () => {
+    const { readPhrase } = await import("./grammar");
+    expect(readPhrase(["undo"], "434 recession").parsed).toMatchObject({ ok: true, commands: [{ type: "undo" }] });
+  });
+});

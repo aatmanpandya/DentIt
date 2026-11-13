@@ -31,7 +31,9 @@ export type VoiceCommand =
 
 // `numbers`: rejected because the numbers themselves were ambiguous or out of range — another
 // of Chrome's guesses must not be used instead (it would be a guess at the numbers).
-export type ParseResult = { ok: true; commands: VoiceCommand[] } | { ok: false; reason: string; numbers?: boolean };
+// `incomplete`: the phrase stopped where numbers were still due ("434 recession", "33") — Chrome
+// splits a phrase at a pause, so the caller holds it and joins it to the next one.
+export type ParseResult = { ok: true; commands: VoiceCommand[] } | { ok: false; reason: string; numbers?: boolean; incomplete?: boolean };
 
 const FILLERS = new Set(["and", "the", "is", "are", "a", "um", "uh", "okay", "ok", "it", "index", "dental", "side", "please", "then"]);
 
@@ -39,7 +41,7 @@ const FILLERS = new Set(["and", "the", "is", "are", "a", "um", "uh", "okay", "ok
 const HOMOPHONES: Record<string, string> = { to: "2", too: "2", for: "4", tree: "3", ate: "8", won: "1" };
 
 const SITE_WORDS: Record<string, SiteRef | "all"> = {
-  all: "all", mall: "all", present: "all", on: "all",
+  all: "all", mall: "all", present: "all", on: "all", wall: "all",
   first: "first", forest: "first", fast: "first",
   middle: "middle", medal: "middle", mid: "middle",
   last: "last", lost: "last",
@@ -52,9 +54,9 @@ const SIDE_WORDS: Record<string, Side> = {
   inside: "inside", lingual: "inside", palatal: "inside", palatine: "inside", palatin: "inside", tongue: "inside",
 };
 
-const FURCATION_WORDS = new Set(["furcation", "vacation", "vocation", "occasion", "education", "purchasing", "furcations"]);
-const RECESSION_WORDS = new Set(["recession", "session"]);
-const UNDO_WORDS = new Set(["undo", "undu"]);
+const FURCATION_WORDS = new Set(["furcation", "vacation", "vocation", "occasion", "education", "purchasing", "furcations", "forcian", "forcion", "forshan", "fortian"]);
+const RECESSION_WORDS = new Set(["recession", "session", "resection"]);
+const UNDO_WORDS = new Set(["undo", "undu", "andu"]);
 
 const FLAG_SPELLINGS: Record<FlagName, string[]> = {
   bleeding_on_probing: ["bleeding", "bleed", "leading", "pleading"],
@@ -114,6 +116,8 @@ export function parse(transcript: string): ParseResult {
 
   const fail = (reason: string): ParseResult => ({ ok: false, reason });
   const failNumbers = (reason: string): ParseResult => ({ ok: false, reason, numbers: true });
+  const waiting = (reason: string): ParseResult => ({ ok: false, reason, numbers: true, incomplete: true });
+  const atEnd = () => i >= tokens.length;
 
   /** Reads a run of numbers (digits, homophones in the middle of a run, "deep", "minus"). */
   function readRun(opts: { deep?: boolean; minus?: boolean; homophonesAtStart?: boolean }) {
@@ -184,7 +188,9 @@ export function parse(transcript: string): ParseResult {
         continue;
       }
       const values = depthValues(items);
-      if (typeof values === "string") return failNumbers(values);
+      if (typeof values === "string") return atEnd() && values.includes("needs a number") ? waiting("Waiting for the number after “deep”…") : failNumbers(values);
+      if (commands.length === 0 && atEnd() && values.length > 0 && values.length < 3 && !items.some((x) => x.k === "deep"))
+        return waiting(`Heard ${values.join(" ")} — waiting for the rest…`);
       // Pauses don't survive: "three, twelve, four" comes back "3124", indistinguishable from
       // 3 1 2 4. A side is three sites, so a plain run must come in threes; a 10-15 mm pocket is
       // said with "deep". Catches 3124 / 1065; can't catch "311" meant as 3, 11 (spec, Evals).
@@ -211,6 +217,7 @@ export function parse(transcript: string): ParseResult {
         });
         negative = false;
       }
+      if (values.length < 3 && atEnd()) return waiting("Waiting for the recession numbers…");
       if (values.length !== 3) return failNumbers("Say recession as three numbers, e.g. “recession one zero one”.");
       commands.push({ type: "recession", values });
       continue;
@@ -219,15 +226,18 @@ export function parse(transcript: string): ParseResult {
     if (w === "mobility") {
       i++;
       const v = readGrade("mobility");
-      if (typeof v === "string") return failNumbers(v);
+      if (typeof v === "string") return atEnd() ? waiting("Waiting for the mobility number…") : failNumbers(v);
       commands.push({ type: "mobility", value: v });
       continue;
     }
 
-    if (w && (FURCATION_WORDS.has(w) || (w === "for" && FURCATION_WORDS.has(word(tokens[i + 1]) ?? "")))) {
-      i += w === "for" ? 2 : 1;
+    // "for Asian grade 1", "for grade 1" (live): "for" + a furcation-ish word or "grade". Mobility
+    // always says "mobility", so a lone "grade N" after "for" can only be furcation.
+    const forFurcation = w === "for" && (FURCATION_WORDS.has(word(tokens[i + 1]) ?? "") || isWord(tokens[i + 1], "asian", "station"));
+    if (w && (FURCATION_WORDS.has(w) || forFurcation || (w === "for" && isWord(tokens[i + 1], "grade")))) {
+      i += forFurcation ? 2 : 1;
       const v = readGrade("furcation");
-      if (typeof v === "string") return failNumbers(v);
+      if (typeof v === "string") return atEnd() ? waiting("Waiting for the furcation grade…") : failNumbers(v);
       commands.push({ type: "furcation", value: v });
       continue;
     }
@@ -237,7 +247,8 @@ export function parse(transcript: string): ParseResult {
       if (isWord(tokens[i], "to", "too")) i++;
       const items = readRun({});
       const tooth = items.map((x) => (x.k === "digits" ? x.s : "")).join("");
-      if (!validTooth(tooth)) return fail(tooth ? `“${tooth}” isn't a tooth.` : "Say which tooth, e.g. “jump to one six outside”.");
+      if (!tooth && atEnd()) return waiting("Waiting for the tooth…");
+      if (!validTooth(tooth)) return fail(tooth ? `“${tooth}” isn't a tooth.` : "Say which tooth, e.g. “jump one six outside”.");
       const sideWord = word(tokens[i]);
       const side = sideWord ? (SIDE_WORDS[sideWord] ?? null) : null;
       if (side) i++;
@@ -298,10 +309,22 @@ export function parse(transcript: string): ParseResult {
  * are tried — but only used if every one of them that parses agrees,
  * so a fallback is never a coin-flip between readings.
  */
+/** The tooth digits said after "jump" in one guess, valid or not ("jump to one" → "1"). */
+function jumpDigits(text: string): string | null {
+  const tokens = normalise(text);
+  const at = tokens.findIndex((t) => t.t === "word" && (t.w === "jump" || t.w === "go"));
+  if (at === -1) return null;
+  let i = at + 1;
+  if (tokens[i]?.t === "word" && ["to", "too"].includes((tokens[i] as { w: string }).w)) i++;
+  let digits = "";
+  while (tokens[i]?.t === "digits") digits += (tokens[i++] as { s: string }).s;
+  return digits;
+}
+
 export function parseAlternatives(alternatives: string[]): ParseResult & { used?: string } {
   if (alternatives.length === 0) return { ok: false, reason: "Nothing heard." };
   const top = parse(alternatives[0]);
-  if (top.ok) return { ...top, used: alternatives[0] };
+  if (top.ok) return guardJump({ ...top, used: alternatives[0] }, alternatives);
   // The best guess's numbers were ambiguous ("3124" for "three twelve four"): a lower guess with
   // different numbers ("324") would be a guess at the values. Write nothing.
   if (top.numbers) return top;
@@ -309,5 +332,37 @@ export function parseAlternatives(alternatives: string[]): ParseResult & { used?
   if (others.length === 0) return top;
   const first = JSON.stringify(others[0].r.commands);
   if (others.some((o) => JSON.stringify(o.r.commands) !== first)) return { ok: false, reason: `Heard “${alternatives[0]}” — not sure what was meant. Say it again.` };
-  return { ...others[0].r, used: others[0].a };
+  return guardJump({ ...others[0].r, used: others[0].a }, alternatives);
+}
+
+/**
+ * "jump to one one" came back "jump 21" (live, 13 Nov): "to" swallowed into the number, and every
+ * value after it landed one tooth off. If Chrome's guesses disagree about the jump's tooth, don't
+ * move — except when one is just the other with its last digit lost ("1" beside "16", "six"
+ * heard as "side"), which can't put the cursor on a different tooth.
+ */
+function guardJump(result: { ok: true; commands: VoiceCommand[]; used: string }, alternatives: string[]): ParseResult & { used?: string } {
+  const jump = result.commands.find((c) => c.type === "jump");
+  if (!jump || jump.type !== "jump") return result;
+  const conflict = alternatives.some((a) => {
+    const d = jumpDigits(a);
+    return d !== null && d !== "" && d !== jump.tooth && !jump.tooth.startsWith(d);
+  });
+  if (!conflict) return result;
+  return { ok: false, numbers: true, reason: `Not sure which tooth (heard “${alternatives[0]}”). Say “jump”, then the tooth, without “to”: “jump one one inside”.` };
+}
+
+/**
+ * Reads a phrase, joined to a cut-off one still waiting for its numbers (`pending`). Chrome
+ * splits a phrase at a pause — live, "434 recession" | "211" wrote 2 1 1 as pocket depths. The
+ * joined reading is used if it works or still waits; if it doesn't but the new phrase works on
+ * its own (the dentist repeated the whole thing), that's used. "undo" is never joined.
+ */
+export function readPhrase(alternatives: string[], pending: string | null): { parsed: ParseResult & { used?: string }; alternatives: string[] } {
+  const alone = parseAlternatives(alternatives);
+  if (!pending || (alone.ok && alone.commands[0].type === "undo")) return { parsed: alone, alternatives };
+  const joinedAlternatives = alternatives.map((a) => `${pending} ${a}`);
+  const joined = parseAlternatives(joinedAlternatives);
+  if (joined.ok || joined.incomplete || !alone.ok) return { parsed: joined, alternatives: joinedAlternatives };
+  return { parsed: alone, alternatives };
 }

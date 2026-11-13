@@ -21,6 +21,13 @@ produces the actions the keyboard already uses (`jump`, `digit`, `dash`, `flag`,
 selection), through the same reducer, so the range checks (pocket 0–15, recession −5 to 10),
 per-tooth saving and skip handling stay identical.
 
+**Cut-off phrases wait.** Chrome splits a phrase at a pause ("434 recession" | "211"). A phrase
+that stops where numbers are due (recession, mobility, furcation, jump, "deep", or one or two
+bare numbers) is shown amber and joined to the next phrase if it comes within 6 s.
+
+**Jumps need agreement.** If Chrome's guesses disagree about which tooth a jump means ("jump 21"
+vs "jump to one"), the cursor doesn't move.
+
 **Never write a guess.** A phrase is applied to a copy of the entry state first. If any part is
 not understood, out of range, or ambiguous, nothing is written and the transcript shows red with
 the reason. Every cell a phrase changed is highlighted, and "undo" (spoken or a button) takes
@@ -56,7 +63,7 @@ later change (`organizations.probing_sequence` holds the keyboard's tooth order 
 | "bleeding all", "bleeding first / middle / last" | bleeding on the side just entered |
 | "suppuration …", "plaque …" | the same, for suppuration and plaque |
 | "mobility two", "furcation grade one" | per-tooth values for the current tooth |
-| "jump to one six outside" | move the cursor |
+| "jump one six outside" | move the cursor (no "to": Chrome hears "to one" as 21) |
 | "one eight is missing" | skip that tooth |
 | "back" | the previous side |
 | "no, make that four" | replace the last pocket depth entered |
