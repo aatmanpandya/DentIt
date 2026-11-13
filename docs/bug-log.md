@@ -586,3 +586,22 @@ tests and in the browser. The first three were noted in the 12 Nov review and pa
   exam date. Hidden in the demo because the seed writes its two exams directly. Two older tests
   had encoded the wrong behaviour (a patient with no birth date getting baby teeth); they now
   use a child patient, and new tests cover the adult, the 13th birthday and no birth date.
+
+---
+
+## 37. Voice grammar: falling back to Chrome's second guess wrote wrong values
+
+- **Symptom:** first run of `npm run eval:voice`: 71/73 exact and **1 wrong value written**.
+  "three twelve four" came back as `["3124", "3/4", "324"]`. The best guess was rightly
+  rejected (four numbers for a three-site side), but the fallback then took "324" and wrote
+  3, 2, 4, silently dropping a digit.
+- **Cause:** the fallback to lower guesses was meant for misheard *words* ("jump to one side
+  button" → "jump to 16 button"). Applied after a rejection for ambiguous *numbers*, it became a
+  guess at the values, which the spec forbids.
+- **Fix:** a rejection is tagged when the numbers themselves were the problem (count, "deep",
+  range); then no lower guess is used. Before: 71/73, 1 wrong. After: 72/73, 0 wrong.
+- **Same session:** the sound match for flags accepted "hello" as plaque (sound key "al" is one
+  edit from "pla"). Keys shorter than three sounds are no longer trusted. Caught by a unit test,
+  not the eval set, so it's now a test.
+- The one remaining miss is safe: "jump to two four lingual" came back "jump to do for lingual",
+  the tooth number lost; nothing is written and the dentist says it again.

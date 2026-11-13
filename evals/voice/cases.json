@@ -1,0 +1,1330 @@
+{
+ "about": "Voice perio eval set (docs/specs/voice-perio.md, Evals). 'alternatives' are Chrome's guesses, best first: real ones from the reading rounds, or constructed. 'expect' is the exact command list, or null when the phrase must write nothing. Excluded: lines said with words later dropped from the vocabulary: j01 ('cheek side' replaced by outside/inside); j02 ('go to \u2026 tongue side' replaced by 'jump to \u2026 inside'); w12 ('pus' replaced by suppuration/exudate)",
+ "cases": [
+  {
+   "id": "r1-t01",
+   "source": "round 1 recording",
+   "said": "three two three",
+   "category": "depths",
+   "alternatives": [
+    "323"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      2,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t02",
+   "source": "round 1 recording",
+   "said": "two two two",
+   "category": "depths",
+   "alternatives": [
+    "222",
+    "2222"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      2,
+      2,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t03",
+   "source": "round 1 recording",
+   "said": "four three five",
+   "category": "depths",
+   "alternatives": [
+    "435"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      3,
+      5
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t04",
+   "source": "round 1 recording",
+   "said": "three four four",
+   "category": "depths",
+   "alternatives": [
+    "344"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      4,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t05",
+   "source": "round 1 recording",
+   "said": "five six four",
+   "category": "depths",
+   "alternatives": [
+    "564"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      5,
+      6,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t06",
+   "source": "round 1 recording",
+   "said": "two one two",
+   "category": "depths",
+   "alternatives": [
+    "212"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      2,
+      1,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t07",
+   "source": "round 1 recording",
+   "said": "eight seven six",
+   "category": "depths",
+   "alternatives": [
+    "876",
+    "87 sets",
+    "87 sex"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      8,
+      7,
+      6
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t08",
+   "source": "round 1 recording",
+   "said": "three three two",
+   "category": "depths",
+   "alternatives": [
+    "332"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      3,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t09",
+   "source": "round 1 recording",
+   "said": "nine eight seven",
+   "category": "depths",
+   "alternatives": [
+    "987",
+    "98"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      9,
+      8,
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t10",
+   "source": "round 1 recording",
+   "said": "two three two, three two three",
+   "category": "depths",
+   "alternatives": [
+    "232323",
+    "232 32323"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      2,
+      3,
+      2,
+      3,
+      2,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t11",
+   "source": "round 1 recording",
+   "said": "four four four",
+   "category": "depths",
+   "alternatives": [
+    "444",
+    "4444"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      4,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-t12",
+   "source": "round 1 recording",
+   "said": "one zero one",
+   "category": "depths",
+   "alternatives": [
+    "101"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      1,
+      0,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-d01",
+   "source": "round 1 recording",
+   "said": "three twelve four",
+   "category": "must_reject",
+   "alternatives": [
+    "3124",
+    "3/4",
+    "324"
+   ],
+   "expect": null
+  },
+  {
+   "id": "r1-d02",
+   "source": "round 1 recording",
+   "said": "ten six five",
+   "category": "must_reject",
+   "alternatives": [
+    "1065"
+   ],
+   "expect": null
+  },
+  {
+   "id": "r1-r01",
+   "source": "round 1 recording",
+   "said": "three two three, recession one zero one",
+   "category": "recession",
+   "alternatives": [
+    "323 recession 101"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      2,
+      3
+     ]
+    },
+    {
+     "type": "recession",
+     "values": [
+      1,
+      0,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-r02",
+   "source": "round 1 recording",
+   "said": "four five four, recession two two one",
+   "category": "recession",
+   "alternatives": [
+    "454 recession 221",
+    "454 session 221"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      5,
+      4
+     ]
+    },
+    {
+     "type": "recession",
+     "values": [
+      2,
+      2,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-r03",
+   "source": "round 1 recording",
+   "said": "recession minus one zero zero",
+   "category": "recession",
+   "alternatives": [
+    "recession -100"
+   ],
+   "expect": [
+    {
+     "type": "recession",
+     "values": [
+      -1,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-f01",
+   "source": "round 1 recording",
+   "said": "bleeding all",
+   "category": "flags",
+   "alternatives": [
+    "bleeding all",
+    "bleeding roll",
+    "bleeding role",
+    "bleeding oil",
+    "bleeding on"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-f02",
+   "source": "round 1 recording",
+   "said": "bleeding mesial",
+   "category": "flags",
+   "alternatives": [
+    "bleeding museum",
+    "bleeding music",
+    "bleeding musical",
+    "bleeding NaCl"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "mesial"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-f03",
+   "source": "round 1 recording",
+   "said": "bleeding distal and middle",
+   "category": "flags",
+   "alternatives": [
+    "leading digital and middle",
+    "leading distal and middle",
+    "leading digital and medicine"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "distal",
+      "middle"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-f04",
+   "source": "round 1 recording",
+   "said": "suppuration mesial",
+   "category": "flags",
+   "alternatives": [
+    "separation museum",
+    "separation measure"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "suppuration",
+     "sites": [
+      "mesial"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-f05",
+   "source": "round 1 recording",
+   "said": "plaque all",
+   "category": "flags",
+   "alternatives": [
+    "delete all",
+    "play it all",
+    "play it on",
+    "plate on",
+    "plate all"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-m01",
+   "source": "round 1 recording",
+   "said": "mobility two",
+   "category": "tooth_values",
+   "alternatives": [
+    "mobility to"
+   ],
+   "expect": [
+    {
+     "type": "mobility",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "r1-m02",
+   "source": "round 1 recording",
+   "said": "furcation one",
+   "category": "tooth_values",
+   "alternatives": [
+    "purchasing one",
+    "purchasing 1",
+    "furcation 1",
+    "percussion 1"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "r1-j03",
+   "source": "round 1 recording",
+   "said": "back",
+   "category": "navigation",
+   "alternatives": [
+    "back"
+   ],
+   "expect": [
+    {
+     "type": "back"
+    }
+   ]
+  },
+  {
+   "id": "r3-s01",
+   "source": "round 3 recording",
+   "said": "suppuration first",
+   "category": "flags",
+   "alternatives": [
+    "separation first"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "suppuration",
+     "sites": [
+      "first"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r1-c01",
+   "source": "round 1 recording",
+   "said": "no, make that four",
+   "category": "correction",
+   "alternatives": [
+    "no makes that 4",
+    "no makes that four",
+    "no make that 4",
+    "no makes that for"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": "r1-c02",
+   "source": "round 1 recording",
+   "said": "undo",
+   "category": "undo",
+   "alternatives": [
+    "undo",
+    "Pandu",
+    "undu"
+   ],
+   "expect": [
+    {
+     "type": "undo"
+    }
+   ]
+  },
+  {
+   "id": "r2-w01",
+   "source": "round 2 recording",
+   "said": "jump to one six buccal",
+   "category": "navigation",
+   "alternatives": [
+    "jump to one side button",
+    "jump to 16 button"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "16",
+     "side": "outside"
+    }
+   ]
+  },
+  {
+   "id": "r2-w02",
+   "source": "round 2 recording",
+   "said": "jump to two four lingual",
+   "category": "navigation",
+   "alternatives": [
+    "jump to do for lingual"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "24",
+     "side": "inside"
+    }
+   ]
+  },
+  {
+   "id": "r2-w03",
+   "source": "round 2 recording",
+   "said": "jump to one four palatal",
+   "category": "navigation",
+   "alternatives": [
+    "jump to 14 Palatine",
+    "jump to 14 palatin",
+    "jump to 14 palatal"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "14",
+     "side": "inside"
+    }
+   ]
+  },
+  {
+   "id": "r2-w04",
+   "source": "round 2 recording",
+   "said": "jump to three six outside",
+   "category": "navigation",
+   "alternatives": [
+    "jump to 36 outside",
+    "jump to 36 out side"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "36",
+     "side": "outside"
+    }
+   ]
+  },
+  {
+   "id": "r2-w05",
+   "source": "round 2 recording",
+   "said": "jump to four six inside",
+   "category": "navigation",
+   "alternatives": [
+    "jump to 46 inside"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "46",
+     "side": "inside"
+    }
+   ]
+  },
+  {
+   "id": "r2-w06",
+   "source": "round 2 recording",
+   "said": "bleeding first",
+   "category": "flags",
+   "alternatives": [
+    "bleeding first"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "first"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w07",
+   "source": "round 2 recording",
+   "said": "bleeding last",
+   "category": "flags",
+   "alternatives": [
+    "bleeding last",
+    "pleading last"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w08",
+   "source": "round 2 recording",
+   "said": "bleeding middle",
+   "category": "flags",
+   "alternatives": [
+    "bleeding middle",
+    "pleading middle"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "middle"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w09",
+   "source": "round 2 recording",
+   "said": "bleeding mesial",
+   "category": "flags",
+   "alternatives": [
+    "bleeding museum",
+    "bleeding musical",
+    "bleeding music",
+    "bleeding measles",
+    "bleeding medial"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "mesial"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w10",
+   "source": "round 2 recording",
+   "said": "bleeding distal",
+   "category": "flags",
+   "alternatives": [
+    "bleeding distance",
+    "leading digital",
+    "bleeding digital",
+    "leading distance",
+    "bleeding distal"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "distal"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w11",
+   "source": "round 2 recording",
+   "said": "plaque present",
+   "category": "flags",
+   "alternatives": [
+    "plant present",
+    "Flat present",
+    "cloth present"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w13",
+   "source": "round 2 recording",
+   "said": "furcation grade two",
+   "category": "tooth_values",
+   "alternatives": [
+    "for Occasion grade 2",
+    "vocation grade 2",
+    "vacation grade 2",
+    "for education grade 2"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "r2-w14",
+   "source": "round 2 recording",
+   "said": "deep twelve",
+   "category": "deep",
+   "alternatives": [
+    "deep 12"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      12
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r2-w15",
+   "source": "round 2 recording",
+   "said": "three, deep eleven, four",
+   "category": "deep",
+   "alternatives": [
+    "3D 114",
+    "three deep level 4",
+    "3D 11 4"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      11,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-p01",
+   "source": "round 3 recording",
+   "said": "plaque",
+   "category": "must_reject",
+   "alternatives": [
+    "black",
+    "flag"
+   ],
+   "expect": null
+  },
+  {
+   "id": "r3-p02",
+   "source": "round 3 recording",
+   "said": "plaque first",
+   "category": "flags",
+   "alternatives": [
+    "black forest",
+    "black first"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-p03",
+   "source": "round 3 recording",
+   "said": "plaque index all",
+   "category": "flags",
+   "alternatives": [
+    "black index all",
+    "black index on",
+    "flat index all",
+    "black index of",
+    "black index sold"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-p04",
+   "source": "round 3 recording",
+   "said": "biofilm all",
+   "category": "flags",
+   "alternatives": [
+    "biofil Mall",
+    "biofilm all",
+    "biofilm Mall",
+    "biofilm on"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-p05",
+   "source": "round 3 recording",
+   "said": "deposits all",
+   "category": "flags",
+   "alternatives": [
+    "deposits all",
+    "deposits on"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-p06",
+   "source": "round 3 recording",
+   "said": "debris middle",
+   "category": "flags",
+   "alternatives": [
+    "debris middle",
+    "debri middle",
+    "dibri middle",
+    "Dabri middle",
+    "dibri medal"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "middle"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-p07",
+   "source": "round 3 recording",
+   "said": "dental plaque last",
+   "category": "flags",
+   "alternatives": [
+    "dental plant last",
+    "dental plaque last",
+    "dental plast last",
+    "dental plaster",
+    "dental plot last"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-s02",
+   "source": "round 3 recording",
+   "said": "suppuration all",
+   "category": "flags",
+   "alternatives": [
+    "separation all"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "suppuration",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r3-s03",
+   "source": "round 3 recording",
+   "said": "exudate middle",
+   "category": "flags",
+   "alternatives": [
+    "exudate middle",
+    "accident middle",
+    "accurate middle"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "suppuration",
+     "sites": [
+      "middle"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c01",
+   "source": "constructed",
+   "said": "232 323 444",
+   "category": "depths",
+   "alternatives": [
+    "232 323 444"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      2,
+      3,
+      2,
+      3,
+      2,
+      3,
+      4,
+      4,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c02",
+   "source": "constructed",
+   "said": "4 ate tree",
+   "category": "depths",
+   "alternatives": [
+    "4 ate tree"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      8,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c03",
+   "source": "constructed",
+   "said": "deep twelve",
+   "category": "deep",
+   "alternatives": [
+    "deep twelve"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      12
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c04",
+   "source": "constructed",
+   "said": "2 deep 15 3",
+   "category": "deep",
+   "alternatives": [
+    "2 deep 15 3"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      2,
+      15,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c05",
+   "source": "constructed",
+   "said": "recession 1 0 -1",
+   "category": "recession",
+   "alternatives": [
+    "recession 1 0 -1"
+   ],
+   "expect": [
+    {
+     "type": "recession",
+     "values": [
+      1,
+      0,
+      -1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c06",
+   "source": "constructed",
+   "said": "323 bleeding all",
+   "category": "flags",
+   "alternatives": [
+    "323 bleeding all"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      2,
+      3
+     ]
+    },
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c07",
+   "source": "constructed",
+   "said": "Slack all",
+   "category": "flags",
+   "alternatives": [
+    "Slack all"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c08",
+   "source": "constructed",
+   "said": "plack first",
+   "category": "flags",
+   "alternatives": [
+    "plack first"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c09",
+   "source": "constructed",
+   "said": "pleading last and first",
+   "category": "flags",
+   "alternatives": [
+    "pleading last and first"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "bleeding_on_probing",
+     "sites": [
+      "last",
+      "first"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c10",
+   "source": "constructed",
+   "said": "vacation grade 1",
+   "category": "tooth_values",
+   "alternatives": [
+    "vacation grade 1"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "c11",
+   "source": "constructed",
+   "said": "mobility grade 3",
+   "category": "tooth_values",
+   "alternatives": [
+    "mobility grade 3"
+   ],
+   "expect": [
+    {
+     "type": "mobility",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": "c12",
+   "source": "constructed",
+   "said": "jump to 26 inside",
+   "category": "navigation",
+   "alternatives": [
+    "jump to 26 inside"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "26",
+     "side": "inside"
+    }
+   ]
+  },
+  {
+   "id": "c13",
+   "source": "constructed",
+   "said": "46 is missing",
+   "category": "missing",
+   "alternatives": [
+    "46 is missing"
+   ],
+   "expect": [
+    {
+     "type": "missing",
+     "tooth": "46"
+    }
+   ]
+  },
+  {
+   "id": "c14",
+   "source": "constructed",
+   "said": "make that deep 12",
+   "category": "correction",
+   "alternatives": [
+    "make that deep 12"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 12
+    }
+   ]
+  },
+  {
+   "id": "c15",
+   "source": "constructed",
+   "said": "mobility 7",
+   "category": "must_reject",
+   "alternatives": [
+    "mobility 7"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c16",
+   "source": "constructed",
+   "said": "recession 1 0",
+   "category": "must_reject",
+   "alternatives": [
+    "recession 1 0"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c17",
+   "source": "constructed",
+   "said": "deep 17",
+   "category": "must_reject",
+   "alternatives": [
+    "deep 17"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c18",
+   "source": "constructed",
+   "said": "jump to 99",
+   "category": "must_reject",
+   "alternatives": [
+    "jump to 99"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c19",
+   "source": "constructed",
+   "said": "undo 323",
+   "category": "must_reject",
+   "alternatives": [
+    "undo 323"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c20",
+   "source": "constructed",
+   "said": "hello there",
+   "category": "must_reject",
+   "alternatives": [
+    "hello there"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c21",
+   "source": "constructed",
+   "said": "32",
+   "category": "must_reject",
+   "alternatives": [
+    "32"
+   ],
+   "expect": null
+  },
+  {
+   "id": "c22",
+   "source": "constructed",
+   "said": "furcation grade 5",
+   "category": "must_reject",
+   "alternatives": [
+    "furcation grade 5"
+   ],
+   "expect": null
+  }
+ ]
+}
