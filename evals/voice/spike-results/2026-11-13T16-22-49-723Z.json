@@ -1,0 +1,341 @@
+{
+  "round": 2,
+  "recorded_at": "2026-11-13T16:22:49.689Z",
+  "lang": "en-IN",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+  "results": [
+    {
+      "id": "w01",
+      "say": "jump to one six buccal",
+      "expect": [
+        "jump",
+        "16",
+        "buccal"
+      ],
+      "alternatives": [
+        {
+          "transcript": "jump to one side button",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 16 button",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3163
+    },
+    {
+      "id": "w02",
+      "say": "jump to two four lingual",
+      "expect": [
+        "jump",
+        "24",
+        "lingual"
+      ],
+      "alternatives": [
+        {
+          "transcript": "jump to do for lingual",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2766
+    },
+    {
+      "id": "w03",
+      "say": "jump to one four palatal",
+      "expect": [
+        "jump",
+        "14",
+        "palatal"
+      ],
+      "alternatives": [
+        {
+          "transcript": "jump to 14 Palatine",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 14 palatin",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 14 palatal",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2731
+    },
+    {
+      "id": "w04",
+      "say": "jump to three six outside",
+      "expect": [
+        "jump",
+        "36",
+        "outside"
+      ],
+      "alternatives": [
+        {
+          "transcript": "jump to 36 outside",
+          "confidence": 0
+        },
+        {
+          "transcript": "jump to 36 out side",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2752
+    },
+    {
+      "id": "w05",
+      "say": "jump to four six inside",
+      "expect": [
+        "jump",
+        "46",
+        "inside"
+      ],
+      "alternatives": [
+        {
+          "transcript": "jump to 46 inside",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2830
+    },
+    {
+      "id": "w06",
+      "say": "bleeding first",
+      "expect": [
+        "bleeding",
+        "first"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding first",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2135
+    },
+    {
+      "id": "w07",
+      "say": "bleeding last",
+      "expect": [
+        "bleeding",
+        "last"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding last",
+          "confidence": 0
+        },
+        {
+          "transcript": "pleading last",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2139
+    },
+    {
+      "id": "w08",
+      "say": "bleeding middle",
+      "expect": [
+        "bleeding",
+        "middle"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding middle",
+          "confidence": 0
+        },
+        {
+          "transcript": "pleading middle",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2640
+    },
+    {
+      "id": "w09",
+      "say": "bleeding mesial",
+      "expect": [
+        "bleeding",
+        "mesial"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding museum",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding musical",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding music",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding measles",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding medial",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2292
+    },
+    {
+      "id": "w10",
+      "say": "bleeding distal",
+      "expect": [
+        "bleeding",
+        "distal"
+      ],
+      "alternatives": [
+        {
+          "transcript": "bleeding distance",
+          "confidence": 0
+        },
+        {
+          "transcript": "leading digital",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding digital",
+          "confidence": 0
+        },
+        {
+          "transcript": "leading distance",
+          "confidence": 0
+        },
+        {
+          "transcript": "bleeding distal",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1963
+    },
+    {
+      "id": "w11",
+      "say": "plaque present",
+      "expect": [
+        "plaque",
+        "all"
+      ],
+      "alternatives": [
+        {
+          "transcript": "plant present",
+          "confidence": 0
+        },
+        {
+          "transcript": "Flat present",
+          "confidence": 0
+        },
+        {
+          "transcript": "cloth present",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 1789
+    },
+    {
+      "id": "w12",
+      "say": "pus first",
+      "expect": [
+        "suppuration",
+        "first"
+      ],
+      "alternatives": [
+        {
+          "transcript": "first first",
+          "confidence": 0
+        },
+        {
+          "transcript": "Bus first",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2247
+    },
+    {
+      "id": "w13",
+      "say": "furcation grade two",
+      "expect": [
+        "furcation",
+        "2"
+      ],
+      "alternatives": [
+        {
+          "transcript": "for Occasion grade 2",
+          "confidence": 0
+        },
+        {
+          "transcript": "vocation grade 2",
+          "confidence": 0
+        },
+        {
+          "transcript": "vacation grade 2",
+          "confidence": 0
+        },
+        {
+          "transcript": "for education grade 2",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3846
+    },
+    {
+      "id": "w14",
+      "say": "deep twelve",
+      "expect": [
+        "12"
+      ],
+      "alternatives": [
+        {
+          "transcript": "deep 12",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 2123
+    },
+    {
+      "id": "w15",
+      "say": "three, deep eleven, four",
+      "expect": [
+        "3",
+        "11",
+        "4"
+      ],
+      "alternatives": [
+        {
+          "transcript": "3D 114",
+          "confidence": 0
+        },
+        {
+          "transcript": "three deep level 4",
+          "confidence": 0
+        },
+        {
+          "transcript": "3D 11 4",
+          "confidence": 0
+        }
+      ],
+      "error": null,
+      "ms": 3724
+    }
+  ]
+}
