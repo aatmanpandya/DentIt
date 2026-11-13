@@ -76,23 +76,37 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     onHighlight(last.cells);
   }
 
+  // Development only: every phrase goes to evals/voice/session-log.jsonl for review.
+  function logPhrase(alternatives: string[], outcome: string, note: string) {
+    if (process.env.NODE_ENV !== "development") return;
+    void fetch("/api/dev/voice-log", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ alternatives, outcome, note, next: next ? `${next.tooth} ${next.side}` : null, route }),
+    }).catch(() => {});
+  }
+
   function handlePhrase(alternatives: string[]) {
     setInterim("");
     const parsed = parseAlternatives(alternatives);
     const text = parsed.ok && parsed.used ? parsed.used : (alternatives[0] ?? "");
     if (!parsed.ok) {
       setHeard({ text, ok: false, note: `${parsed.reason} Nothing written.` });
+      logPhrase(alternatives, "rejected", parsed.reason);
       return;
     }
     if (parsed.commands[0].type === "undo") {
+      logPhrase(alternatives, "undo", "");
       undo();
       return;
     }
     const plan = planPhrase(parsed.commands, voice, { steps, draftFor: knownDraft, hasFurcation });
     if (!plan.ok) {
       setHeard({ text, ok: false, note: `${plan.reason} Nothing written.` });
+      logPhrase(alternatives, "rejected", plan.reason);
       return;
     }
+    logPhrase(alternatives, "written", JSON.stringify(parsed.commands));
     applyVoice(plan.changes, plan.skips);
     setHistory((h) => [...h.slice(-49), { changes: plan.changes, skips: plan.skips, voiceBefore: voice, text, cells: plan.cells }]);
     setVoice(plan.voice);
