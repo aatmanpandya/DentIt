@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id } = await params;
 
-    const parsed = createConditionSchema.safeParse(await req.json());
+    const parsed = createConditionSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the condition details.", parsed.error.issues);
     }

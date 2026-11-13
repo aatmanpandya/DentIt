@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   try {
     const actor = await requireAuth(req);
 
-    const parsed = createPatientSchema.safeParse(await req.json());
+    const parsed = createPatientSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the patient details.", parsed.error.issues);
     }

@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id } = await params;
 
-    const parsed = updateProcedureCodeSchema.safeParse(await req.json());
+    const parsed = updateProcedureCodeSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the procedure code details.", parsed.error.issues);
     }

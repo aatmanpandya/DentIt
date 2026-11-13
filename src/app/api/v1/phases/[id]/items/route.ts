@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id } = await params;
 
-    const parsed = addItemSchema.safeParse(await req.json());
+    const parsed = addItemSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the procedure to add.", parsed.error.issues);
     }

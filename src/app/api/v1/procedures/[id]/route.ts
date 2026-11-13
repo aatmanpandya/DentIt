@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
     const actor = await requireAuth(req);
     const { id } = await params;
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
 
     if (body && typeof body === "object" && "to_status" in body) {
       const parsed = updateProcedureStatusSchema.safeParse(body);

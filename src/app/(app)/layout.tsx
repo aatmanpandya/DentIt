@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { NavRail } from "@/components/shell/nav-rail";
 import { TopBar } from "@/components/shell/top-bar";
 import { ToastProvider } from "@/components/ui/toast";
+import { QueryErrorToasts } from "@/components/ui/query-error-toasts";
 import { LogoMark } from "@/components/brand/logo";
 
 export default function AppShellLayout({ children }: { children: ReactNode }) {
@@ -30,6 +31,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
 
   return (
     <ToastProvider>
+      <QueryErrorToasts />
       {/* print: the fixed-height scroll shell would clip a long invoice to one page. */}
       <div className="flex h-screen flex-col bg-paper print:block print:h-auto">
         <TopBar />

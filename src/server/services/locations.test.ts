@@ -69,11 +69,14 @@ describe("listLocations", () => {
     const [otherOrg] = await adminDb.insert(organizations).values({ name: "__locations_other_org" }).returning();
     await adminDb.insert(locations).values({ organizationId: otherOrg.id, name: "Other Clinic" });
 
-    const result = await listLocations(actor);
-
-    expect(result).toEqual([]);
-    await wipeOrganizationData(adminDb, otherOrg.id);
-    await adminDb.delete(organizations).where(eq(organizations.id, otherOrg.id));
+    try {
+      const result = await listLocations(actor);
+      expect(result).toEqual([]);
+    } finally {
+      // In finally: a failing assertion used to leave this org behind in the dev database.
+      await wipeOrganizationData(adminDb, otherOrg.id);
+      await adminDb.delete(organizations).where(eq(organizations.id, otherOrg.id));
+    }
   });
 });
 
@@ -99,10 +102,12 @@ describe("listOperatories", () => {
     const [otherOrg] = await adminDb.insert(organizations).values({ name: "__locations_other_org2" }).returning();
     const [otherLoc] = await adminDb.insert(locations).values({ organizationId: otherOrg.id, name: "Other" }).returning();
 
-    await expect(listOperatories(actor, otherLoc.id)).rejects.toThrow(LocationNotFoundError);
-
-    await wipeOrganizationData(adminDb, otherOrg.id);
-    await adminDb.delete(organizations).where(eq(organizations.id, otherOrg.id));
+    try {
+      await expect(listOperatories(actor, otherLoc.id)).rejects.toThrow(LocationNotFoundError);
+    } finally {
+      await wipeOrganizationData(adminDb, otherOrg.id);
+      await adminDb.delete(organizations).where(eq(organizations.id, otherOrg.id));
+    }
   });
 });
 
@@ -186,9 +191,11 @@ describe("listProviderSchedule", () => {
       .values({ organizationId: otherOrg.id, email: "other-dentist@example.test", fullName: "Other Dentist", role: "owner" })
       .returning();
 
-    await expect(listProviderSchedule(actor, otherProvider.id)).rejects.toThrow(ProviderNotFoundError);
-
-    await wipeOrganizationData(adminDb, otherOrg.id);
-    await adminDb.delete(organizations).where(eq(organizations.id, otherOrg.id));
+    try {
+      await expect(listProviderSchedule(actor, otherProvider.id)).rejects.toThrow(ProviderNotFoundError);
+    } finally {
+      await wipeOrganizationData(adminDb, otherOrg.id);
+      await adminDb.delete(organizations).where(eq(organizations.id, otherOrg.id));
+    }
   });
 });

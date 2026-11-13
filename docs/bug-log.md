@@ -519,3 +519,38 @@ data consistency plus the seed. Every finding was checked against the code; this
   reference carried the old clinic's name, and a plan was accepted after its procedures were
   done. Corrected; seeded invoices take their GST status from the clinic.
 - `docs/specs/seed-data.md` updated (one location, counts, the clinic-hours rule).
+
+---
+
+## 35. Second final sweep: a bad id or bad JSON crashed 50-odd routes; failed loads looked empty
+
+This sweep changed method. Earlier sweeps read code area by area, and every fix was made where
+the bug was found. This one ran the app instead: data invariants against the seeded database
+(`npm run check:data`), malformed input against every API route (`npm run probe:api`, 2,790
+requests), and the demo path clicked through in the browser.
+
+- **A non-uuid id in an API URL** (`/patients/abc`) reached Postgres and came back as a 500 on
+  every route except the ledger's. The ledger routes checked ids themselves since 12 Nov; the
+  older ones were never brought in line. Fixed once for all routes in `src/proxy.ts` (a 404
+  before the handler runs), with tests.
+- **A missing or malformed JSON body** was a 500 on 29 routes. The newer routes already used
+  `req.json().catch(() => ({}))`; the older ones now do too, so it's a 422.
+- **A wrong patient link** (bad or deleted id) rendered the tabs over empty pages, and the Ledger
+  tab offered "Create invoice" with a ₹0.00 balance. The patient shell now shows "Patient not
+  found". The Ledger tab shows a load failure as a failure, not as ₹0.00.
+- **404s were retried,** so the invoice print page sat on its skeleton for up to 15 seconds
+  before saying the invoice couldn't be loaded. 4xx responses are no longer retried.
+- **Sixteen screens had no error state:** a dropped connection looked like an empty schedule or
+  no patients. One global toast ("Some data couldn't be loaded. Retry") now covers every query.
+- **Dr Nimisha was double-booked in the seed** (10:00 filling and 10:15 cleaning), introduced by
+  entry 34 moving the filling to her. The seed writes tables directly, skipping the service's
+  clash check. The cleaning moved to 10:45, and the seed now refuses a double-booked dentist or
+  patient before wiping anything.
+- **Test organisations left in the dev database** by tests that failed before their cleanup ran
+  (12 Nov). Cleanup is now in `finally`; the four leftovers were removed.
+- Ledger empty state said "Complete a treatment on the chart" while one was waiting to be billed.
+
+**Why the earlier sweeps missed these:** reviewers read code by area and judged what was in front
+of them; a fix in one route was never searched for in the others; nothing exercised the running
+app with bad input; and the seed bypasses the service rules, so its data was never checked
+against them. The probe and data checks are now scripts to rerun after any change.

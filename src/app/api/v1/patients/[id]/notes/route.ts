@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id } = await params;
 
-    const parsed = createNoteSchema.safeParse(await req.json());
+    const parsed = createNoteSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the note.", parsed.error.issues);
     }

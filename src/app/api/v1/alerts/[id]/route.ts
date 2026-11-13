@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id } = await params;
 
-    const parsed = updatePatientAlertSchema.safeParse(await req.json());
+    const parsed = updatePatientAlertSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the alert details.", parsed.error.issues);
     }

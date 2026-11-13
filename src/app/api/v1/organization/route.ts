@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const actor = await requireAuth(req);
 
-    const parsed = updateOrganizationSchema.safeParse(await req.json());
+    const parsed = updateOrganizationSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the organization settings.", parsed.error.issues);
     }

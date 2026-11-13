@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id, tooth } = await params;
 
-    const parsed = upsertPerioToothRecordSchema.safeParse(await req.json());
+    const parsed = upsertPerioToothRecordSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the measurements.", parsed.error.issues);
     }

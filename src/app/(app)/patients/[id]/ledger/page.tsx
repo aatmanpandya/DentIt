@@ -42,7 +42,7 @@ export default function PatientLedgerPage() {
   const timeZone = user?.organization.timezone ?? "Asia/Kolkata";
   const canWrite = !!user && LEDGER_WRITE_ROLES.has(user.role);
 
-  const { data: ledger, isLoading } = useQuery({ queryKey: ["patient-ledger", params.id], queryFn: () => getPatientLedger(params.id) });
+  const { data: ledger, isLoading, isError: ledgerFailed } = useQuery({ queryKey: ["patient-ledger", params.id], queryFn: () => getPatientLedger(params.id) });
   // ?bill=1 comes from the chart's "Treatment completed — Create invoice" prompt.
   const searchParams = useSearchParams();
   const [invoicePanelOpen, setInvoicePanelOpen] = useState(false);
@@ -100,7 +100,7 @@ export default function PatientLedgerPage() {
           <span className="text-[12px] text-ink-soft">{balancePaise < 0 ? "Credit" : "Balance due"}</span>
           <div className={clsx("font-data text-[24px]", balancePaise > 0 ? "text-ink" : "text-healthy")}>
             {/* Net figure, same as the patient header: credit = −balance (not gross unapplied credit). */}
-            {formatRupees(balancePaise < 0 ? fromPaise(-balancePaise) : (ledger?.balance ?? "0.00"))}
+            {ledger ? formatRupees(balancePaise < 0 ? fromPaise(-balancePaise) : ledger.balance) : "—"}
           </div>
           {ledger && balancePaise >= 0 && ledger.credit !== "0.00" && (
             <span className="text-[11px] text-ink-soft">{formatRupees(ledger.credit)} received but not yet applied to an invoice (already counted above)</span>
@@ -141,13 +141,21 @@ export default function PatientLedgerPage() {
       )}
 
       <div className="min-h-0 flex-1 overflow-auto px-6 py-4">
-        {isLoading ? null : !ledger || (ledger.invoices.length === 0 && ledger.entries.length === 0) ? (
+        {isLoading ? null : ledgerFailed && !ledger ? (
+          // Used to fall through to "No invoices yet" and a ₹0.00 balance — wrong figures on a
+          // money screen (docs/bug-log.md entry 35).
+          <p className="py-8 text-center text-[13px] text-bleed">The ledger couldn&apos;t be loaded. Refresh to try again.</p>
+        ) : !ledger || (ledger.invoices.length === 0 && ledger.entries.length === 0) ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius)] border border-rule bg-surface text-ink-soft">
               <Receipt size={22} strokeWidth={1.5} />
             </div>
             <p className="text-[13px] text-ink">No invoices yet.</p>
-            <p className="max-w-xs text-[12px] text-ink-soft">Complete a treatment on the chart, then create an invoice for it here.</p>
+            <p className="max-w-xs text-[12px] text-ink-soft">
+              {readyToBill.length > 0
+                ? "Completed treatments are waiting above — create an invoice for them."
+                : "Complete a treatment on the chart, then create an invoice for it here."}
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">

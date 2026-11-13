@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const actor = await requireAuth(req);
 
-    const parsed = createProcedureCodeSchema.safeParse(await req.json());
+    const parsed = createProcedureCodeSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the procedure code details.", parsed.error.issues);
     }

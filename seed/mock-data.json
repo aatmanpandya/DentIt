@@ -160,7 +160,7 @@
     { "patient": "p1",  "provider": "nimisha", "operatory": "kp1", "type": "consult",    "day_offset": 0, "start": "09:30", "status": "completed" },
     { "patient": "p2",  "provider": "priya",  "operatory": "kp3", "type": "perio",      "day_offset": 0, "start": "09:30", "status": "completed" },
     { "patient": "p3",  "provider": "nimisha", "operatory": "kp2", "type": "filling",    "day_offset": 0, "start": "10:00", "status": "completed" },
-    { "patient": "p9",  "provider": "nimisha", "operatory": "kp1", "type": "cleaning",   "day_offset": 0, "start": "10:15", "status": "seated" },
+    { "patient": "p9",  "provider": "nimisha", "operatory": "kp1", "type": "cleaning",   "day_offset": 0, "start": "10:45", "status": "seated" },
     { "patient": "p5",  "provider": "vikram", "operatory": "kp2", "type": "extraction", "day_offset": 0, "start": "11:00", "status": "arrived" },
     { "patient": "p6",  "provider": "priya",  "operatory": "kp3", "type": "cleaning",   "day_offset": 0, "start": "11:15", "status": "confirmed" },
     { "patient": "p12", "provider": "nimisha", "operatory": "kp1", "type": "rct",        "day_offset": 0, "start": "12:00", "status": "confirmed" },

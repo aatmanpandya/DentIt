@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const actor = await requireAuth(req);
 
-    const parsed = createFeeScheduleSchema.safeParse(await req.json());
+    const parsed = createFeeScheduleSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the fee schedule details.", parsed.error.issues);
     }

@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const actor = await requireAuth(req);
     const { id } = await params;
 
-    const parsed = reorderSchema.safeParse(await req.json());
+    const parsed = reorderSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return errorResponse(422, "VALIDATION_FAILED", "Check the new position.", parsed.error.issues);
     }

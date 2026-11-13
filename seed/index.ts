@@ -77,7 +77,30 @@ function atOffset(dayOffset: number, time?: string): Date {
 
 type SiteTuple = [number, number, boolean, boolean, boolean];
 
+/**
+ * The seed writes appointments straight into the table, skipping the service's clash checks
+ * (the database itself only refuses a double-booked chair). Check the mock data for a
+ * double-booked dentist or patient before anything is wiped, so a mock-data edit can't quietly
+ * put one in the demo (docs/bug-log.md entry 35).
+ */
+function assertNoAppointmentClashes() {
+  const booked: { index: number; provider: string; patient: string; start: Date; end: Date }[] = [];
+  data.appointments.forEach((a, index) => {
+    if (a.status === "cancelled") return;
+    const start = atOffset(isSundayInClinic(a.day_offset) ? a.day_offset + 1 : a.day_offset, a.start);
+    const minutes = data.appointment_types.find((t) => t.key === a.type)?.default_duration_minutes ?? 30;
+    const end = new Date(start.getTime() + minutes * 60_000);
+    for (const b of booked) {
+      if (start < b.end && b.start < end && (b.provider === a.provider || b.patient === a.patient)) {
+        throw new Error(`mock-data.json appointment #${index} (${a.patient} with ${a.provider} at ${a.start}) overlaps #${b.index}`);
+      }
+    }
+    booked.push({ index, provider: a.provider, patient: a.patient, start, end });
+  });
+}
+
 async function main() {
+  assertNoAppointmentClashes();
   console.log(`Seeding "${data.organization.name}"...`);
 
   // --- wipe any prior run of this demo org ---

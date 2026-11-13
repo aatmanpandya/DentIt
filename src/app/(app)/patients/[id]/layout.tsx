@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Pencil } from "lucide-react";
 import clsx from "clsx";
 import { getPatient, getPatientSummary } from "@/lib/patients-api";
+import { ApiError } from "@/lib/api-client";
 
 const TABS = [
   { href: "", label: "Chart" },
@@ -42,13 +43,27 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const basePath = `/patients/${params.id}`;
 
-  const { data: patient } = useQuery({ queryKey: ["patient", params.id], queryFn: () => getPatient(params.id) });
+  const { data: patient, error: patientError } = useQuery({ queryKey: ["patient", params.id], queryFn: () => getPatient(params.id) });
   const { data: summary } = useQuery({
     queryKey: ["patient-summary", params.id],
     queryFn: () => getPatientSummary(params.id),
   });
 
   const activeAlerts = summary?.alerts.filter((a) => a.is_active) ?? [];
+
+  // A wrong or stale link (deleted patient, typo, another clinic's id) used to render the tabs
+  // over empty pages — the Ledger tab even offered "Create invoice" (docs/bug-log.md entry 35).
+  if (patientError instanceof ApiError && patientError.status === 404) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+        <p className="text-[14px] font-medium text-ink">Patient not found</p>
+        <p className="text-[13px] text-ink-soft">The link may be wrong, or the patient was deleted.</p>
+        <Link href="/patients" className="mt-2 text-[13px] font-medium text-steel hover:underline">
+          Back to Patients
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col print:block print:h-auto">
