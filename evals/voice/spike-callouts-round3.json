@@ -1,0 +1,15 @@
+{
+  "about": "Round 3: plaque came back as five different words in rounds 1-2 (delete, play it, plant, flat, cloth); suppuration came back as 'separation' twice. Tests candidate words for plaque and confirms suppuration.",
+  "lines": [
+    { "id": "p01", "category": "plaque", "say": "plaque", "expect": ["plaque"] },
+    { "id": "p02", "category": "plaque", "say": "plaque first", "expect": ["plaque", "first"] },
+    { "id": "p03", "category": "plaque", "say": "plaque index all", "expect": ["plaque", "all"] },
+    { "id": "p04", "category": "plaque", "say": "biofilm all", "expect": ["plaque", "all"] },
+    { "id": "p05", "category": "plaque", "say": "deposits all", "expect": ["plaque", "all"] },
+    { "id": "p06", "category": "plaque", "say": "debris middle", "expect": ["plaque", "middle"] },
+    { "id": "p07", "category": "plaque", "say": "dental plaque last", "expect": ["plaque", "last"] },
+    { "id": "s01", "category": "suppuration", "say": "suppuration first", "expect": ["suppuration", "first"] },
+    { "id": "s02", "category": "suppuration", "say": "suppuration all", "expect": ["suppuration", "all"] },
+    { "id": "s03", "category": "suppuration", "say": "exudate middle", "expect": ["suppuration", "middle"] }
+  ]
+}

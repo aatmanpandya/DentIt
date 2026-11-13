@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import round1 from "../../../../evals/voice/spike-callouts.json";
 import round2 from "../../../../evals/voice/spike-callouts-round2.json";
+import round3 from "../../../../evals/voice/spike-callouts-round3.json";
 import { useSearchParams } from "next/navigation";
 
 /**
@@ -44,9 +45,10 @@ export default function VoiceSpikePage() {
 }
 
 function VoiceSpike() {
-  // ?round=2 reads the follow-up set (replacement words for the ones round 1 misheard).
-  const round = useSearchParams().get("round") === "2" ? 2 : 1;
-  const lines = (round === 2 ? round2 : round1).lines;
+  // ?round=2 / ?round=3 read the follow-up sets (replacement words for ones Chrome misheard).
+  const param = useSearchParams().get("round");
+  const round = param === "3" ? 3 : param === "2" ? 2 : 1;
+  const lines = (round === 3 ? round3 : round === 2 ? round2 : round1).lines;
   const [index, setIndex] = useState(0);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
@@ -123,7 +125,7 @@ function VoiceSpike() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 bg-paper px-6 py-10 text-ink">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-[18px] font-medium">Voice reading test{round === 2 ? " · round 2" : ""}</h1>
+        <h1 className="text-[18px] font-medium">Voice reading test{round > 1 ? ` · round ${round}` : ""}</h1>
         <span className="font-data text-[12px] text-ink-soft">
           {done} / {lines.length} recorded
         </span>
