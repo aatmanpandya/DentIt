@@ -219,6 +219,7 @@ and every finding listed here was re-checked against the code before it was fixe
   re-derived on completion and on cancellation, for every plan containing the procedure.
 - **Tests:** "completes the plan even if an earlier item was invoiced…", "…when the last open
   item is cancelled".
+- **Commit:** `f9bc1fa`
 
 ## 11. Completing a procedure that's on an unaccepted plan breaks that plan
 
@@ -229,6 +230,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** `updateProcedureStatus` refuses any change to a `planned` procedure that is on a
   draft/presented plan, naming the plan (`PROCEDURE_ON_OPEN_PLAN`, 422). The chart panel now
   shows refused changes instead of failing silently (it showed no errors at all before).
+- **Commit:** `f9bc1fa`
 
 ## 12. A procedure could be marked "invoiced" with no invoice
 
@@ -238,6 +240,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** `completed` has no manual transitions; only the ledger sets `invoiced`, when it
   creates a real invoice. Tests that walked to `invoiced` through the chart now mark it the way
   the ledger does.
+- **Commit:** `f9bc1fa`
 
 ## 13. Deleting a procedure that's on a plan returned a 500
 
@@ -245,6 +248,7 @@ and every finding listed here was re-checked against the code before it was fixe
   plan hit the `treatment_plan_items` foreign key: an unmapped Postgres 23503, so a 500.
 - **Fix:** `deleteProcedure` checks plan membership first and refuses with the plan's name
   (`PROCEDURE_ON_PLAN`, 422).
+- **Commit:** `f9bc1fa`
 
 ## 14. The void confirmation promised the wrong amount of credit
 
@@ -254,6 +258,7 @@ and every finding listed here was re-checked against the code before it was fixe
   also subtracts adjustments, so discounts counted as payments.
 - **Fix:** the ledger returns `paid` per invoice (sum of its allocations) and the confirmation
   uses it. Test: "reports what was actually paid on each invoice, net of discounts".
+- **Commit:** `4d8ceec`
 
 ## 15. Two payments at the same moment could overpay an invoice; credit could be spent twice
 
@@ -267,6 +272,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** every ledger write locks the patient row first (`SELECT … FOR UPDATE`), so one
   patient's ledger writes queue. A single lock taken first everywhere also rules out the
   lock-order deadlock a reviewer flagged on overlapping procedure sets.
+- **Commit:** `4d8ceec`
 
 ## 16. A "discount" could raise the bill; oversized amounts gave a 500
 
@@ -274,6 +280,7 @@ and every finding listed here was re-checked against the code before it was fixe
   Amounts over ₹99,999,999.99 passed validation and failed in Postgres (numeric overflow, 500).
 - **Fix:** discounts and write-offs must be negative (corrections may be either sign); money
   is capped at 8 whole digits in the request schema and in `toPaise`.
+- **Commit:** `4d8ceec`
 
 ## 17. Smaller ledger fixes from the same review
 
@@ -284,6 +291,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - The apply-credit audit row used the invoice id as the allocation id; fixed.
 - Record payment kept the last location/method across patients and could capture an invoice
   for "apply credit" before the ledger loaded; both now reset or derive on each opening.
+- **Commit:** `4d8ceec`
 
 ## 18. A wrong password said "Sign in to continue."
 
@@ -294,6 +302,7 @@ and every finding listed here was re-checked against the code before it was fixe
   generic error (and cleared tokens); with a stale one it re-POSTed the login.
 - **Fix:** only a 401 with code `AUTH_TOKEN_EXPIRED` triggers a refresh, and never for
   `/auth/login`; any other 401 reaches the caller as-is. Verified in the browser.
+- **Commit:** `8fe6c1a`
 
 ## 19. Refreshing restarted the 12-hour session; a bad refresh token gave a 500
 
@@ -307,12 +316,14 @@ and every finding listed here was re-checked against the code before it was fixe
   Existing sessions (tokens without the new claim) sign in once more.
 - **Not done:** refresh tokens are still not rotated or revocable server-side (no store of
   used `jti`s) — a larger change, noted for after the pilot.
+- **Commit:** `8fe6c1a`
 
 ## 20. An expired lockout re-locked after one more wrong password
 
 - **Symptom:** after a 15-minute lock expired, the failure count was still 5, so a single
   wrong password made it 6 and locked the account again.
 - **Fix:** a lock that has run out starts the count from zero.
+- **Commit:** `8fe6c1a`
 
 ## 21. The location-access table had no row-level security
 
@@ -327,6 +338,7 @@ and every finding listed here was re-checked against the code before it was fixe
   `dbForRequest`. Writing that test reproduced a second, latent bug: `wipeOrganizationData`
   never cleared this table, so wiping any org that had such rows failed with "no progress on:
   locations, users". It now clears it first.
+- **Commit:** `9dedccf`
 
 ## 22. The app's database role had a publicly known password in every environment
 
@@ -335,6 +347,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** the password comes from `DATABASE_URL_APP` (`db/app-role.ts`), is substituted into
   `rls.sql` by `migrate.ts`, and is re-applied with `ALTER ROLE` on each migrate so the role
   follows the environment. Production refuses to migrate without one, or with the dev default.
+- **Commit:** `9dedccf`
 
 ## 23. Moving an appointment 15 minutes in the same chair was refused as a clash with itself
 
@@ -350,6 +363,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Noted while testing:** one unrelated appointment test timed out at 5 s during the full run
   and passed in 345 ms alone — the machine's load average was ~68 at the time (Spotlight and the
   Docker VM), not a code problem.
+- **Commit:** `0b8a27d`
 
 ## 24. A location's fee schedule hid clinic-wide prices it didn't list
 
@@ -359,11 +373,13 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Root cause:** `resolvePrice` chose one schedule and stopped if it lacked the code.
 - **Fix:** walk the effective schedules in preference order (location's, then org-wide;
   default first, then newest) and take the first that prices the code. Two new tests.
+- **Commit:** `4f52af2`
 
 ## 25. `?active=false` returned active procedure codes
 
 - `z.coerce.boolean()` turns any non-empty string, including `"false"`, into `true`. Now an
   explicit `"true" | "false"` enum. Schema test added.
+- **Commit:** `4f52af2`
 
 ## 26. Patient numbers broke past P-9999, and simultaneous creates could collide
 
@@ -373,6 +389,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** order by the numeric part, and take a per-organisation advisory lock
   (`pg_advisory_xact_lock`) for the allocation. Tests: "counts past P-9999 numerically",
   "gives simultaneous creates distinct numbers".
+- **Commit:** `4f52af2`
 
 ## 27. "Today" was the UTC date
 
@@ -380,6 +397,7 @@ and every finding listed here was re-checked against the code before it was fixe
   yesterday's fee schedule and new perio exams were dated the day before.
 - **Fix:** the server's default pricing date and the perio / fee-schedule pages use the
   clinic's timezone (`zonedDateString`, `src/lib/dates.ts`).
+- **Commit:** `4f52af2`
 
 ## 28. Old invoices reprinted as tax invoices after the clinic registered for GST
 
@@ -391,6 +409,7 @@ and every finding listed here was re-checked against the code before it was fixe
   printout reads those. Tests: "keeps an invoice issued while unregistered a receipt…",
   "records the GSTIN…". (Written together with the fix, not run red first — the fields they
   assert didn't exist before.)
+- **Commit:** `f3bd2a5`
 
 ## 29. Seeded appointment times depended on the machine's timezone
 
@@ -400,6 +419,7 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** dates are computed in the clinic's calendar and clock times converted with
   `zonedDateTimeToInstant`. Verified by seeding with `TZ=UTC`: today's appointments still start
   at 09:30 IST.
+- **Commit:** `f3bd2a5`
 
 ## 30. Renaming the demo clinic left the old one behind, and the seed crashed
 
@@ -412,6 +432,7 @@ and every finding listed here was re-checked against the code before it was fixe
   demo went to a single location.
 - **Fix:** an appointment takes its location from its operatory's own record; the seed wipes
   every org named in `name` or `previous_names` (backed up first, as always).
+- **Commit:** `62399f9`
 
 ## 31. A reversed payment still printed as "Paid" on the invoice
 
@@ -419,3 +440,4 @@ and every finding listed here was re-checked against the code before it was fixe
   the invoice, including those of reversed payments, and the print page summed them as "Paid".
 - **Fix:** `getInvoice` drops reversed payments' allocations, and returns the payments
   themselves (date, method, reference) for the new "Payments received" block.
+- **Commit:** `62399f9`
