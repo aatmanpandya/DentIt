@@ -586,3 +586,15 @@ describe("plan and procedure lifecycle together", () => {
     await expect(deleteProcedure(actor, proc.id)).rejects.toThrow(ProcedureOnPlanError);
   });
 });
+
+describe("deleting a procedure on a locked plan", () => {
+  afterEach(cleanup);
+  it("says to cancel it instead of the impossible 'remove it from the plan'", async () => {
+    const { actor, patient, code } = await setup();
+    const detail = await createTreatmentPlan(actor, patient.id, { name: "Turned down" });
+    const proc = await plannedProcedure(actor, patient.id, code.id);
+    await addItemToPhase(actor, detail.phases[0].phase.id, { charted_procedure_id: proc.id });
+    await updateTreatmentPlan(actor, detail.plan.id, { to_status: "declined" });
+    await expect(deleteProcedure(actor, proc.id)).rejects.toThrow(/declined plan "Turned down".*Cancel it instead/);
+  });
+});

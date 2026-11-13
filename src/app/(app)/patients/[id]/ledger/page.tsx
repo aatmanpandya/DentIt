@@ -89,10 +89,11 @@ export default function PatientLedgerPage() {
         <div>
           <span className="text-[12px] text-ink-soft">{balancePaise < 0 ? "Credit" : "Balance due"}</span>
           <div className={clsx("font-data text-[24px]", balancePaise > 0 ? "text-ink" : "text-healthy")}>
-            {formatRupees(balancePaise < 0 ? ledger!.credit : (ledger?.balance ?? "0.00"))}
+            {/* Net figure, same as the patient header: credit = −balance (not gross unapplied credit). */}
+            {formatRupees(balancePaise < 0 ? fromPaise(-balancePaise) : (ledger?.balance ?? "0.00"))}
           </div>
           {ledger && balancePaise >= 0 && ledger.credit !== "0.00" && (
-            <span className="text-[11px] text-ink-soft">Includes {formatRupees(ledger.credit)} unapplied credit</span>
+            <span className="text-[11px] text-ink-soft">{formatRupees(ledger.credit)} received but not yet applied to an invoice (already counted above)</span>
           )}
         </div>
         {canWrite && (
@@ -259,7 +260,8 @@ function InvoiceRow({
           {isVoid ? (
             <>Void — {invoice.void_reason}</>
           ) : invoice.outstanding === "0.00" ? (
-            <span className="text-healthy">Paid</span>
+            // Nothing due but nothing paid either (e.g. fully discounted) isn't "Paid".
+            <span className="text-healthy">{toPaise(invoice.paid) > 0 ? "Paid" : "Settled"}</span>
           ) : (
             <>{formatRupees(invoice.outstanding)} due</>
           )}

@@ -535,6 +535,9 @@ export async function recordPayment(actor: RequestActor, input: RecordPaymentInp
         .limit(1);
       if (!existing) return null;
       if (existing.requestHash !== requestHash) throw new IdempotencyKeyReusedError();
+      // A retry of a payment that has since been reversed must not look like money received.
+      const [reversal] = await tx.select().from(paymentReversals).where(eq(paymentReversals.paymentId, existing.id)).limit(1);
+      if (reversal) throw new PaymentAlreadyReversedError();
       const allocations = await tx.select().from(paymentAllocations).where(eq(paymentAllocations.paymentId, existing.id));
       return { payment: existing, allocations, replayed: true as const };
     });

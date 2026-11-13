@@ -5,16 +5,18 @@
 -- WHERE clause in application code leaks nothing, because Postgres itself won't return
 -- rows outside the session's app.current_org.
 
--- The password is substituted by migrate.ts from DATABASE_URL_APP (see db/app-role.ts) —
--- never hard-coded here — and re-applied on every migrate so the role follows the env.
+-- Passwords are substituted by migrate.ts (see db/app-role.ts), never hard-coded here.
+-- A missing role is created with the configured password (the dev default locally); an
+-- existing role's password is reset only when DATABASE_URL_APP supplies one
+-- (the sync placeholder below becomes an ALTER ROLE, or nothing).
 do $$
 begin
   if not exists (select from pg_roles where rolname = 'dentit_app') then
-    create role dentit_app login nobypassrls;
+    create role dentit_app login password __APP_ROLE_PASSWORD__ nobypassrls;
   end if;
 end
 $$;
-alter role dentit_app with login password __APP_ROLE_PASSWORD__;
+__APP_ROLE_PASSWORD_SYNC__
 
 grant usage on schema public to dentit_app;
 grant usage, select on all sequences in schema public to dentit_app;

@@ -132,6 +132,14 @@ is append-only and `rls.sql` refuses UPDATE/DELETE on payments.
 - Same permission rule as voids and adjustments: managers any time; front desk only on the
   IST day the money was received. Already reversed: `PAYMENT_ALREADY_REVERSED` (422). Audited.
 
+## Discounts and GST (known limitation)
+
+A discount, whether given at invoicing or later via Adjust, is an adjustment against the
+invoice total: it lowers what the patient owes but does not recompute the lines' tax. For an
+unregistered clinic (the pilot) there is no tax, so nothing changes. A GST-registered clinic
+discounting a taxable line would, strictly, reduce the taxable value too; that needs a
+line-level discount and is left for when a registered clinic uses the ledger.
+
 ## Adjustments
 
 `POST /adjustments { invoice_id, amount, adjustment_type, reason }`. Signed amount (a discount or

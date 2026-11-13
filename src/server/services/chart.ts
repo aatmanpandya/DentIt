@@ -93,8 +93,14 @@ export class ProcedureOnOpenPlanError extends Error {
 
 /** Deleting a procedure a plan item points at would break that plan. 422 PROCEDURE_ON_PLAN. */
 export class ProcedureOnPlanError extends Error {
-  constructor(planName: string) {
-    super(`This treatment is on the plan "${planName}". Remove it from the plan before deleting it.`);
+  constructor(planName: string, planStatus?: string) {
+    // A locked plan (declined/accepted/completed) can't have items removed, so "remove it
+    // from the plan" would be a dead end there — say what does work (bug-log entry 32).
+    super(
+      planStatus === "draft" || planStatus === "presented" || planStatus === undefined
+        ? `This treatment is on the plan "${planName}". Remove it from the plan before deleting it.`
+        : `This treatment is on the ${planStatus} plan "${planName}", so it's kept for the record. Cancel it instead.`,
+    );
     this.name = "ProcedureOnPlanError";
   }
 }
@@ -689,7 +695,7 @@ export async function deleteProcedure(actor: RequestActor, id: string) {
     if (before.status === "invoiced") throw new ProcedureAlreadyInvoicedError();
     if (before.status !== "planned") throw new ProcedureNotDeletableError();
     const onPlan = await findPlanContaining(tx, id);
-    if (onPlan) throw new ProcedureOnPlanError(onPlan.name);
+    if (onPlan) throw new ProcedureOnPlanError(onPlan.name, onPlan.status);
 
     await tx.delete(chartedProcedures).where(eq(chartedProcedures.id, id));
 

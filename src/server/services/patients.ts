@@ -68,7 +68,9 @@ async function nextPatientNumber(tx: Parameters<Parameters<typeof dbForRequest>[
     .orderBy(sql`nullif(regexp_replace(${patients.patientNumber}, '[^0-9]', '', 'g'), '')::bigint desc nulls last`)
     .limit(1);
 
-  const lastSeq = row ? Number(row.patientNumber.replace(/^P-/, "")) : 0;
+  // Digits only, matching the ORDER BY above: an imported number like "DEN/2024/001" must
+  // not turn into NaN → "P-0001" and collide (bug-log entry 32).
+  const lastSeq = row ? Number(row.patientNumber.replace(/[^0-9]/g, "") || "0") : 0;
   const next = Number.isFinite(lastSeq) ? lastSeq + 1 : 1;
   return `P-${String(next).padStart(4, "0")}`;
 }

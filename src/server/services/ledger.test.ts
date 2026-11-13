@@ -626,3 +626,16 @@ describe("createInvoice with a discount", () => {
     expect(await adminDb.select().from(invoices).where(eq(invoices.patientId, patient.id))).toEqual([]);
   });
 });
+
+// docs/bug-log.md entry 32: a retried payment request after the payment was reversed used to
+// come back as a normal, successful payment.
+describe("idempotent replay after reversal", () => {
+  afterEach(cleanup);
+  it("refuses to present a reversed payment as received", async () => {
+    const { owner, location, patient } = await setup();
+    const body = { patient_id: patient.id, location_id: location.id, amount: "500.00", method: "cash" as const };
+    const { payment } = await recordPayment(owner, body, "replay-key");
+    await reversePayment(owner, payment.id, "Bounced");
+    await expect(recordPayment(owner, body, "replay-key")).rejects.toThrow(PaymentAlreadyReversedError);
+  });
+});

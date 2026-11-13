@@ -441,3 +441,35 @@ and every finding listed here was re-checked against the code before it was fixe
 - **Fix:** `getInvoice` drops reversed payments' allocations, and returns the payments
   themselves (date, method, reference) for the new "Payments received" block.
 - **Commit:** `62399f9`
+
+---
+
+## 32. Final review sweep (13 Nov): smaller bugs in the day's new code
+
+Three read-only agents swept code written after the first review: server logic, screens, and
+data consistency plus the seed. Every finding was checked against the code; this entry and
+33–34 list the real ones.
+
+- **Not reproduced (and not changed):** "drafts leak to the next patient after searching".
+  Tested in the browser: selecting tooth 16 on one patient, searching to another, the panel was
+  reset. Next.js remounts the page when the patient id in the URL changes.
+- **Old invoices lost their GST status:** migration 0010 added `invoices.gst_registered`
+  defaulting to false with no backfill, so a registered clinic's earlier tax invoices would
+  reprint as plain receipts. Migration 0013 marks every invoice that charged tax as registered,
+  with the clinic's GSTIN.
+- **App role password:** `migrate.ts` substituted it with `String.replace`, which expands `$$`
+  and `$&` inside the password; and every migrate without `DATABASE_URL_APP` reset the role to
+  the dev password. Now replacer functions, and an existing role's password is only reset when
+  `DATABASE_URL_APP` supplies one. While fixing it I broke migrate myself — the new SQL comment
+  named the placeholder, `.replace` hit the comment first, Postgres rejected the script (nothing
+  applied). Fixed with `replaceAll` and a comment that no longer contains the token.
+- **A retried payment after its reversal** came back as a successful payment; now
+  `PAYMENT_ALREADY_REVERSED`.
+- **Deleting a procedure on a declined plan** said "remove it from the plan", which a locked
+  plan refuses; it now says to cancel it instead.
+- **An imported patient number** like `DEN/2024/001` made the next number NaN → `P-0001` and a
+  duplicate-key 500.
+- **Credit shown two ways:** the header showed net credit (−balance), the Ledger tab and
+  `/ledger` gross unapplied credit; with an open invoice the two disagreed. All now show net.
+  A void invoice's reprint no longer lists money that moved to credit as "Paid", and a fully
+  discounted invoice reads "Settled", not "Paid".

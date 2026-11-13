@@ -111,8 +111,8 @@ function Sheet({ inv }: { inv: InvoiceDetail }) {
             <h1 className="mb-2 text-[20px] font-semibold">{org.name}</h1>
           )}
           <address className="not-italic text-[11.5px] leading-snug text-ink-soft">
-            {address.map((line) => (
-              <div key={line}>{line}</div>
+            {address.map((line, i) => (
+              <div key={i}>{line}</div>
             ))}
             <div className="mt-1">
               {loc?.phone && <span>{formatPhone(loc.phone)}</span>}
@@ -170,8 +170,8 @@ function Sheet({ inv }: { inv: InvoiceDetail }) {
             <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-wider text-ink-soft">
               {inv.providers.length > 1 ? "Treating dentists" : "Treating dentist"}
             </div>
-            {inv.providers.map((p) => (
-              <div key={p.full_name}>
+            {inv.providers.map((p, i) => (
+              <div key={i}>
                 <span className="font-medium">{p.full_name}</span>
                 {p.qualification && <span className="text-ink-soft">, {p.qualification}</span>}
                 {p.registration_number && <div className="text-[11px] text-ink-soft">Reg. no. {p.registration_number}</div>}
@@ -215,7 +215,8 @@ function Sheet({ inv }: { inv: InvoiceDetail }) {
       {/* Totals, and the payments that make them up */}
       <section className="mt-5 flex items-start justify-between gap-10">
         <div className="min-w-0 flex-1 text-[11.5px]">
-          {inv.payments.length > 0 && (
+          {/* On a void invoice, money paid has moved to the patient's credit — don't list it as paid here. */}
+          {!isVoid && inv.payments.length > 0 && (
             <>
               <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-ink-soft">Payments received</div>
               <table className="w-full max-w-[340px] border-collapse">
@@ -256,7 +257,7 @@ function Sheet({ inv }: { inv: InvoiceDetail }) {
             <Row label="Total" value={formatRupees(inv.total)} strong />
           </div>
           {toPaise(adjusted) !== 0 && <Row label="Discounts & adjustments" value={formatRupees(adjusted)} />}
-          {toPaise(paid) > 0 && <Row label="Paid" value={formatRupees(`-${paid}`)} />}
+          {!isVoid && toPaise(paid) > 0 && <Row label="Paid" value={formatRupees(`-${paid}`)} />}
           {!isVoid && (
             <div className="mt-2 flex items-baseline justify-between rounded-[var(--radius)] bg-steel-lo px-3 py-2 print:bg-transparent print:px-0 print:border-t-2 print:border-ink">
               <span className="font-semibold">Balance due</span>

@@ -60,7 +60,7 @@ export default function LedgerPage() {
                         </Link>
                       </td>
                       <td className={clsx("text-right font-data", toPaise(b.balance) < 0 ? "text-healthy" : "text-ink")}>
-                        {toPaise(b.balance) < 0 ? `${formatRupees(b.credit)} credit` : `${formatRupees(b.balance)} due`}
+                        {toPaise(b.balance) < 0 ? `${formatRupees(fromPaise(-toPaise(b.balance)))} credit` : `${formatRupees(b.balance)} due`}
                       </td>
                     </tr>
                   ))}

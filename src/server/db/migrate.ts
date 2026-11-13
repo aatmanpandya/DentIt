@@ -22,10 +22,14 @@ async function main() {
   await migrate(db, { migrationsFolder: "./src/server/db/migrations" });
 
   console.log("Applying RLS policies and constraints...");
-  const rls = readFileSync(join(process.cwd(), "src/server/db/rls.sql"), "utf-8").replace(
-    "__APP_ROLE_PASSWORD__",
-    sqlLiteral(appRolePassword(process.env)),
-  );
+  const role = appRolePassword(process.env);
+  // Replacer functions, not strings: a string replacement would expand "$$", "$&"… in the
+  // password (docs/bug-log.md entry 32).
+  const rls = readFileSync(join(process.cwd(), "src/server/db/rls.sql"), "utf-8")
+    .replaceAll("__APP_ROLE_PASSWORD_SYNC__", () =>
+      role.fromEnv ? `alter role dentit_app with login password ${sqlLiteral(role.password)};` : "",
+    )
+    .replaceAll("__APP_ROLE_PASSWORD__", () => sqlLiteral(role.password));
   await client.unsafe(rls);
 
   console.log("Done.");
