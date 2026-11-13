@@ -1,47 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { orderTeethForTraversal } from "./perio-sequence";
-import { initEntryState, firstIncompleteIndex, perioEntryReducer, SITE_ORDER } from "./perio-entry";
+import { initEntryState, firstIncompleteIndex, perioEntryReducer, SITE_ORDER, toothSavePayload } from "./perio-entry";
+import { createSaveQueue, type SaveStatus } from "./save-queue";
 import type { EntryAction, PerioEntryState, PerioSiteCode, SiteDraft, ToothDraft } from "./perio-entry";
 import { upsertPerioToothRecord } from "@/lib/perio-api";
 import type { PerioToothRecord } from "@/lib/perio-api";
 
-export type ToothSaveStatus = "saved" | "saving" | "retrying";
-
-const RETRY_BASE_MS = 1000;
-const RETRY_MAX_MS = 30000;
-
-type RetryTimers = MutableRefObject<Map<string, ReturnType<typeof setTimeout>>>;
-
-/**
- * Fire-and-retry: attempts `save()`, and on failure retries with capped exponential
- * backoff until it succeeds — the grid's never-lose-a-tooth guarantee
- * (docs/specs/validation-and-errors.md). A plain recursive function, not a hook, so it
- * can call itself directly without the stale-closure problems a self-referencing
- * useCallback would have.
- */
-function retryingSave(
-  key: string,
-  attempt: number,
-  save: () => Promise<unknown>,
-  setSaveStatus: Dispatch<SetStateAction<Record<string, ToothSaveStatus>>>,
-  retryTimers: RetryTimers,
-  onSaved: () => void,
-) {
-  setSaveStatus((s) => ({ ...s, [key]: attempt === 0 ? "saving" : "retrying" }));
-  save()
-    .then(() => {
-      retryTimers.current.delete(key);
-      setSaveStatus((s) => ({ ...s, [key]: "saved" }));
-      onSaved();
-    })
-    .catch(() => {
-      const delay = Math.min(RETRY_BASE_MS * 2 ** attempt, RETRY_MAX_MS);
-      const timer = setTimeout(() => retryingSave(key, attempt + 1, save, setSaveStatus, retryTimers, onSaved), delay);
-      retryTimers.current.set(key, timer);
-    });
-}
+export type ToothSaveStatus = SaveStatus;
 
 /**
  * Wires the pure perio-entry reducer (src/components/perio/perio-entry.ts) to real API
@@ -97,7 +64,24 @@ export function usePerioEntry(
   }
 
   const [saveStatus, setSaveStatus] = useState<Record<string, ToothSaveStatus>>({});
-  const retryTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // onSaved changes identity with the parent's render; the queue lives for the whole exam.
+  const onSavedRef = useRef(onSaved);
+  useEffect(() => {
+    onSavedRef.current = onSaved;
+  }, [onSaved]);
+  // One queue per mounted exam (docs/bug-log.md entry 36). Skip toggles use their own key
+  // ("16:skip") so they never displace a tooth's pending measurement save; both report their
+  // status under the tooth. Created in the effect, not useState: StrictMode's dev
+  // unmount/remount would otherwise cancel the only queue and silently drop every later save.
+  const queueRef = useRef<ReturnType<typeof createSaveQueue> | null>(null);
+  useEffect(() => {
+    const queue = createSaveQueue({
+      onStatus: (key, status) => setSaveStatus((s) => ({ ...s, [key.split(":")[0]]: status })),
+      onSaved: () => onSavedRef.current(),
+    });
+    queueRef.current = queue;
+    return () => queue.cancelAll();
+  }, [examId]);
 
   // A tooth's draft disappears from `state` the instant it advances to the next one,
   // but the server refetch that repopulates `teeth` with the saved data takes a real
@@ -111,33 +95,32 @@ export function usePerioEntry(
     Record<string, { mobility: number | null; furcation: number | null; sites: SiteDraft[] }>
   >({});
 
-  useEffect(() => {
-    const timers = retryTimers.current;
-    return () => {
-      for (const timer of timers.values()) clearTimeout(timer);
-    };
-  }, []);
-
   const persistTooth = useCallback(
     (tooth: string, mobility: number | null, furcation: number | null, sites: SiteDraft[]) => {
-      const pending = retryTimers.current.get(tooth);
-      if (pending) {
-        clearTimeout(pending);
-        retryTimers.current.delete(tooth);
-      }
-      // `save_tooth` only ever fires once every site has a committed pocket depth (the
-      // reducer's own invariant) — this filter is defensive, not expected to drop anything.
-      const payload = sites.filter((s): s is SiteDraft & { pocket_depth: number } => s.pocket_depth !== null);
-      retryingSave(
-        tooth,
-        0,
-        () => upsertPerioToothRecord(examId, tooth, { mobility, furcation, sites: payload }),
-        setSaveStatus,
-        retryTimers,
-        onSaved,
-      );
+      const payload = toothSavePayload({ mobility, furcation, sites });
+      queueRef.current?.save(tooth, () => upsertPerioToothRecord(examId, tooth, payload));
     },
-    [examId, onSaved],
+    [examId],
+  );
+
+  // What the grid shows for a tooth just saved. Mobility/furcation left unset in the draft
+  // weren't sent (toothSavePayload), so the server keeps its value — show that, not null.
+  const rememberSave = useCallback(
+    (tooth: string, mobility: number | null, furcation: number | null, sites: SiteDraft[]) => {
+      setRecentSaves((prev) => {
+        const saved = teeth.find((t) => t.tooth === tooth);
+        const before = prev[tooth];
+        return {
+          ...prev,
+          [tooth]: {
+            mobility: mobility ?? before?.mobility ?? saved?.mobility ?? null,
+            furcation: furcation ?? before?.furcation ?? saved?.furcation ?? null,
+            sites,
+          },
+        };
+      });
+    },
+    [teeth],
   );
 
   // Deliberately not the setState(prev => ...) functional-updater form: the network
@@ -152,15 +135,12 @@ export function usePerioEntry(
       setState(next);
       for (const effect of effects) {
         if (effect.type === "save_tooth") {
-          setRecentSaves((prev) => ({
-            ...prev,
-            [effect.tooth]: { mobility: effect.mobility, furcation: effect.furcation, sites: effect.sites },
-          }));
+          rememberSave(effect.tooth, effect.mobility, effect.furcation, effect.sites);
           persistTooth(effect.tooth, effect.mobility, effect.furcation, effect.sites);
         }
       }
     },
-    [state, persistTooth],
+    [state, persistTooth, rememberSave],
   );
 
   // Click-to-position — mouse parity for entry (pilot-foundations.md §2: "any cell is
@@ -188,10 +168,7 @@ export function usePerioEntry(
       // measurements with no warning.
       const departingTooth = state.draft;
       if (departingTooth && departingTooth.sites.some((s) => s.pocket_depth !== null)) {
-        setRecentSaves((prev) => ({
-          ...prev,
-          [departingTooth.tooth]: { mobility: departingTooth.mobility, furcation: departingTooth.furcation, sites: departingTooth.sites },
-        }));
+        rememberSave(departingTooth.tooth, departingTooth.mobility, departingTooth.furcation, departingTooth.sites);
         persistTooth(departingTooth.tooth, departingTooth.mobility, departingTooth.furcation, departingTooth.sites);
       }
 
@@ -219,29 +196,17 @@ export function usePerioEntry(
       };
       dispatch({ type: "jump", target: { toothIndex, site, draft } });
     },
-    [activeOrder, state.draft, recentSaves, teeth, dispatch, persistTooth],
+    [activeOrder, state.draft, recentSaves, teeth, dispatch, persistTooth, rememberSave],
   );
 
   // Skip-toggling is deliberately outside the reducer (docs/specs/perio.md — symmetric,
   // works on any tooth via a click/keypress on its header, not just the current one).
-  // Same never-lose-it retry-and-drain guarantee as a measurement save.
+  // Same never-lose-it retry guarantee as a measurement save, on its own queue key.
   const toggleSkip = useCallback(
     (tooth: string, isSkipped: boolean) => {
-      const pending = retryTimers.current.get(tooth);
-      if (pending) {
-        clearTimeout(pending);
-        retryTimers.current.delete(tooth);
-      }
-      retryingSave(
-        tooth,
-        0,
-        () => upsertPerioToothRecord(examId, tooth, { is_skipped: isSkipped, sites: [] }),
-        setSaveStatus,
-        retryTimers,
-        onSaved,
-      );
+      queueRef.current?.save(`${tooth}:skip`, () => upsertPerioToothRecord(examId, tooth, { is_skipped: isSkipped, sites: [] }));
     },
-    [examId, onSaved],
+    [examId],
   );
 
   return { state, dispatch, saveStatus, toggleSkip, activeOrder, recentSaves, jumpTo };

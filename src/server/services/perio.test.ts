@@ -25,7 +25,7 @@ import {
 
 const TEST_ORG_NAME = "__perio_service_test";
 
-async function setup(role: RequestActor["role"] = "hygienist") {
+async function setup(role: RequestActor["role"] = "hygienist", dateOfBirth: string | null = null) {
   const [org] = await adminDb.insert(organizations).values({ name: TEST_ORG_NAME }).returning();
   const [user] = await adminDb
     .insert(users)
@@ -35,7 +35,7 @@ async function setup(role: RequestActor["role"] = "hygienist") {
 
   const [patient] = await adminDb
     .insert(patients)
-    .values({ organizationId: org.id, patientNumber: "P-0001", firstName: "Test", lastName: "Patient", phone: "9000000000" })
+    .values({ organizationId: org.id, patientNumber: "P-0001", firstName: "Test", lastName: "Patient", phone: "9000000000", dateOfBirth })
     .returning();
 
   return { org, actor, patient, user };
@@ -52,8 +52,28 @@ async function cleanup() {
 describe("createPerioExam", () => {
   afterEach(cleanup);
 
-  it("seeds a tooth record for every present socket, auto-skipping primary teeth by default", async () => {
-    const { actor, patient } = await setup();
+  it("examines an adult in adult dentition: 32 permanent teeth, none skipped", async () => {
+    // docs/bug-log.md entry 36: every exam used mixed dentition, so a 37-year-old got primary
+    // teeth 55-65 (all skipped) and only the molars could be probed.
+    for (const dob of ["1989-03-02", null]) {
+      const { actor, patient } = await setup("hygienist", dob);
+      const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+      const { teeth } = await getPerioExam(actor, exam.id);
+      expect(teeth).toHaveLength(32);
+      expect(teeth.every((t) => !t.record.isSkipped && ["1", "2", "3", "4"].includes(t.record.tooth[0]))).toBe(true);
+      await cleanup();
+    }
+  });
+
+  it("turns adult on the 13th birthday, by the exam date", async () => {
+    const { actor, patient } = await setup("hygienist", "2013-08-19");
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+    const { teeth } = await getPerioExam(actor, exam.id);
+    expect(teeth.filter((t) => t.record.isSkipped)).toHaveLength(0);
+  });
+
+  it("seeds a child's exam in mixed dentition, auto-skipping primary teeth", async () => {
+    const { actor, patient } = await setup("hygienist", "2018-05-01");
 
     const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
     const { teeth } = await getPerioExam(actor, exam.id);
@@ -232,10 +252,10 @@ describe("upsertPerioToothRecord", () => {
   });
 
   it("rejects a tooth not seeded into this exam", async () => {
-    const { actor, patient } = await setup();
+    const { actor, patient } = await setup("hygienist", "2018-05-01");
     const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
 
-    // "11" isn't seeded — the default-state socket resolves to primary "51" instead.
+    // A child's exam: "11" isn't seeded — the socket resolves to primary "51" instead.
     await expect(upsertPerioToothRecord(actor, exam.id, "11", { sites: [] })).rejects.toThrow(InvalidToothError);
   });
 
@@ -260,7 +280,7 @@ describe("upsertPerioToothRecord", () => {
   });
 
   it("un-skips an auto-skipped primary tooth (symmetric skip toggle)", async () => {
-    const { actor, patient } = await setup();
+    const { actor, patient } = await setup("hygienist", "2018-05-01");
     const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
 
     const { record: before } = await upsertPerioToothRecord(actor, exam.id, "51", { sites: [] });

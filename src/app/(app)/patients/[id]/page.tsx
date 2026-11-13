@@ -12,28 +12,14 @@ import type { Surface } from "@/lib/chart-api";
 import { Odontogram } from "@/components/chart/odontogram";
 import { ChartingPanel } from "@/components/chart/charting-panel";
 import { ScopedProceduresList } from "@/components/chart/scoped-procedures-list";
-import type { DentitionView } from "@/components/chart/tooth-grid";
+import { defaultDentitionView, type DentitionView } from "@/components/chart/tooth-grid";
+import { todayIn } from "@/lib/dates";
 
 const SEVERITY_COLOR: Record<string, string> = {
   critical: "text-bleed",
   warning: "text-caution",
   info: "text-ink-soft",
 };
-
-// Mixed dentition is the accurate default below this age; adult above it — the
-// dentist corrects per-tooth as eruption actually happens (see the odontogram
-// spec's "Intake defaults"). Not re-derived once the user picks a view explicitly.
-const MIXED_DENTITION_AGE_THRESHOLD = 13;
-
-function age(dateOfBirth: string | null): number | null {
-  if (!dateOfBirth) return null;
-  const dob = new Date(dateOfBirth);
-  const now = new Date();
-  let years = now.getFullYear() - dob.getFullYear();
-  const beforeBirthday = now.getMonth() < dob.getMonth() || (now.getMonth() === dob.getMonth() && now.getDate() < dob.getDate());
-  if (beforeBirthday) years -= 1;
-  return years;
-}
 
 export default function PatientChartPage() {
   const params = useParams<{ id: string }>();
@@ -55,10 +41,10 @@ export default function PatientChartPage() {
     },
   });
 
-  const defaultView = useMemo<DentitionView>(() => {
-    const years = age(patient?.date_of_birth ?? null);
-    return years !== null && years < MIXED_DENTITION_AGE_THRESHOLD ? "mixed" : "adult";
-  }, [patient?.date_of_birth]);
+  const defaultView = useMemo<DentitionView>(
+    () => defaultDentitionView(patient?.date_of_birth ?? null, todayIn(undefined)),
+    [patient?.date_of_birth],
+  );
 
   const effectiveView = view ?? defaultView;
   const alerts = alertsData?.data ?? [];

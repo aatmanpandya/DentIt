@@ -91,3 +91,19 @@ describe("resolveSocketTooth", () => {
     expect(resolveSocketTooth(molarSocket, {}, "primary")).toBeNull();
   });
 });
+
+import { ageOn, defaultDentitionView } from "./tooth-grid";
+
+describe("defaultDentitionView", () => {
+  it("is adult from the 13th birthday, mixed before, adult without a date of birth", () => {
+    expect(defaultDentitionView("2013-08-19", "2026-08-18")).toBe("mixed");
+    expect(defaultDentitionView("2013-08-19", "2026-08-19")).toBe("adult");
+    expect(defaultDentitionView("1989-03-02", "2026-11-13")).toBe("adult");
+    expect(defaultDentitionView(null, "2026-11-13")).toBe("adult");
+  });
+
+  it("counts whole years by calendar date", () => {
+    expect(ageOn("2000-02-29", "2026-02-28")).toBe(25);
+    expect(ageOn("2000-02-29", "2026-03-01")).toBe(26);
+  });
+});

@@ -267,3 +267,26 @@ describe("firstIncompleteIndex", () => {
     expect(index).toBe(2);
   });
 });
+
+// Bug 2 of the perio save flow (docs/bug-log.md entry 36): a draft starts with mobility and
+// furcation null, and the save sent that null — which the server reads as "clear it" — so
+// finishing a resumed or revisited tooth wiped its saved mobility.
+import { toothSavePayload } from "./perio-entry";
+
+describe("toothSavePayload", () => {
+  const site = (s: string, pd: number | null) => ({ site: s as never, pocket_depth: pd, gingival_margin: null, bleeding_on_probing: false, suppuration: false, plaque: false });
+
+  it("leaves out mobility and furcation that weren't set, so the server keeps what it has", () => {
+    const p = toothSavePayload({ mobility: null, furcation: null, sites: [site("MB", 3)] });
+    expect("mobility" in p).toBe(false);
+    expect("furcation" in p).toBe(false);
+  });
+
+  it("sends mobility and furcation that were set, including 0", () => {
+    expect(toothSavePayload({ mobility: 0, furcation: 2, sites: [] })).toMatchObject({ mobility: 0, furcation: 2 });
+  });
+
+  it("sends only sites with a pocket depth", () => {
+    expect(toothSavePayload({ mobility: null, furcation: null, sites: [site("MB", 3), site("B", null)] }).sites).toHaveLength(1);
+  });
+});

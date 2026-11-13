@@ -554,3 +554,35 @@ requests), and the demo path clicked through in the browser.
 of them; a fix in one route was never searched for in the others; nothing exercised the running
 app with bad input; and the seed bypasses the service rules, so its data was never checked
 against them. The probe and data checks are now scripts to rerun after any change.
+
+---
+
+## 36. Perio entry: saves could overwrite newer data, wipe mobility, or be dropped; adults examined with baby teeth
+
+Found by rereading the save path before building voice entry on top of it, then proven with
+tests and in the browser. The first three were noted in the 12 Nov review and parked for Phase 3.
+
+- **An older save could win.** Each tooth save retried on its own. If a tooth was re-entered
+  while its earlier save was in flight, the old one could fail and retry *after* the new one,
+  or simply arrive later, overwriting newer data on the server. Now one queue per tooth
+  (`src/components/perio/save-queue.ts`): one request at a time, a newer save replaces a waiting
+  one, a superseded save is never retried, and the newest is always sent last. Tested with fake
+  timers.
+- **Finishing a resumed or revisited tooth wiped its mobility and furcation.** A tooth's draft
+  starts them as null, and the save sent that null, which the server reads as "clear it". Seen
+  live: mobility 2 saved on tooth 18, reload, finish 18 → mobility gone. Now
+  `toothSavePayload()` leaves out values the draft never set (the menu only offers 0–3, so null
+  always means untouched). Verified live: the same steps keep mobility 2.
+- **A skip toggle cancelled a pending measurement retry** — both shared the tooth's retry slot.
+  Skips now use their own queue key.
+- While wiring the queue: creating it once with `useState` and cancelling it on unmount would,
+  under React StrictMode's dev unmount/remount, cancel the only queue and silently drop every
+  later save. The lint rule flagged the ref; the queue is now created in the effect.
+- **Every new perio exam used mixed dentition**, so for an adult each socket with a baby-tooth
+  equivalent resolved to the baby tooth (nothing on an adult's chart says it was lost): a
+  37-year-old's exam had 55–65 and 75–85, all skipped, and only the 12 molars could be probed.
+  The chart already defaulted by age (adult from 13); the exam never got that rule. Both now
+  use one `defaultDentitionView(dateOfBirth, date)` in `tooth-grid.ts`, the exam judged on its
+  exam date. Hidden in the demo because the seed writes its two exams directly. Two older tests
+  had encoded the wrong behaviour (a patient with no birth date getting baby teeth); they now
+  use a child patient, and new tests cover the adult, the 13th birthday and no birth date.

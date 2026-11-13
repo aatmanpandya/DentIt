@@ -14,6 +14,33 @@ export type Row = "upper" | "lower";
 export type Direction = "left" | "right" | "up" | "down";
 export type DentitionView = "mixed" | "adult" | "primary";
 
+/**
+ * Mixed dentition is the accurate default below this age; adult from it on — the dentist
+ * corrects per tooth as eruption actually happens (odontogram spec, "Intake defaults").
+ */
+export const MIXED_DENTITION_AGE_THRESHOLD = 13;
+
+/** Whole years between two YYYY-MM-DD dates, by calendar (no timezone drift). */
+export function ageOn(dateOfBirth: string | null, onDate: string): number | null {
+  if (!dateOfBirth) return null;
+  const [by, bm, bd] = dateOfBirth.slice(0, 10).split("-").map(Number);
+  const [y, m, d] = onDate.slice(0, 10).split("-").map(Number);
+  let years = y - by;
+  if (m < bm || (m === bm && d < bd)) years -= 1;
+  return years;
+}
+
+/**
+ * Which dentition a patient is shown or examined in by default. One rule for the chart and
+ * the perio exam: the exam used "mixed" for everyone, so an adult's new exam got primary
+ * teeth 55-65 (all skipped) in place of 15-25 and 35-45 (docs/bug-log.md entry 36).
+ * No date of birth: adult.
+ */
+export function defaultDentitionView(dateOfBirth: string | null, onDate: string): DentitionView {
+  const years = ageOn(dateOfBirth, onDate);
+  return years !== null && years < MIXED_DENTITION_AGE_THRESHOLD ? "mixed" : "adult";
+}
+
 export interface Socket {
   index: number; // 0-31, row-major: 0-15 upper, 16-31 lower
   row: Row;

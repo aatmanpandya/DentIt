@@ -7,7 +7,7 @@ import { hasFurcation, isPrimaryTooth, isValidFdiTooth } from "@/server/lib/toot
 // Perio reuses it rather than re-deriving which FDI occupies which socket; the Odontogram
 // handoff (docs/specs/odontogram.md) already designates getToothState as the shared read
 // contract these two features both call.
-import { SOCKETS, resolveSocketTooth } from "@/components/chart/tooth-grid";
+import { SOCKETS, resolveSocketTooth, defaultDentitionView } from "@/components/chart/tooth-grid";
 import { getToothState, InvalidToothError } from "./chart";
 import { writeAudit } from "./audit";
 import { PatientNotFoundError } from "./patients";
@@ -63,7 +63,7 @@ type Tx = Parameters<Parameters<typeof dbForRequest>[1]>[0];
 
 async function requirePatient(tx: Tx, actor: RequestActor, patientId: string) {
   const [row] = await tx
-    .select({ id: patients.id })
+    .select({ id: patients.id, dateOfBirth: patients.dateOfBirth })
     .from(patients)
     .where(and(eq(patients.id, patientId), eq(patients.organizationId, actor.organizationId), isNull(patients.deletedAt)))
     .limit(1);
@@ -161,7 +161,7 @@ export interface CreatePerioExamInput {
  * POST /patients/:id/perio-exams — creates the exam shell. Per docs/specs/perio.md, the
  * shell starts empty (no pre-filled healthy measurement values), but a `perio_tooth_records`
  * row is seeded for every socket that actually has a tooth in it right now — resolved the
- * same way the Odontogram resolves mixed dentition (`resolveSocketTooth`, "mixed" view) —
+ * same way the Odontogram resolves it (`resolveSocketTooth`, in the patient's default view by age) —
  * with `is_skipped` auto-set for a missing tooth or a primary tooth (AAPD guidance), per the
  * Odontogram's "Handoff to Perio". An empty socket (no tooth present at all) gets no row —
  * there's nothing to probe or skip.
@@ -170,7 +170,9 @@ export async function createPerioExam(actor: RequestActor, patientId: string, in
   assertCan(actor.role, "perio", "write");
 
   return dbForRequest(actor.organizationId, async (tx) => {
-    await requirePatient(tx, actor, patientId);
+    const patient = await requirePatient(tx, actor, patientId);
+    // Same default as the chart: an adult is examined in adult dentition (entry 36).
+    const view = defaultDentitionView(patient.dateOfBirth, input.exam_date);
 
     if (input.provider_id) {
       const [provider] = await tx
@@ -211,7 +213,7 @@ export async function createPerioExam(actor: RequestActor, patientId: string, in
     }
 
     for (const socket of SOCKETS) {
-      const tooth = resolveSocketTooth(socket, toothStateByFdi, "mixed");
+      const tooth = resolveSocketTooth(socket, toothStateByFdi, view);
       if (!tooth) continue;
 
       const isSkipped = toothStateByFdi[tooth].isMissing || isPrimaryTooth(tooth);

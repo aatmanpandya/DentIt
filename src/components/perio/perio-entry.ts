@@ -81,6 +81,20 @@ export type EntryAction =
   | { type: "select_menu_value"; value: 0 | 1 | 2 | 3 }
   | { type: "close_menu" };
 
+/**
+ * What a per-tooth save sends. Mobility and furcation are left out unless set: a draft starts
+ * them as null, and sending that null told the server to clear them, so finishing a resumed or
+ * revisited tooth wiped its saved mobility (docs/bug-log.md entry 36). The menu only offers
+ * 0-3, so null always means "not touched", never "clear". Only sites with a pocket depth go.
+ */
+export function toothSavePayload(draft: Pick<ToothDraft, "mobility" | "furcation" | "sites">) {
+  return {
+    ...(draft.mobility !== null ? { mobility: draft.mobility } : {}),
+    ...(draft.furcation !== null ? { furcation: draft.furcation } : {}),
+    sites: draft.sites.filter((s): s is SiteDraft & { pocket_depth: number } => s.pocket_depth !== null),
+  };
+}
+
 /** Finds where to resume: the first tooth in `order` that doesn't yet have all 6 sites
  * saved. `sitesByTooth` need only report how many sites are saved for a given tooth. */
 export function firstIncompleteIndex(order: string[], sitesByTooth: (tooth: string) => number): number {
