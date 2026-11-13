@@ -59,9 +59,10 @@ const RECESSION_WORDS = new Set(["recession", "session", "resection"]);
 const UNDO_WORDS = new Set(["undo", "undu", "andu"]);
 
 const FLAG_SPELLINGS: Record<FlagName, string[]> = {
-  bleeding_on_probing: ["bleeding", "bleed", "leading", "pleading"],
+  // Not "bleed": its sound key ("plat") ties with plaque's mishearings ("plot", live 13 Nov).
+  bleeding_on_probing: ["bleeding", "leading", "pleading"],
   suppuration: ["suppuration", "separation", "exudate"],
-  plaque: ["plaque", "plak", "plack", "black", "slack", "flat", "plat", "plant", "flag", "play", "delete", "deposits", "debris", "debri", "dibri", "dabri", "biofilm", "biofil"],
+  plaque: ["plaque", "plak", "plack", "black", "slack", "flat", "plat", "plant", "plot", "plate", "flag", "play", "delete", "deposits", "debris", "debri", "dibri", "dabri", "biofilm", "biofil"],
 };
 
 /**
@@ -278,6 +279,22 @@ export function parse(transcript: string): ParseResult {
       continue;
     }
 
+    // "<anything> grade N" is furcation: "grade" belongs only to mobility and furcation, and
+    // mobility is always said "mobility". Live, furcation came back "hurrication", "frication",
+    // "friction", "fusion", "for cash on" — no word list keeps up. Up to three unknown words,
+    // none of them a flag or a site word.
+    {
+      let j = i;
+      while (j < tokens.length && j - i < 3 && tokens[j].t === "word" && !isWord(tokens[j], "grade", "grades", "great", "mobility") && SITE_WORDS[word(tokens[j]) ?? ""] === undefined && !classifyFlag(word(tokens[j]) ?? "")) j++;
+      if (j > i && isWord(tokens[j], "grade", "grades", "great")) {
+        i = j;
+        const v = readGrade("furcation");
+        if (typeof v === "string") return atEnd() ? waiting("Waiting for the furcation grade…") : failNumbers(v);
+        commands.push({ type: "furcation", value: v });
+        continue;
+      }
+    }
+
     // A flag: <word that sounds like a flag> <site> [and <site>…] — or "all"/"present".
     if (w && SITE_WORDS[word(tokens[i + 1]) ?? ""] !== undefined) {
       const flag = classifyFlag(w);
@@ -338,15 +355,15 @@ export function parseAlternatives(alternatives: string[]): ParseResult & { used?
 /**
  * "jump to one one" came back "jump 21" (live, 13 Nov): "to" swallowed into the number, and every
  * value after it landed one tooth off. If Chrome's guesses disagree about the jump's tooth, don't
- * move — except when one is just the other with its last digit lost ("1" beside "16", "six"
- * heard as "side"), which can't put the cursor on a different tooth.
+ * move — except when one is just the other with a trailing digit lost or added ("1" beside "16",
+ * "six" heard as "side"; "111" beside "11"), which can't put the cursor on a different tooth.
  */
 function guardJump(result: { ok: true; commands: VoiceCommand[]; used: string }, alternatives: string[]): ParseResult & { used?: string } {
   const jump = result.commands.find((c) => c.type === "jump");
   if (!jump || jump.type !== "jump") return result;
   const conflict = alternatives.some((a) => {
     const d = jumpDigits(a);
-    return d !== null && d !== "" && d !== jump.tooth && !jump.tooth.startsWith(d);
+    return d !== null && d !== "" && d !== jump.tooth && !jump.tooth.startsWith(d) && !d.startsWith(jump.tooth);
   });
   if (!conflict) return result;
   return { ok: false, numbers: true, reason: `Not sure which tooth (heard “${alternatives[0]}”). Say “jump”, then the tooth, without “to”: “jump one one inside”.` };

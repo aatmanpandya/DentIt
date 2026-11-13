@@ -636,3 +636,18 @@ didn't contain.
   remaining miss is still "jump to do for lingual" (tooth number lost), which writes nothing.
 - Lesson recorded in the spec: reading rounds tested single phrases read carefully; only real
   dictation, with its pauses and pace, exposed the split phrase.
+- **Second live run (same script, after these fixes):** the jump and the split recession now
+  behave, and "three twelve four" is rejected. Three more problems:
+  - furcation still failed three times: Chrome heard "hurrication", "frication", "friction",
+    "fusion", "for cash on". No word list keeps up, so the rule changed: "grade N" belongs only
+    to mobility and furcation, and mobility is always said "mobility", so up to three unknown
+    words before "grade" now mean furcation.
+  - "two two two" took five tries: Chrome caught it a word at a time with 7–8 s gaps, longer than
+    the 6 s join window. Now 15 s; safe, since a join that doesn't read falls back to the new
+    phrase alone.
+  - "plot all" (plaque) was refused: "plot" and "bleed" share a sound key, a tie. "bleed" was
+    dropped as a bleeding spelling.
+  - **One wrong value, not catchable by rules:** "one two one" came back "122" in every one of
+    Chrome's guesses, so 1, 2, 2 was written. The cell is highlighted and "no, make that one"
+    corrects it; the real fix is a recogniser that hears digits better (ADR-0004).
+  - Eval with both runs' phrases: 98/99 exact, 0 wrong values.

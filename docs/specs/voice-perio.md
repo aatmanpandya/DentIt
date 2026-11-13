@@ -23,7 +23,7 @@ per-tooth saving and skip handling stay identical.
 
 **Cut-off phrases wait.** Chrome splits a phrase at a pause ("434 recession" | "211"). A phrase
 that stops where numbers are due (recession, mobility, furcation, jump, "deep", or one or two
-bare numbers) is shown amber and joined to the next phrase if it comes within 6 s.
+bare numbers) is shown amber and joined to the next phrase if it comes within 15 s.
 
 **Jumps need agreement.** If Chrome's guesses disagree about which tooth a jump means ("jump 21"
 vs "jump to one"), the cursor doesn't move.

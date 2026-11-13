@@ -1639,6 +1639,225 @@
      ]
     }
    ]
+  },
+  {
+   "id": "live-16",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "furcation grade one",
+   "category": "tooth_values",
+   "alternatives": [
+    "hurrication grade 1",
+    "for cash on grade 1",
+    "for cash and grade 1",
+    "for Keshav grade 1"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "live-17",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "furcation grade one",
+   "category": "tooth_values",
+   "alternatives": [
+    "frication grade 1",
+    "hurrication grade 1",
+    "friction grade 1",
+    "fusion grade 1"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "live-18",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "furcation grade one",
+   "category": "tooth_values",
+   "alternatives": [
+    "hurrication grade 1",
+    "hurrication Grade One",
+    "hr occasion grade 1",
+    "hn Grade One"
+   ],
+   "expect": [
+    {
+     "type": "furcation",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "live-19",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "jump one one inside",
+   "category": "navigation",
+   "alternatives": [
+    "jump 11 inside",
+    "jump one one inside",
+    "jump one one one inside",
+    "jumper 1 inside"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "11",
+     "side": "inside"
+    }
+   ]
+  },
+  {
+   "id": "live-20",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "jump one one inside",
+   "category": "navigation",
+   "alternatives": [
+    "jump 11 inside",
+    "jump one one inside",
+    "jump one month inside"
+   ],
+   "expect": [
+    {
+     "type": "jump",
+     "tooth": "11",
+     "side": "inside"
+    }
+   ]
+  },
+  {
+   "id": "live-21",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "plaque all",
+   "category": "flags",
+   "alternatives": [
+    "plot all",
+    "plot",
+    "PL"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-22",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "plaque all",
+   "category": "flags",
+   "alternatives": [
+    "plate all",
+    "flat all"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-23",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "suppuration middle",
+   "category": "flags",
+   "alternatives": [
+    "separation middle",
+    "separation medal",
+    "se middle"
+   ],
+   "expect": [
+    {
+     "type": "flag",
+     "flag": "suppuration",
+     "sites": [
+      "middle"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-24",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "three deep twelve four",
+   "category": "deep",
+   "alternatives": [
+    "3D 124",
+    "3 deep 124",
+    "3D 12 4",
+    "23 deep 124"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      3,
+      12,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-25",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "four three four, recession two one one",
+   "category": "recession",
+   "alternatives": [
+    "434 recession 2 1 1",
+    "434 recession 2 1 1",
+    "434 recession 211",
+    "434 recession 211"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      3,
+      4
+     ]
+    },
+    {
+     "type": "recession",
+     "values": [
+      2,
+      1,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-26",
+   "source": "live dictation 13 Nov, run 2",
+   "said": "three twelve four",
+   "category": "must_reject",
+   "alternatives": [
+    "3124",
+    "324",
+    "312 4",
+    "3/4"
+   ],
+   "expect": null
   }
  ]
 }

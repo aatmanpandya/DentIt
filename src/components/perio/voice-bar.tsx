@@ -32,8 +32,10 @@ interface Heard {
   waiting?: boolean;
 }
 
-// How long a cut-off phrase ("434 recession") waits to be joined to the next one.
-const JOIN_WINDOW_MS = 6000;
+// How long a cut-off phrase ("434 recession") waits to be joined to the next one. 6 s was too
+// short live: Chrome caught "two two two" a word at a time with 7-8 s gaps. A long window is safe
+// because a join that doesn't read falls back to the new phrase on its own (readPhrase).
+const JOIN_WINDOW_MS = 15000;
 
 const ROUTE_KEY = "dentit.voiceRoute";
 const ROUTE_LABEL: Record<ProbingRoute, string> = { outside_first: "Outside first", each_jaw: "Each jaw first" };

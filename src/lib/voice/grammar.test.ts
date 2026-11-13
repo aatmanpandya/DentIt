@@ -98,3 +98,12 @@ describe("readPhrase: a phrase cut at a pause", () => {
     expect(readPhrase(["undo"], "434 recession").parsed).toMatchObject({ ok: true, commands: [{ type: "undo" }] });
   });
 });
+
+describe("readPhrase: slow single words", () => {
+  // Live run 2: Chrome caught "two two two" a word at a time.
+  it("builds 2 2 2 from '2 2' then '2'", async () => {
+    const { readPhrase } = await import("./grammar");
+    expect(readPhrase(["2 2"], null).parsed).toMatchObject({ ok: false, incomplete: true });
+    expect(readPhrase(["2"], "2 2").parsed).toMatchObject({ ok: true, commands: [{ type: "depths", values: [2, 2, 2] }] });
+  });
+});
