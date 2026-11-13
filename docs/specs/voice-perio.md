@@ -41,7 +41,9 @@ in the direction the probe travels:
 
 Within a side the three sites are read in travel order: moving 18→28 on the outside, upper-right
 teeth are DB, B, MB and upper-left teeth MB, B, DB. Skipped and missing teeth are passed over.
-The keyboard keeps its per-tooth order; both drive the same reducer.
+The keyboard keeps its per-tooth order; both drive the same reducer. For the pilot the route is
+picked next to the Dictate button and remembered per device; making it a clinic setting is a
+later change (`organizations.probing_sequence` holds the keyboard's tooth order only).
 
 ## What can be said
 
@@ -62,6 +64,16 @@ The keyboard keeps its per-tooth order; both drive the same reducer.
 
 Sites: "first / middle / last" in travel order. "mesial" and "distal" are accepted. Sides:
 "outside / inside"; "buccal", "lingual", "palatal" accepted.
+
+## Undo and the save API
+
+"Undo" restores every site the phrase touched to exactly what it was. A site that was empty goes
+back to empty, which the tooth save couldn't do (it only adds or changes), so
+`PUT /perio-exams/:id/teeth/:tooth` takes `clear_sites: ["MB", …]`; mobility/furcation that were
+unset are sent back as `null`. Up to 50 phrases can be undone, newest first.
+
+In development, `window.__dentitVoice("323")` feeds a phrase in as if Chrome had heard it, so the
+whole path can be tested without a microphone.
 
 ## Feasibility: what Chrome actually hears
 

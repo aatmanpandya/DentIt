@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import clsx from "clsx";
 import { Lock } from "lucide-react";
 import { usePerioEntry } from "./use-perio-entry";
@@ -10,6 +10,7 @@ import { hasFurcation } from "./tooth-furcation";
 import { renderTooth } from "./tooth-display";
 import { buildDeltaIndex, badgeForDelta } from "./perio-compare";
 import type { PerioToothRecord, PerioSiteDelta } from "@/lib/perio-api";
+import { VoiceBar, type VoiceCell } from "./voice-bar";
 
 export interface PerioGridProps {
   examId: string;
@@ -41,7 +42,24 @@ const MENU_LABEL: Record<"mobility" | "furcation", string> = { mobility: "Mobili
  * this component only renders state and forwards keystrokes.
  */
 export function PerioGrid({ examId, teeth, probingSequence, completed, toothDisplay, compareDeltas, onSaved }: PerioGridProps) {
-  const { state, dispatch, saveStatus, toggleSkip, recentSaves, jumpTo } = usePerioEntry(examId, teeth, probingSequence, onSaved);
+  const { state, dispatch, saveStatus, toggleSkip, recentSaves, jumpTo, activeOrder, knownDraft, applyVoice, restoreVoice } = usePerioEntry(
+    examId,
+    teeth,
+    probingSequence,
+    onSaved,
+  );
+  // Cells the last voice phrase (or its undo) changed, lit for a few seconds so the dentist can
+  // see where the numbers landed without looking for them.
+  const [voiceCells, setVoiceCells] = useState<Set<string>>(new Set());
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function highlight(cells: VoiceCell[]) {
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    setVoiceCells(new Set(cells.map((c) => `${c.tooth}:${c.site ?? ""}`)));
+    highlightTimer.current = setTimeout(() => setVoiceCells(new Set()), 4000);
+  }
+  useEffect(() => () => {
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const deltaIndex = useMemo(() => (compareDeltas ? buildDeltaIndex(compareDeltas) : null), [compareDeltas]);
 
@@ -101,6 +119,17 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, toothDisp
 
   return (
     <div className="flex flex-col gap-2">
+      {!completed && (
+        <VoiceBar
+          activeOrder={activeOrder}
+          disabled={completed}
+          knownDraft={knownDraft}
+          applyVoice={applyVoice}
+          restoreVoice={restoreVoice}
+          onHighlight={highlight}
+          renderTooth={(t) => renderTooth(t, toothDisplay)}
+        />
+      )}
       <div
         ref={containerRef}
         tabIndex={completed ? -1 : 0}
@@ -162,7 +191,10 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, toothDisp
             const mobility = isDraftTooth ? state.draft?.mobility : (recent ? recent.mobility : t.mobility);
             const furcation = isDraftTooth ? state.draft?.furcation : (recent ? recent.furcation : t.furcation);
             return (
-              <div key={t.tooth} className="border-b border-rule py-0.5 text-center font-data text-[10px] text-ink-soft">
+              <div
+                key={t.tooth}
+                className={clsx("border-b border-rule py-0.5 text-center font-data text-[10px] text-ink-soft", voiceCells.has(`${t.tooth}:`) && "bg-healthy/20 text-ink")}
+              >
                 {t.is_skipped ? "—" : `${mobility ?? "·"}/${hasFurcation(t.tooth) ? (furcation ?? "·") : "·"}`}
               </div>
             );
@@ -212,6 +244,7 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, toothDisp
                       t.is_skipped ? "cursor-default bg-steel-lo text-ink-soft" : "cursor-pointer hover:bg-steel-lo/60",
                       isDraftTooth && !t.is_skipped && "bg-steel-lo/40",
                       isActiveCell && "ring-2 ring-inset ring-steel",
+                      voiceCells.has(`${t.tooth}:${site}`) && "bg-healthy/20",
                     )}
                   >
                     {t.is_skipped ? (

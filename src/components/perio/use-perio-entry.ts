@@ -143,6 +143,38 @@ export function usePerioEntry(
     [state, persistTooth, rememberSave],
   );
 
+  // Everything already known for a tooth: its live draft if it's the one being edited, else
+  // what was just sent (a save may not have round-tripped through `teeth` yet), else what's
+  // saved, else blank for an untouched site — so nothing built from this can wipe a value.
+  const knownDraft = useCallback(
+    (tooth: string): ToothDraft => {
+      if (state.draft?.tooth === tooth) return state.draft;
+      const known = recentSaves[tooth];
+      const savedRecord = teeth.find((t) => t.tooth === tooth);
+      return {
+        tooth,
+        mobility: known ? known.mobility : (savedRecord?.mobility ?? null),
+        furcation: known ? known.furcation : (savedRecord?.furcation ?? null),
+        sites: SITE_ORDER.map((s) => {
+          const knownSite = known?.sites.find((x) => x.site === s);
+          if (knownSite) return knownSite;
+          const savedSite = savedRecord?.sites.find((x) => x.site === s);
+          return savedSite
+            ? {
+                site: s,
+                pocket_depth: savedSite.pocket_depth,
+                gingival_margin: savedSite.gingival_margin,
+                bleeding_on_probing: savedSite.bleeding_on_probing,
+                suppuration: savedSite.suppuration,
+                plaque: savedSite.plaque,
+              }
+            : { site: s, pocket_depth: null, gingival_margin: null, bleeding_on_probing: false, suppuration: false, plaque: false };
+        }),
+      };
+    },
+    [state.draft, recentSaves, teeth],
+  );
+
   // Click-to-position — mouse parity for entry (pilot-foundations.md §2: "any cell is
   // directly clickable"). If the clicked tooth is the one already being edited, just
   // reposition within its live draft (must not overwrite in-progress edits with
@@ -172,31 +204,10 @@ export function usePerioEntry(
         persistTooth(departingTooth.tooth, departingTooth.mobility, departingTooth.furcation, departingTooth.sites);
       }
 
-      const known = recentSaves[tooth];
-      const savedRecord = teeth.find((t) => t.tooth === tooth);
-      const draft: ToothDraft = {
-        tooth,
-        mobility: known ? known.mobility : (savedRecord?.mobility ?? null),
-        furcation: known ? known.furcation : (savedRecord?.furcation ?? null),
-        sites: SITE_ORDER.map((s) => {
-          const knownSite = known?.sites.find((x) => x.site === s);
-          if (knownSite) return knownSite;
-          const savedSite = savedRecord?.sites.find((x) => x.site === s);
-          return savedSite
-            ? {
-                site: s,
-                pocket_depth: savedSite.pocket_depth,
-                gingival_margin: savedSite.gingival_margin,
-                bleeding_on_probing: savedSite.bleeding_on_probing,
-                suppuration: savedSite.suppuration,
-                plaque: savedSite.plaque,
-              }
-            : { site: s, pocket_depth: null, gingival_margin: null, bleeding_on_probing: false, suppuration: false, plaque: false };
-        }),
-      };
+      const draft = knownDraft(tooth);
       dispatch({ type: "jump", target: { toothIndex, site, draft } });
     },
-    [activeOrder, state.draft, recentSaves, teeth, dispatch, persistTooth, rememberSave],
+    [activeOrder, state.draft, knownDraft, dispatch, persistTooth, rememberSave],
   );
 
   // Skip-toggling is deliberately outside the reducer (docs/specs/perio.md — symmetric,
@@ -209,5 +220,47 @@ export function usePerioEntry(
     [examId],
   );
 
-  return { state, dispatch, saveStatus, toggleSkip, activeOrder, recentSaves, jumpTo };
+  // Voice entry (docs/specs/voice-perio.md). The values were already worked out through
+  // perioEntryReducer by voice-apply.ts; this persists them through the same save queue and
+  // payload as the keyboard, and keeps the keyboard's live draft in step if it's one of the
+  // teeth changed.
+  const showTooth = useCallback(
+    (tooth: string, draft: ToothDraft) => {
+      setRecentSaves((prev) => ({ ...prev, [tooth]: { mobility: draft.mobility, furcation: draft.furcation, sites: draft.sites } }));
+      setState((s) => (s.draft?.tooth === tooth ? { ...s, draft } : s));
+    },
+    [],
+  );
+
+  const applyVoice = useCallback(
+    (changes: { tooth: string; after: ToothDraft }[], skips: string[]) => {
+      for (const { tooth, after } of changes) {
+        showTooth(tooth, after);
+        persistTooth(tooth, after.mobility, after.furcation, after.sites);
+      }
+      for (const tooth of skips) toggleSkip(tooth, true);
+    },
+    [showTooth, persistTooth, toggleSkip],
+  );
+
+  // Undo of a voice phrase: every touched site goes back to exactly what it was — including
+  // back to empty (clear_sites) and mobility/furcation back to unset, which a normal save can't do.
+  const restoreVoice = useCallback(
+    (changes: { tooth: string; before: ToothDraft; after: ToothDraft }[], skips: string[]) => {
+      for (const { tooth, before, after } of changes) {
+        showTooth(tooth, before);
+        const payload = {
+          sites: toothSavePayload(before).sites,
+          clear_sites: after.sites.filter((s) => s.pocket_depth !== null && before.sites.find((b) => b.site === s.site)?.pocket_depth === null).map((s) => s.site),
+          ...(after.mobility !== before.mobility ? { mobility: before.mobility } : {}),
+          ...(after.furcation !== before.furcation ? { furcation: before.furcation } : {}),
+        };
+        queueRef.current?.save(tooth, () => upsertPerioToothRecord(examId, tooth, payload));
+      }
+      for (const tooth of skips) toggleSkip(tooth, false);
+    },
+    [examId, showTooth, toggleSkip],
+  );
+
+  return { state, dispatch, saveStatus, toggleSkip, activeOrder, recentSaves, jumpTo, knownDraft, applyVoice, restoreVoice };
 }

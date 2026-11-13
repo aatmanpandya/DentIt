@@ -404,3 +404,24 @@ describe("comparePerioExam", () => {
     await expect(comparePerioExam(actor, exam.id, otherExam.id)).rejects.toThrow(PerioExamNotFoundError);
   });
 });
+
+describe("upsertPerioToothRecord clear_sites", () => {
+  afterEach(cleanup);
+
+  // Voice undo returns a site that was empty to empty (docs/specs/voice-perio.md).
+  it("removes the listed sites and leaves the others", async () => {
+    const { actor, patient } = await setup();
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+    await upsertPerioToothRecord(actor, exam.id, "16", {
+      sites: [
+        { site: "MB", pocket_depth: 3 },
+        { site: "B", pocket_depth: 2 },
+        { site: "DB", pocket_depth: 4 },
+      ],
+    });
+
+    const { sites } = await upsertPerioToothRecord(actor, exam.id, "16", { sites: [], clear_sites: ["B", "DB"] });
+
+    expect(sites.map((s) => s.site)).toEqual(["MB"]);
+  });
+});

@@ -30,4 +30,10 @@ export const upsertPerioToothRecordSchema = z.object({
   furcation: z.number().int().min(0).max(3).nullable().optional(),
   is_skipped: z.boolean().optional(),
   sites: z.array(perioSiteMeasurementSchema).max(6),
+  // Removes these sites' measurements. Voice undo needs it: taking back a phrase must return a
+  // site that was empty to empty, and an upsert can only add or change (docs/specs/voice-perio.md).
+  clear_sites: z.array(z.enum(["MB", "B", "DB", "ML", "L", "DL"])).max(6).optional(),
+}).refine((v) => !(v.clear_sites ?? []).some((c) => v.sites.some((s) => s.site === c)), {
+  message: "A site can't be both saved and cleared.",
+  path: ["clear_sites"],
 });

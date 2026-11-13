@@ -84,6 +84,7 @@ export interface UpsertPerioToothRecordInput {
   furcation?: number | null;
   is_skipped?: boolean;
   sites: PerioSiteInput[];
+  clear_sites?: string[];
 }
 
 // The load-bearing call — fires once per tooth as the operator advances. The grid's own

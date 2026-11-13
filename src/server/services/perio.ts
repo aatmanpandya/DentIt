@@ -283,6 +283,7 @@ export interface UpsertPerioToothRecordInput {
   furcation?: number | null;
   is_skipped?: boolean;
   sites: PerioSiteInput[];
+  clear_sites?: string[];
 }
 
 /**
@@ -320,6 +321,18 @@ export async function upsertPerioToothRecord(actor: RequestActor, examId: string
     };
 
     const [record] = await tx.update(perioToothRecords).set(patch).where(eq(perioToothRecords.id, existing.id)).returning();
+
+    if (input.clear_sites && input.clear_sites.length > 0) {
+      await tx
+        .delete(perioSiteMeasurements)
+        .where(
+          and(
+            eq(perioSiteMeasurements.examId, examId),
+            eq(perioSiteMeasurements.tooth, tooth),
+            inArray(perioSiteMeasurements.site, input.clear_sites as (typeof perioSiteMeasurements.$inferSelect)["site"][]),
+          ),
+        );
+    }
 
     if (input.sites.length > 0) {
       await tx
