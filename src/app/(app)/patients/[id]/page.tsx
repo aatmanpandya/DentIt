@@ -140,8 +140,12 @@ export default function PatientChartPage() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1 overflow-auto p-4">
+      {/* Laptop: odontogram + whole-mouth list on the left, charting panel on the right.
+          Below 1024px (a tablet chairside) the fixed-width panel squeezed the teeth to ~22px,
+          too small to tap; there it stacks: odontogram, then the panel for the tapped tooth,
+          then the whole-mouth list. */}
+      <div className="grid min-h-0 flex-1 auto-rows-max overflow-auto lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+        <div className="min-w-0 p-4 lg:col-start-1 lg:row-start-1">
           <Odontogram
             conditions={chart.conditions}
             procedures={chart.procedures}
@@ -150,12 +154,9 @@ export default function PatientChartPage() {
             onActivate={(fdi, surface) => setSelected({ fdi, surface })}
             onClose={() => setSelected(null)}
           />
-          <div className="mt-6 border-t border-rule pt-4">
-            <ScopedProceduresList patientId={params.id} procedures={chart.procedures} onChanged={refetchChart} />
-          </div>
         </div>
 
-        <div className="w-[320px] flex-none">
+        <div className="border-t border-rule lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:min-h-0 lg:overflow-auto lg:border-t-0">
           <ChartingPanel
             patientId={params.id}
             selectedFdi={selected?.fdi ?? null}
@@ -164,6 +165,12 @@ export default function PatientChartPage() {
             procedures={chart.procedures}
             onChanged={refetchChart}
           />
+        </div>
+
+        <div className="min-w-0 px-4 pb-4 lg:col-start-1 lg:row-start-2 lg:overflow-auto">
+          <div className="border-t border-rule pt-4">
+            <ScopedProceduresList patientId={params.id} procedures={chart.procedures} onChanged={refetchChart} />
+          </div>
         </div>
       </div>
     </div>
