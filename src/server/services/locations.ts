@@ -66,7 +66,7 @@ export async function listOperatories(actor: RequestActor, locationId: string) {
  * users.role — a solo-dentist owner (the common case for a small pilot clinic) is
  * still the person being booked into the chair, and role='owner' would wrongly exclude
  * them from this list if filtered by role instead. Confirmed against the demo org's
- * own seed data: Dr Ananya Rao is role='owner' with a provider_profiles row and is the
+ * own seed data: Dr Nimisha Pandya is role='owner' with a provider_profiles row and is the
  * provider on real seeded appointments.
  */
 export async function listProviders(actor: RequestActor) {

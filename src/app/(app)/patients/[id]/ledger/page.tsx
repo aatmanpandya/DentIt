@@ -26,7 +26,8 @@ function dateLabel(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-const MONEY = /^\d+(\.\d{1,2})?$/;
+// Same limit as the server: numeric(10,2) holds 8 whole digits.
+const MONEY = /^\d{1,8}(\.\d{1,2})?$/;
 
 /**
  * Patient Ledger tab — docs/specs/ledger.md. Balance (or credit), invoices with their
@@ -44,7 +45,16 @@ export default function PatientLedgerPage() {
   const { data: ledger, isLoading } = useQuery({ queryKey: ["patient-ledger", params.id], queryFn: () => getPatientLedger(params.id) });
   // ?bill=1 comes from the chart's "Treatment completed — Create invoice" prompt.
   const searchParams = useSearchParams();
-  const [invoicePanelOpen, setInvoicePanelOpen] = useState(searchParams.get("bill") === "1");
+  const [invoicePanelOpen, setInvoicePanelOpen] = useState(false);
+  // Open the panel whenever ?bill=1 arrives — also when this page is already showing (the
+  // chart toast can be clicked after you've opened the Ledger yourself). Adjusting state
+  // during render, React's pattern for "state that follows a changing value".
+  const billRequested = searchParams.get("bill") === "1";
+  const [prevBillRequested, setPrevBillRequested] = useState(false);
+  if (billRequested !== prevBillRequested) {
+    setPrevBillRequested(billRequested);
+    if (billRequested && canWrite) setInvoicePanelOpen(true);
+  }
   // Drop ?bill=1 once used, so a reload doesn't reopen the panel.
   const router = useRouter();
   const pathname = usePathname();
@@ -179,6 +189,7 @@ export default function PatientLedgerPage() {
         )}
       </div>
 
+      {canWrite && (
       <CreateInvoicePanel
         patientId={params.id}
         open={invoicePanelOpen}
@@ -189,6 +200,8 @@ export default function PatientLedgerPage() {
           refresh();
         }}
       />
+      )}
+      {canWrite && (
       <RecordPaymentPanel
         patientId={params.id}
         ledger={ledger}
@@ -200,6 +213,7 @@ export default function PatientLedgerPage() {
           refresh();
         }}
       />
+      )}
     </div>
   );
 }
@@ -220,7 +234,9 @@ function InvoiceRow({
   const [adjustType, setAdjustType] = useState<"discount" | "writeoff" | "correction">("discount");
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustInPercent, setAdjustInPercent] = useState(false);
-  const isVoid = invoice.status === "void";
+  // Treated as void the moment the void succeeds, before the refetch lands.
+  const [voidedHere, setVoidedHere] = useState(false);
+  const isVoid = invoice.status === "void" || voidedHere;
   // What was actually allocated to it — what moves to credit on void. Not total − outstanding,
   // which counts a discount as money paid (docs/bug-log.md entry 14).
   const paid = toPaise(invoice.paid);
@@ -228,6 +244,7 @@ function InvoiceRow({
   const voidMutation = useMutation({
     mutationFn: () => voidInvoice(invoice.id, reason.trim()),
     onSuccess: () => {
+      setVoidedHere(true);
       setMode("idle");
       onChanged();
     },
@@ -324,7 +341,11 @@ function InvoiceRow({
                     key={String(pct)}
                     type="button"
                     aria-pressed={adjustInPercent === pct}
-                    onClick={() => setAdjustInPercent(pct)}
+                    onClick={() => {
+                      // A number typed as rupees means something else as a percentage.
+                      if (pct !== adjustInPercent) setAdjustAmount("");
+                      setAdjustInPercent(pct);
+                    }}
                     className={clsx("h-7 px-2 text-[12px]", adjustInPercent === pct ? "bg-steel text-white" : "bg-surface text-ink-soft hover:bg-steel-lo")}
                   >
                     {pct ? "%" : "₹"}
@@ -338,7 +359,13 @@ function InvoiceRow({
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={!reason.trim() || !(adjustType === "correction" ? /^-?\d+(\.\d{1,2})?$/.test(adjustAmount) : MONEY.test(adjustAmount)) || adjustMutation.isPending}
+              disabled={
+                !reason.trim() ||
+                !(adjustType === "correction" ? /^-?\d{1,8}(\.\d{1,2})?$/.test(adjustAmount) : MONEY.test(adjustAmount)) ||
+                (usePercent && MONEY.test(adjustAmount) && toPaise(adjustAmount) > 10_000) ||
+                (adjustType !== "correction" && MONEY.test(adjustAmount) && toPaise(adjustRupees) === 0) ||
+                adjustMutation.isPending
+              }
               onClick={() => adjustMutation.mutate()}
               className="h-7 rounded-[var(--radius)] bg-steel px-3 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
@@ -368,10 +395,14 @@ function ActivityRow({ entry, reverseBlockedReason, onChanged }: { entry: Ledger
     onSuccess: () => {
       setConfirming(false);
       setReason("");
+      setReversedHere(true);
       onChanged();
     },
   });
-  const canReverse = entry.kind === "payment" && !entry.reversed;
+  // Hidden as soon as the reversal succeeds, not when the refetch lands — otherwise the
+  // button briefly comes back and a second click gets "already reversed".
+  const [reversedHere, setReversedHere] = useState(false);
+  const canReverse = entry.kind === "payment" && !entry.reversed && !reversedHere;
 
   return (
     <>

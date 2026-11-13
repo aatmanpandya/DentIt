@@ -51,7 +51,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   const activeAlerts = summary?.alerts.filter((a) => a.is_active) ?? [];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col print:block print:h-auto">
       <div className="flex flex-none items-center gap-3 border-b border-rule bg-surface px-4 py-2 print:hidden">
         {patient ? (
           <>
@@ -125,7 +125,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+      <div className="min-h-0 flex-1 overflow-auto print:overflow-visible">{children}</div>
     </div>
   );
 }

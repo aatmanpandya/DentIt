@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch, setTokens, clearTokens, getAccessToken, ApiError } from "./api-client";
 
 export interface CurrentUser {
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // that's the earliest point server and client are guaranteed to agree.
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let cancelled = false;
@@ -69,13 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(result.access_token, result.refresh_token);
     const me = await apiFetch<CurrentUser>("/auth/me");
     setUser(me);
-    router.push("/");
+    // replace, not push: Back from the app shouldn't land on the sign-in page again.
+    router.replace("/");
   }
 
   function logout() {
     clearTokens();
     setUser(null);
-    router.push("/login");
+    // Drop every cached response (patients, search hits, ledgers): the next person to sign in
+    // on this machine must not briefly see the previous user's data.
+    queryClient.clear();
+    router.replace("/login");
   }
 
   return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;

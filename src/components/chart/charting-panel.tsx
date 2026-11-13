@@ -276,11 +276,17 @@ function HistorySection({
   // Cancelling is final (a cancelled procedure has no way back), so it confirms inline —
   // ui-design.md: "Confirm only for irreversible things".
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  // Only the latest failure, cleared when the next action starts — an old "plan not
+  // accepted" error shouldn't sit under a later, successful change.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const errorHandlers = { onMutate: () => setActionError(null), onError: (e: Error) => setActionError(e.message) };
   const resolveCondition = useMutation({
+    ...errorHandlers,
     mutationFn: (id: string) => updateCondition(id, { resolve: true }),
     onSuccess: onChanged,
   });
   const cancelProcedure = useMutation({
+    ...errorHandlers,
     mutationFn: (id: string) => updateProcedureStatus(id, "cancelled"),
     onSuccess: () => {
       setConfirmCancelId(null);
@@ -288,6 +294,7 @@ function HistorySection({
     },
   });
   const completeProcedureMutation = useMutation({
+    ...errorHandlers,
     mutationFn: (id: string) => completeProcedure(id),
     onSuccess: () => {
       onChanged();
@@ -302,6 +309,7 @@ function HistorySection({
     },
   });
   const removeProcedure = useMutation({
+    ...errorHandlers,
     mutationFn: (id: string) => deleteProcedure(id),
     onSuccess: onChanged,
   });
@@ -376,13 +384,7 @@ function HistorySection({
       </ul>
       {/* A refused change (e.g. the treatment is on a plan not yet accepted) must say why,
           not fail silently. */}
-      {[cancelProcedure, completeProcedureMutation, removeProcedure, resolveCondition].map((m, i) =>
-        m.isError ? (
-          <p key={i} className="text-[12px] text-bleed">
-            {(m.error as Error).message}
-          </p>
-        ) : null,
-      )}
+      {actionError && <p className="text-[12px] text-bleed">{actionError}</p>}
     </div>
   );
 }

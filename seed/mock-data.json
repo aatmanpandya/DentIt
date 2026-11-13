@@ -80,11 +80,12 @@
   ],
 
   "provider_schedules": [
-    { "provider": "nimisha", "location": "kp", "days": [1, 2, 3, 4, 5], "start_time": "09:30", "end_time": "18:00" },
-    { "provider": "nimisha", "location": "kp", "days": [6], "start_time": "09:30", "end_time": "14:00" },
-    { "provider": "vikram", "location": "kp", "days": [1, 3, 5], "start_time": "10:00", "end_time": "19:00" },
-    { "provider": "vikram", "location": "kp", "days": [2, 4], "start_time": "10:00", "end_time": "18:00" },
-    { "provider": "priya", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "09:30", "end_time": "17:00" }
+    { "provider": "nimisha", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "09:30", "end_time": "14:00" },
+    { "provider": "nimisha", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "17:00", "end_time": "20:30" },
+    { "provider": "vikram", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "09:30", "end_time": "14:00" },
+    { "provider": "vikram", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "17:00", "end_time": "20:30" },
+    { "provider": "priya", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "09:30", "end_time": "14:00" },
+    { "provider": "priya", "location": "kp", "days": [1, 2, 3, 4, 5, 6], "start_time": "17:00", "end_time": "20:30" }
   ],
 
   "appointment_types": [
@@ -158,14 +159,14 @@
   "appointments": [
     { "patient": "p1",  "provider": "nimisha", "operatory": "kp1", "type": "consult",    "day_offset": 0, "start": "09:30", "status": "completed" },
     { "patient": "p2",  "provider": "priya",  "operatory": "kp3", "type": "perio",      "day_offset": 0, "start": "09:30", "status": "completed" },
-    { "patient": "p3",  "provider": "vikram", "operatory": "kp2", "type": "filling",    "day_offset": 0, "start": "10:00", "status": "completed" },
+    { "patient": "p3",  "provider": "nimisha", "operatory": "kp2", "type": "filling",    "day_offset": 0, "start": "10:00", "status": "completed" },
     { "patient": "p9",  "provider": "nimisha", "operatory": "kp1", "type": "cleaning",   "day_offset": 0, "start": "10:15", "status": "seated" },
     { "patient": "p5",  "provider": "vikram", "operatory": "kp2", "type": "extraction", "day_offset": 0, "start": "11:00", "status": "arrived" },
     { "patient": "p6",  "provider": "priya",  "operatory": "kp3", "type": "cleaning",   "day_offset": 0, "start": "11:15", "status": "confirmed" },
     { "patient": "p12", "provider": "nimisha", "operatory": "kp1", "type": "rct",        "day_offset": 0, "start": "12:00", "status": "confirmed" },
-    { "patient": "p8",  "provider": "nimisha", "operatory": "kp1", "type": "review",     "day_offset": 0, "start": "15:00", "status": "scheduled" },
-    { "patient": "p11", "provider": "vikram", "operatory": "kp2", "type": "consult",    "day_offset": 0, "start": "15:30", "status": "scheduled" },
-    { "patient": "p3",  "provider": "priya",  "operatory": "kp3", "type": "cleaning",   "day_offset": 0, "start": "16:00", "status": "scheduled" },
+    { "patient": "p8",  "provider": "nimisha", "operatory": "kp1", "type": "review",     "day_offset": 0, "start": "17:00", "status": "scheduled" },
+    { "patient": "p11", "provider": "vikram", "operatory": "kp2", "type": "consult",    "day_offset": 0, "start": "17:30", "status": "scheduled" },
+    { "patient": "p3",  "provider": "priya",  "operatory": "kp3", "type": "cleaning",   "day_offset": 0, "start": "18:00", "status": "scheduled" },
     { "patient": "p7",  "provider": "vikram", "operatory": "bn1", "type": "consult",    "day_offset": 1, "start": "10:00", "status": "scheduled" },
     { "patient": "p4",  "provider": "vikram", "operatory": "bn1", "type": "filling",    "day_offset": 1, "start": "11:00", "status": "scheduled" },
     { "patient": "p1",  "provider": "nimisha", "operatory": "kp1", "type": "filling",    "day_offset": 2, "start": "09:30", "status": "scheduled" },
@@ -212,7 +213,7 @@
       "phases": [ { "name": "Deep cleaning", "items": ["p2-scale-ur", "p2-scale-ul"] } ] },
     { "patient": "p2",  "name": "Surgery & crown",     "status": "presented", "presented_offset": -1,
       "phases": [ { "name": "Flap surgery", "items": ["p2-flap-ur"] }, { "name": "Crown", "items": ["p2-crown-26"] } ] },
-    { "patient": "p12", "name": "Root canal 21",       "status": "accepted",  "presented_offset": -6, "accepted_offset": -6,
+    { "patient": "p12", "name": "Root canal 21",       "status": "accepted",  "presented_offset": -14, "accepted_offset": -14,
       "phases": [ { "name": "Phase 1", "items": ["p12-rct-21"] } ] },
     { "patient": "p12", "name": "Crown on 21",         "status": "draft",
       "phases": [ { "name": "Phase 1", "items": ["p12-crown-21"] } ] },
@@ -262,8 +263,8 @@
 
   "clinical_notes": [
     { "patient": "p1", "provider": "nimisha", "day_offset": 0, "signed": true, "body": "New patient. Chief complaint: sensitivity upper left on cold. O/E moderate occlusal caries 26, mesio-occlusal caries 36. No perio involvement. Advised composite restorations both. Allergy to penicillin noted and flagged." },
-    { "patient": "p2", "provider": "priya",  "day_offset": 0, "signed": true, "body": "Full mouth perio charting completed. Generalised moderate chronic periodontitis, localised severe upper right. Grade II furcation 16 buccal. Compared against baseline exam: UR quadrant deteriorated 1-2mm despite home care advice. Diabetic — HbA1c 7.8. Referred to Dr Rao for quadrant SRP and possible flap surgery UR." },
-    { "patient": "p3", "provider": "vikram", "day_offset": 0, "signed": true, "body": "Composite restoration 14 OD under LA. Uneventful. Occlusion checked and adjusted. Post-op instructions given." },
+    { "patient": "p2", "provider": "priya",  "day_offset": 0, "signed": true, "body": "Full mouth perio charting completed. Generalised moderate chronic periodontitis, localised severe upper right. Grade II furcation 16 buccal. Compared against baseline exam: UR quadrant deteriorated 1-2mm despite home care advice. Diabetic — HbA1c 7.8. Referred to Dr Pandya for quadrant SRP and possible flap surgery UR." },
+    { "patient": "p3", "provider": "nimisha", "day_offset": 0, "signed": true, "body": "Composite restoration 14 OD under LA. Uneventful. Occlusion checked and adjusted. Post-op instructions given." },
     { "patient": "p12","provider": "nimisha", "day_offset": -14, "signed": true, "body": "Trauma to 21, cricket ball injury 2 weeks prior. Enamel-dentine fracture mesio-incisal. Tooth tender to percussion, negative to cold. Diagnosis: pulp necrosis. RCT advised followed by zirconia crown. Patient consented to RCT today, crown to follow." }
   ],
 
@@ -274,7 +275,7 @@
       "day_offset": 0,
       "sequence": 881,
       "lines": [{ "procedure": "p1-consult" }],
-      "payment": { "amount": "300.00", "method": "upi", "reference": "UPI/442190883/SUNRISE" }
+      "payment": { "amount": "300.00", "method": "upi", "reference": "UPI/442190883/SUMAN" }
     },
     {
       "patient": "p3",

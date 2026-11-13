@@ -30,11 +30,12 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
 
   return (
     <ToastProvider>
-      <div className="flex h-screen flex-col bg-paper">
+      {/* print: the fixed-height scroll shell would clip a long invoice to one page. */}
+      <div className="flex h-screen flex-col bg-paper print:block print:h-auto">
         <TopBar />
-        <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 print:block">
           <NavRail />
-          <main className="min-w-0 flex-1 overflow-auto">{children}</main>
+          <main className="min-w-0 flex-1 overflow-auto print:overflow-visible">{children}</main>
         </div>
       </div>
     </ToastProvider>

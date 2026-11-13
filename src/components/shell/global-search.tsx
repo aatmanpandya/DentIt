@@ -38,12 +38,15 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError } = useQuery({
     queryKey: ["global-search", debounced],
     queryFn: () => listPatients({ q: debounced, limit: 8 }),
     enabled: debounced.length >= 2,
   });
   const results = debounced.length >= 2 ? (data?.data ?? []) : [];
+  // Results only count as "for what's typed" once the debounce has caught up; Enter on an
+  // older list could open the wrong patient.
+  const resultsAreCurrent = debounced === q.trim() && !isFetching;
 
   function go(id: string) {
     setOpen(false);
@@ -70,11 +73,11 @@ export function GlobalSearch() {
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
-              setActive((i) => Math.min(i + 1, results.length - 1));
+              setActive((i) => Math.max(0, Math.min(i + 1, results.length - 1)));
             } else if (e.key === "ArrowUp") {
               e.preventDefault();
               setActive((i) => Math.max(i - 1, 0));
-            } else if (e.key === "Enter" && results[active]) {
+            } else if (e.key === "Enter" && resultsAreCurrent && results[active]) {
               e.preventDefault();
               go(results[active].id);
             } else if (e.key === "Escape") {
@@ -85,8 +88,9 @@ export function GlobalSearch() {
           placeholder="Search patients by name, phone or number…"
           aria-label="Search patients"
           role="combobox"
-          aria-expanded={open && results.length > 0}
-          aria-controls="global-search-results"
+          aria-expanded={open && debounced.length >= 2}
+          aria-controls={open && debounced.length >= 2 ? "global-search-results" : undefined}
+          aria-activedescendant={open && results[active] ? `global-search-option-${results[active].id}` : undefined}
           className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-soft"
         />
         <kbd className="font-data rounded-[2px] border border-rule px-1 text-[10px] text-ink-soft">/</kbd>
@@ -99,10 +103,12 @@ export function GlobalSearch() {
           className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-[var(--radius)] border border-rule bg-surface shadow-lg"
         >
           {results.length === 0 ? (
-            <li className="px-3 py-2 text-[12px] text-ink-soft">{isFetching ? "Searching…" : `No patients match "${debounced}".`}</li>
+            <li className="px-3 py-2 text-[12px] text-ink-soft">
+              {isFetching ? "Searching…" : isError ? "Search isn't working right now — try again." : `No patients match "${debounced}".`}
+            </li>
           ) : (
             results.map((p, i) => (
-              <li key={p.id} role="option" aria-selected={i === active}>
+              <li key={p.id} id={`global-search-option-${p.id}`} role="option" aria-selected={i === active}>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}

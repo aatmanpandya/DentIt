@@ -144,7 +144,9 @@ export default function PatientChartPage() {
           Below 1024px (a tablet chairside) the fixed-width panel squeezed the teeth to ~22px,
           too small to tap; there it stacks: odontogram, then the panel for the tapped tooth,
           then the whole-mouth list. */}
-      <div className="grid min-h-0 flex-1 auto-rows-max overflow-auto lg:grid-cols-[minmax(0,1fr)_320px] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+      {/* One scroll area at every size (a short laptop must never clip the teeth or squeeze
+          the list into a sliver); on laptops the panel sticks in view beside it. */}
+      <div className="grid min-h-0 flex-1 auto-rows-max overflow-auto lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 p-4 lg:col-start-1 lg:row-start-1">
           <Odontogram
             conditions={chart.conditions}
@@ -156,7 +158,7 @@ export default function PatientChartPage() {
           />
         </div>
 
-        <div className="border-t border-rule lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:min-h-0 lg:overflow-auto lg:border-t-0">
+        <div className="border-t border-rule lg:sticky lg:top-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-full lg:self-start lg:overflow-auto lg:border-t-0">
           <ChartingPanel
             patientId={params.id}
             selectedFdi={selected?.fdi ?? null}
@@ -167,7 +169,7 @@ export default function PatientChartPage() {
           />
         </div>
 
-        <div className="min-w-0 px-4 pb-4 lg:col-start-1 lg:row-start-2 lg:overflow-auto">
+        <div className="min-w-0 px-4 pb-4 lg:col-start-1 lg:row-start-2">
           <div className="border-t border-rule pt-4">
             <ScopedProceduresList patientId={params.id} procedures={chart.procedures} onChanged={refetchChart} />
           </div>

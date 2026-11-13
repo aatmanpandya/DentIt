@@ -7,7 +7,8 @@ import { listLocations } from "@/lib/schedule-api";
 import { applyCredit, recordPayment, suggestLocation, type PatientLedger, type PaymentMethod } from "@/lib/ledger-api";
 import { addMoney, formatRupees, fromPaise, toPaise } from "@/lib/format-money";
 
-const MONEY = /^\d+(\.\d{1,2})?$/;
+// Same limit as the server: numeric(10,2) holds 8 whole digits.
+const MONEY = /^\d{1,8}(\.\d{1,2})?$/;
 const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "upi", label: "UPI" },
   { value: "cash", label: "Cash" },

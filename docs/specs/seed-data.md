@@ -1,7 +1,7 @@
 # Seed and Mock Data
 
 Data lives in [`seed/mock-data.json`](../../seed/mock-data.json); the loader is `seed/index.ts`,
-run with `pnpm seed`.
+run with `npm run seed`.
 
 ## What it is for
 
@@ -25,8 +25,8 @@ Three jobs, and they pull in different directions — this data set is tuned for
 | Patients | 12 | |
 | Alerts | 7 | Allergies, diabetes, blood thinners |
 | Appointments | 17 | A full day today, plus past and future |
-| Charted conditions | 7 | |
-| Charted procedures | 12 | Across every status |
+| Charted conditions | 13 | |
+| Charted procedures | 13 | Across every status |
 | Perio exams | 2 | Same patient, six months apart |
 | Clinical notes | 4 | Signed, written the way a dentist actually writes |
 | Invoices | 3 | Paid, part-paid, unpaid |
@@ -89,15 +89,20 @@ render as skipped rather than as zeros.
 - **Idempotent.** Re-running truncates the demo Organization and rebuilds it. It must never touch
   another Organization — the loader refuses to run if `NODE_ENV=production` unless
   `SEED_ALLOW_PRODUCTION=1` is set explicitly.
-- **Goes through the service layer**, not raw inserts. If the seed can create it, the API can too —
-  and the seed becomes a smoke test of the services for free.
+- **Writes the tables directly (admin connection), not through the services.** The original
+  intent was to go through the service layer; the loader as built inserts rows itself, so it
+  writes no audit entries and bypasses service validation. It reuses the services' pure helpers
+  where the numbers must agree (`money.ts`/`lineTax` for invoices, the timezone helpers for
+  dates), and the data is kept within the app's own rules by hand: appointments sit inside the
+  clinic's real hours (Mon–Sat 09:30–14:00 and 17:00–20:30, Sunday closed — a Sunday offset moves
+  to Monday), and a visit whose clock time hasn't come yet is never "completed".
 - Keys (`"p1"`, `"kp1"`) are resolved to uuids at load time. They exist only in the JSON.
 - The fee schedule is built from the `price` field on each procedure code.
 
 ## Not included
 
-Documents and images (no binaries in the repo), audit log entries (generated naturally by the
-loader writing through the services).
+Documents and images (no binaries in the repo), audit log entries (the loader writes rows
+directly; see above).
 
 ## Treatment plans
 

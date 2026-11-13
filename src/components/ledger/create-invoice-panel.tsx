@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { SidePanel } from "@/components/ui/side-panel";
 import { listLocations } from "@/lib/schedule-api";
 import { createInvoice, listInvoiceable, suggestLocation, type InvoiceableProcedure } from "@/lib/ledger-api";
 import { addMoney, formatRupees, percentOf, toPaise } from "@/lib/format-money";
 
-const MONEY = /^\d+(\.\d{1,2})?$/;
+// Same limit as the server: numeric(10,2) holds 8 whole digits.
+const MONEY = /^\d{1,8}(\.\d{1,2})?$/;
 
 function where(p: InvoiceableProcedure): string {
   if (p.tooth) return `${p.tooth}${p.surfaces?.length ? ` ${p.surfaces.join("")}` : ""}`;
@@ -64,6 +65,9 @@ export function CreateInvoicePanel({
     queryKey: ["suggest-location", patientId, selectedIds.join(",")],
     queryFn: () => suggestLocation(patientId, selectedIds),
     enabled: open,
+    // Keep showing the last suggestion while the next loads, so the location doesn't flick
+    // to the first branch each time a treatment is ticked or unticked.
+    placeholderData: keepPreviousData,
   });
   // The suggestion pre-fills the picker until the user chooses a location themselves.
   // Until the suggestion arrives, fall back to the first location rather than leaving the

@@ -473,3 +473,49 @@ data consistency plus the seed. Every finding was checked against the code; this
   `/ledger` gross unapplied credit; with an open invoice the two disagreed. All now show net.
   A void invoice's reprint no longer lists money that moved to credit as "Paid", and a fully
   discounted invoice reads "Settled", not "Paid".
+- **Commit:** `6bd2bc7` (server); the screen side of the credit and print fixes is in entry 33's
+  commit.
+
+---
+
+## 33. Final sweep: screen bugs
+
+- **"Bill" link did nothing when the Ledger tab was already open:** the `?bill=1` param was only
+  read on mount. Now it opens Create invoice whenever it appears, and only for users who can
+  write invoices; the panels are hidden from read-only roles altogether.
+- **Reverse and Void buttons stayed visible** until the refetch landed, inviting a second click
+  that came back as an error. Hidden as soon as the action succeeds.
+- **Discount in %:** no cap (150% was accepted and then refused by the server), switching ₹/%
+  kept the old number in the other unit, and a 0 discount was sent. Capped at 100, cleared on
+  switch, zero ignored.
+- **Money fields** accepted more digits than `numeric(10,2)` holds, failing with a 500. Capped
+  at 8 digits before the decimal point.
+- **Create invoice location** flickered back to blank while ticking procedures (the suggestion
+  query reset between keys). Keeps the previous suggestion until the new one arrives.
+- **Chart history errors:** a failed edit showed no message, or the wrong one when two actions
+  overlapped. Now the latest action's error is shown.
+- **Top-bar search:** Enter could open a patient from the previous, stale result list; a server
+  error read as "No patients match"; ArrowDown on an empty list set the index to −1; screen
+  readers didn't hear the highlighted result. All fixed.
+- **Printing** from inside the app shell clipped the invoice to one screen height. The shell
+  now lets print flow over pages.
+- **Login and logout:** Back after login returned to the login form; logging out left the
+  previous user's cached data in memory for the next login on the same browser. Login now
+  replaces history; logout clears the query cache.
+- **Chart on a short laptop screen (1280×650):** the charting panel was cut off below the fold
+  with two nested scroll areas. One scroll area now, with the panel sticky beside the chart.
+
+---
+
+## 34. Final sweep: seed data
+
+- **Appointments outside clinic hours:** seeded visits at 15:00–16:00 fell in the clinic's
+  afternoon break, and day offsets could land on Sundays. Provider hours now match the clinic
+  (Mon–Sat 09:30–14:00, 17:00–20:30), afternoon visits moved to the evening, Sunday visits shift
+  to Monday.
+- **Future visits marked completed, seated or arrived** when a re-seed's day offsets landed
+  ahead of today. Future visits are seeded as confirmed.
+- **Leftovers from the rename:** one note and appointment still pointed at the old dentist, a UPI
+  reference carried the old clinic's name, and a plan was accepted after its procedures were
+  done. Corrected; seeded invoices take their GST status from the clinic.
+- `docs/specs/seed-data.md` updated (one location, counts, the clinic-hours rule).

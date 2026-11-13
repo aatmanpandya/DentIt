@@ -64,6 +64,11 @@ function dateOnly(dayOffset: number): string {
   return new Date(Date.UTC(y, m - 1, d + dayOffset)).toISOString().slice(0, 10);
 }
 
+function isSundayInClinic(dayOffset: number): boolean {
+  const [y, m, d] = dateOnly(dayOffset).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 0;
+}
+
 /** An instant `dayOffset` days from now; with `time`, that wall-clock time in the clinic. */
 function atOffset(dayOffset: number, time?: string): Date {
   if (time) return zonedDateTimeToInstant(dateOnly(dayOffset), time, SEED_TZ);
@@ -254,7 +259,12 @@ async function main() {
   const appointmentIds: Record<number, string> = {};
   for (let i = 0; i < data.appointments.length; i++) {
     const a = data.appointments[i];
-    const start = atOffset(a.day_offset, a.start);
+    // The clinic is closed on Sundays: a day offset that lands on one moves to Monday.
+    const dayOffset = isSundayInClinic(a.day_offset) ? a.day_offset + 1 : a.day_offset;
+    const start = atOffset(dayOffset, a.start);
+    // Seeding before a visit's clock time would put a "completed"/"seated"/"arrived" visit in
+    // the future; show it as confirmed instead.
+    const status = start > today && ["completed", "seated", "arrived"].includes(a.status) ? "confirmed" : a.status;
     const durationMin = data.appointment_types.find((t) => t.key === a.type)?.default_duration_minutes ?? 30;
     const end = new Date(start.getTime() + durationMin * 60_000);
 
@@ -269,8 +279,8 @@ async function main() {
       appointmentTypeId: appointmentTypeIds[a.type],
       startsAt: start,
       endsAt: end,
-      status: a.status as typeof appointments.$inferInsert.status,
-      completedAt: a.status === "completed" ? start : null,
+      status: status as typeof appointments.$inferInsert.status,
+      completedAt: status === "completed" ? start : null,
     }).returning();
     appointmentIds[i] = row.id;
   }
@@ -450,6 +460,9 @@ async function main() {
       subtotal: fromPaise(lines.reduce((sum, l) => sum + l.unit, 0)),
       taxTotal: fromPaise(lines.reduce((sum, l) => sum + l.tax, 0)),
       total: fromPaise(lines.reduce((sum, l) => sum + l.total, 0)),
+      // Same snapshot the ledger service takes at issue (bug-log entry 28).
+      gstRegistered: data.organization.gst_registered,
+      gstin: data.organization.gst_registered ? data.organization.gstin : null,
     }).returning();
 
     for (const l of lines) {
