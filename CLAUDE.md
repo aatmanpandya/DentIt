@@ -31,6 +31,25 @@ table has `organization_id` but no RLS policy.
   Universal notation, only render it.
 - Dates over the wire: ISO 8601 with offset.
 
+## Fixing and hunting bugs
+
+- **A fix is for the pattern, not the spot.** Before calling a bug fixed, search the whole repo
+  for the same flaw and fix every instance — or fix it once centrally (`src/proxy.ts`, a shared
+  helper, a global default) so new code inherits it. On 13 Nov the ledger routes had guarded
+  bad ids and bad JSON for a day while 50-odd older routes still crashed on both
+  (`docs/bug-log.md` entry 35).
+- **Test the failure paths, not just the happy path.** Reading code misses what only shows when
+  the app runs with bad input or real data. Every bug sweep, and every change that touches routes,
+  screens or the seed, also does:
+  - `npm run probe:api` (dev server running): malformed ids, bodies and queries against every
+    route; any 5xx is a bug.
+  - `npm run check:data` after `npm run seed`: data invariants (ledger totals, procedure
+    status vs invoices, no double bookings); every row should print 0.
+  - In the browser: wrong links, missing records, a failed load, a read-only role. A screen
+    must say what went wrong, never show the failure as empty data or ₹0.00.
+- The seed writes tables directly and skips the services' rules; anything those rules enforce
+  must also be checked in the seed or by `check:data`.
+
 ## Local dev
 
 ```
