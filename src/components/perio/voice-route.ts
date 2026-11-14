@@ -11,7 +11,7 @@ import { socketForFdi } from "@/components/chart/tooth-grid";
 import type { PerioSiteCode } from "./perio-entry";
 
 export type Side = "outside" | "inside";
-export type ProbingRoute = "outside_first" | "each_jaw";
+export type ProbingRoute = "around_tooth" | "outside_first" | "each_jaw";
 
 export interface RouteStep {
   tooth: string;
@@ -29,7 +29,7 @@ const UPPER_L_TO_R = [...UPPER_R_TO_L].reverse(); // 28→18
 const LOWER_L_TO_R = [...range(3, 8, 1), ...range(4, 1, 8)]; // 38→48
 const LOWER_R_TO_L = [...LOWER_L_TO_R].reverse(); // 48→38
 
-const SWEEPS: Record<ProbingRoute, { side: Side; positions: string[] }[]> = {
+const SWEEPS: Record<Exclude<ProbingRoute, "around_tooth">, { side: Side; positions: string[] }[]> = {
   outside_first: [
     { side: "outside", positions: UPPER_R_TO_L },
     { side: "outside", positions: LOWER_L_TO_R },
@@ -60,6 +60,27 @@ export function buildRoute(route: ProbingRoute, activeTeeth: string[]): RouteSte
     if (socket) bySocket.set(socket.permanentFdi, t);
   }
   const steps: RouteStep[] = [];
+
+  // Around each tooth (Dr Nimisha, 14 Nov): the probe walks right round one tooth — the outside
+  // in travel order, then on round to the inside starting where the outside ended — before the
+  // next tooth; teeth 18→28, then 38→48. SDCEP describes probing the same way ("walk the probe
+  // around the gingival margin of each tooth").
+  if (route === "around_tooth") {
+    for (const positions of [UPPER_R_TO_L, LOWER_L_TO_R]) {
+      const startQuadrant = positions[0][0];
+      for (const pos of positions) {
+        const tooth = bySocket.get(pos);
+        if (!tooth) continue;
+        const o = SITE_CODES.outside;
+        const i = SITE_CODES.inside;
+        const distalFirst = pos[0] === startQuadrant;
+        steps.push({ tooth, side: "outside", sites: distalFirst ? [o.distal, o.mid, o.mesial] : [o.mesial, o.mid, o.distal] });
+        steps.push({ tooth, side: "inside", sites: distalFirst ? [i.mesial, i.mid, i.distal] : [i.distal, i.mid, i.mesial] });
+      }
+    }
+    return steps;
+  }
+
   for (const sweep of SWEEPS[route]) {
     const startQuadrant = sweep.positions[0][0];
     for (const pos of sweep.positions) {

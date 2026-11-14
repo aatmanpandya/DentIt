@@ -43,8 +43,14 @@ in the direction the probe travels:
 
 | Route | Order |
 |---|---|
-| **Outside first** (default; Dr Nimisha's "clockwise") | outside 18→28, outside 38→48, inside 48→38, inside 28→18 |
+| **Around each tooth** (default; how Suman Dental Care probes, confirmed by Dr Nimisha 14 Nov) | each tooth outside then inside, continuing round it, before the next; teeth 18→28, then 38→48 |
+| Outside first | outside 18→28, outside 38→48, inside 48→38, inside 28→18 |
 | Each jaw first | outside 18→28, inside 28→18, inside 48→38, outside 38→48 |
+
+Around each tooth matches SDCEP's description of probing ("walk the probe around the gingival
+margin of each tooth"); the inside starts where the outside ended (18: DB B MB, then ML L DL), so
+six numbers complete one tooth. The 13 Nov "clockwise" was first read as a sweep along the arch;
+the 14 Nov clarification made around-each-tooth the default, with the sweeps kept as options.
 
 Within a side the three sites are read in travel order: moving 18→28 on the outside, upper-right
 teeth are DB, B, MB and upper-left teeth MB, B, DB. Skipped and missing teeth are passed over.

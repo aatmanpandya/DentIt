@@ -38,13 +38,15 @@ interface Heard {
 const JOIN_WINDOW_MS = 15000;
 
 const ROUTE_KEY = "dentit.voiceRoute";
-const ROUTE_LABEL: Record<ProbingRoute, string> = { outside_first: "Outside first", each_jaw: "Each jaw first" };
+// "Around each tooth" first: it's how Suman Dental Care probes (Dr Nimisha, 14 Nov).
+const ROUTE_LABEL: Record<ProbingRoute, string> = { around_tooth: "Around each tooth", outside_first: "Outside first", each_jaw: "Each jaw first" };
 
 function readRoute(): ProbingRoute {
   try {
-    return window.localStorage.getItem(ROUTE_KEY) === "each_jaw" ? "each_jaw" : "outside_first";
+    const stored = window.localStorage.getItem(ROUTE_KEY);
+    return stored && Object.prototype.hasOwnProperty.call(ROUTE_LABEL, stored) ? (stored as ProbingRoute) : "around_tooth";
   } catch {
-    return "outside_first";
+    return "around_tooth";
   }
 }
 

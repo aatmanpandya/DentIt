@@ -31,3 +31,23 @@ describe("buildRoute", () => {
     expect(steps.filter((s) => s.side === "outside").map((s) => s.tooth)).toEqual(["18", "55", "28"]);
   });
 });
+
+describe("buildRoute: around each tooth (Dr Nimisha's order)", () => {
+  // Each tooth all the way round — outside, then on round to the inside — before the next tooth;
+  // teeth in order 18→28, then 38→48.
+  it("visits every tooth outside then inside before moving on", () => {
+    const steps = buildRoute("around_tooth", ADULT);
+    expect(steps).toHaveLength(64);
+    expect(steps.slice(0, 4).map((s) => `${s.tooth} ${s.side}`)).toEqual(["18 outside", "18 inside", "17 outside", "17 inside"]);
+    expect(steps.slice(30, 34).map((s) => `${s.tooth} ${s.side}`)).toEqual(["28 outside", "28 inside", "38 outside", "38 inside"]);
+    expect(`${steps[63].tooth} ${steps[63].side}`).toBe("48 inside");
+  });
+
+  it("continues round the tooth: the inside starts where the outside ended", () => {
+    const steps = buildRoute("around_tooth", ADULT);
+    expect(steps[0].sites).toEqual(["DB", "B", "MB"]); // 18 outside, toward the midline
+    expect(steps[1].sites).toEqual(["ML", "L", "DL"]); // 18 inside, on round from mesial
+    expect(steps.find((s) => s.tooth === "21" && s.side === "outside")?.sites).toEqual(["MB", "B", "DB"]);
+    expect(steps.find((s) => s.tooth === "21" && s.side === "inside")?.sites).toEqual(["DL", "L", "ML"]);
+  });
+});

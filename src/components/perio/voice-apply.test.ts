@@ -97,3 +97,14 @@ describe("planPhrase", () => {
     expect(site(r.changes[0].after, "DL")?.pocket_depth).toBe(4);
   });
 });
+
+describe("planPhrase on the around-each-tooth route", () => {
+  it("six numbers complete one tooth, round it, then the next tooth", () => {
+    const around: VoiceContext = { steps: buildRoute("around_tooth", TEETH), draftFor: blank, hasFurcation };
+    const r = planPhrase(cmds("323 434"), INITIAL_VOICE_STATE, around);
+    if (!r.ok) throw new Error(r.reason);
+    const t18 = r.changes[0].after;
+    expect(["DB", "B", "MB", "ML", "L", "DL"].map((s) => site(t18, s)?.pocket_depth)).toEqual([3, 2, 3, 4, 3, 4]);
+    expect(r.voice.cursor).toEqual({ tooth: "17", side: "outside", offset: 0 });
+  });
+});
