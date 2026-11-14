@@ -121,6 +121,7 @@ export function PerioGrid({ examId, teeth, probingSequence, completed, toothDisp
     <div className="flex flex-col gap-2">
       {!completed && (
         <VoiceBar
+          examId={examId}
           activeOrder={activeOrder}
           disabled={completed}
           knownDraft={knownDraft}

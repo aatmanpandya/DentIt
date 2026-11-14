@@ -108,3 +108,22 @@ describe("planPhrase on the around-each-tooth route", () => {
     expect(r.voice.cursor).toEqual({ tooth: "17", side: "outside", offset: 0 });
   });
 });
+
+import { draftChanges } from "./voice-apply";
+
+describe("draftChanges (the phrase's lines in the exam transcript)", () => {
+  it("lists every cell a phrase changed, old to new, and nothing it didn't", () => {
+    const r = planPhrase(cmds("323 recession 1 0 1 bleeding first"), INITIAL_VOICE_STATE, ctx());
+    if (!r.ok) throw new Error(r.reason);
+    const c = draftChanges(r.changes);
+    expect(c).toContainEqual({ tooth: "18", site: "DB", field: "pocket_depth", from: null, to: 3 });
+    expect(c).toContainEqual({ tooth: "18", site: "MB", field: "recession", from: null, to: 1 });
+    expect(c).toContainEqual({ tooth: "18", site: "DB", field: "bleeding", from: false, to: true });
+    expect(c.filter((x) => x.site === "ML")).toEqual([]);
+  });
+
+  it("records a skipped tooth, and an undone skip the other way", () => {
+    expect(draftChanges([], ["18"])).toEqual([{ tooth: "18", site: null, field: "skipped", from: false, to: true }]);
+    expect(draftChanges([], ["18"], true)).toEqual([{ tooth: "18", site: null, field: "skipped", from: true, to: false }]);
+  });
+});

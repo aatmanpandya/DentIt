@@ -96,8 +96,9 @@ export function usePerioEntry(
   >({});
 
   const persistTooth = useCallback(
-    (tooth: string, mobility: number | null, furcation: number | null, sites: SiteDraft[]) => {
-      const payload = toothSavePayload({ mobility, furcation, sites });
+    (tooth: string, mobility: number | null, furcation: number | null, sites: SiteDraft[], source: "keyboard" | "voice" = "keyboard") => {
+      // "voice": the phrase is already in the exam's transcript with its changes (docs/specs/perio-approval.md).
+      const payload = { ...toothSavePayload({ mobility, furcation, sites }), source };
       queueRef.current?.save(tooth, () => upsertPerioToothRecord(examId, tooth, payload));
     },
     [examId],
@@ -214,8 +215,8 @@ export function usePerioEntry(
   // works on any tooth via a click/keypress on its header, not just the current one).
   // Same never-lose-it retry guarantee as a measurement save, on its own queue key.
   const toggleSkip = useCallback(
-    (tooth: string, isSkipped: boolean) => {
-      queueRef.current?.save(`${tooth}:skip`, () => upsertPerioToothRecord(examId, tooth, { is_skipped: isSkipped, sites: [] }));
+    (tooth: string, isSkipped: boolean, source: "keyboard" | "voice" = "keyboard") => {
+      queueRef.current?.save(`${tooth}:skip`, () => upsertPerioToothRecord(examId, tooth, { is_skipped: isSkipped, sites: [], source }));
     },
     [examId],
   );
@@ -236,9 +237,9 @@ export function usePerioEntry(
     (changes: { tooth: string; after: ToothDraft }[], skips: string[]) => {
       for (const { tooth, after } of changes) {
         showTooth(tooth, after);
-        persistTooth(tooth, after.mobility, after.furcation, after.sites);
+        persistTooth(tooth, after.mobility, after.furcation, after.sites, "voice");
       }
-      for (const tooth of skips) toggleSkip(tooth, true);
+      for (const tooth of skips) toggleSkip(tooth, true, "voice");
     },
     [showTooth, persistTooth, toggleSkip],
   );
@@ -254,10 +255,11 @@ export function usePerioEntry(
           clear_sites: after.sites.filter((s) => s.pocket_depth !== null && before.sites.find((b) => b.site === s.site)?.pocket_depth === null).map((s) => s.site),
           ...(after.mobility !== before.mobility ? { mobility: before.mobility } : {}),
           ...(after.furcation !== before.furcation ? { furcation: before.furcation } : {}),
+          source: "voice" as const,
         };
         queueRef.current?.save(tooth, () => upsertPerioToothRecord(examId, tooth, payload));
       }
-      for (const tooth of skips) toggleSkip(tooth, false);
+      for (const tooth of skips) toggleSkip(tooth, false, "voice");
     },
     [examId, showTooth, toggleSkip],
   );

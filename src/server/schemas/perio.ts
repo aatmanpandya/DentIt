@@ -33,7 +33,25 @@ export const upsertPerioToothRecordSchema = z.object({
   // Removes these sites' measurements. Voice undo needs it: taking back a phrase must return a
   // site that was empty to empty, and an upsert can only add or change (docs/specs/voice-perio.md).
   clear_sites: z.array(z.enum(["MB", "B", "DB", "ML", "L", "DL"])).max(6).optional(),
+  source: z.enum(["keyboard", "voice"]).optional(),
 }).refine((v) => !(v.clear_sites ?? []).some((c) => v.sites.some((s) => s.site === c)), {
   message: "A site can't be both saved and cleared.",
   path: ["clear_sites"],
+});
+
+// POST /perio-exams/:id/events — one dictated phrase for the exam's transcript
+// (docs/specs/perio-approval.md).
+const perioChangeSchema = z.object({
+  tooth: z.string().max(3),
+  site: z.enum(["MB", "B", "DB", "ML", "L", "DL"]).nullable(),
+  field: z.enum(["pocket_depth", "recession", "bleeding", "suppuration", "plaque", "mobility", "furcation", "skipped"]),
+  from: z.union([z.number().int(), z.boolean(), z.null()]),
+  to: z.union([z.number().int(), z.boolean(), z.null()]),
+});
+export const recordPerioPhraseSchema = z.object({
+  heard: z.array(z.string().max(300)).max(5),
+  used: z.string().max(600).nullable(),
+  outcome: z.enum(["written", "refused", "waiting", "undo"]),
+  note: z.string().max(300).nullable(),
+  changes: z.array(perioChangeSchema).max(300),
 });

@@ -230,3 +230,36 @@ export function planPhrase(commands: VoiceCommand[], voice: VoiceState, ctx: Voi
     .filter((c) => JSON.stringify(c.before) !== JSON.stringify(c.after));
   return { ok: true, changes, skips, voice: { cursor, lastSide, lastDepth }, cells };
 }
+
+/**
+ * What a phrase changed, cell by cell, for the exam's transcript (docs/specs/perio-approval.md).
+ * Same field names as the server's keyboard diff, so the review screen shows both alike.
+ */
+export interface DraftChange {
+  tooth: string;
+  site: PerioSiteCode | null;
+  field: "pocket_depth" | "recession" | "bleeding" | "suppuration" | "plaque" | "mobility" | "furcation" | "skipped";
+  from: number | boolean | null;
+  to: number | boolean | null;
+}
+
+export function draftChanges(changes: { tooth: string; before: ToothDraft; after: ToothDraft }[], skips: string[] = [], unskip = false): DraftChange[] {
+  const out: DraftChange[] = [];
+  for (const { tooth, before, after } of changes) {
+    if (before.mobility !== after.mobility) out.push({ tooth, site: null, field: "mobility", from: before.mobility, to: after.mobility });
+    if (before.furcation !== after.furcation) out.push({ tooth, site: null, field: "furcation", from: before.furcation, to: after.furcation });
+    for (const a of after.sites) {
+      const b = before.sites.find((s) => s.site === a.site) as SiteDraft;
+      const pairs: [DraftChange["field"], number | boolean | null, number | boolean | null][] = [
+        ["pocket_depth", b.pocket_depth, a.pocket_depth],
+        ["recession", b.gingival_margin, a.gingival_margin],
+        ["bleeding", b.bleeding_on_probing, a.bleeding_on_probing],
+        ["suppuration", b.suppuration, a.suppuration],
+        ["plaque", b.plaque, a.plaque],
+      ];
+      for (const [field, from, to] of pairs) if (from !== to) out.push({ tooth, site: a.site, field, from, to });
+    }
+  }
+  for (const tooth of skips) out.push({ tooth, site: null, field: "skipped", from: unskip, to: !unskip });
+  return out;
+}

@@ -18,6 +18,8 @@ import {
 } from "@/lib/perio-api";
 import { PerioGrid } from "@/components/perio/perio-grid";
 import { PerioOverlay } from "@/components/perio/perio-overlay";
+import { PerioReviewPanel } from "@/components/perio/perio-review";
+import { renderTooth } from "@/components/perio/tooth-display";
 
 // Duplicated from src/server/lib/permissions.ts's `perio` row, not imported — client code
 // never reaches into @/server/lib (same boundary src/components/chart/tooth-shapes.ts and
@@ -25,6 +27,9 @@ import { PerioOverlay } from "@/components/perio/perio-overlay";
 // get write access here (they transcribe called-out readings), confirmed with the partner
 // clinic per docs/specs/pilot-foundations.md §2.
 const PERIO_WRITE_ROLES = new Set(["owner", "provider", "hygienist", "assistant"]);
+// Mirrors `perio.approve`: the clinicians who sign clinical notes approve perio exams too
+// (docs/specs/perio-approval.md). Assistants enter, they don't approve.
+const PERIO_APPROVE_ROLES = new Set(["owner", "provider", "hygienist"]);
 
 function formatDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { dateStyle: "medium" });
@@ -43,6 +48,8 @@ export default function PatientPerioPage() {
   const [compareAgainstId, setCompareAgainstId] = useState<string | null>(null);
 
   const canWrite = !!user?.role && PERIO_WRITE_ROLES.has(user.role);
+  const canApprove = !!user?.role && PERIO_APPROVE_ROLES.has(user.role);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const { data: examsData } = useQuery({
     queryKey: ["perio-exams", params.id],
@@ -95,19 +102,22 @@ export default function PatientPerioPage() {
     },
   });
 
+  const refetchTranscript = () => queryClient.invalidateQueries({ queryKey: ["perio-events", activeExamId] });
   const completeMutation = useMutation({
     mutationFn: () => completePerioExam(activeExamId as string),
     onSuccess: () => {
       refetchDetail();
       refetchExams();
+      refetchTranscript();
     },
   });
 
   const uncompleteMutation = useMutation({
-    mutationFn: () => uncompletePerioExam(activeExamId as string),
+    mutationFn: (reason: string) => uncompletePerioExam(activeExamId as string, reason),
     onSuccess: () => {
       refetchDetail();
       refetchExams();
+      refetchTranscript();
     },
   });
 
@@ -191,8 +201,15 @@ export default function PatientPerioPage() {
               <div>
                 <h1 className="font-condensed text-lg font-medium text-ink">{formatDate(examDetail.exam_date)}</h1>
                 <p className="text-[12px] text-ink-soft">
-                  {examDetail.completed_at ? "Completed" : "Draft"} · examined by{" "}
-                  {providers.find((p) => p.id === examDetail.provider_id)?.full_name ?? "—"}
+                  {examDetail.approved_at ? (
+                    <span className="text-healthy">Approved</span>
+                  ) : (
+                    <span className="text-caution">Draft — not approved</span>
+                  )}{" "}
+                  · examined by {providers.find((p) => p.id === examDetail.provider_id)?.full_name ?? "—"}
+                  {examDetail.approved_at && examDetail.approved_by && (
+                    <> · approved by {providers.find((p) => p.id === examDetail.approved_by)?.full_name ?? "—"}</>
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -212,14 +229,37 @@ export default function PatientPerioPage() {
                 {canWrite && (
                   <button
                     type="button"
-                    onClick={() => (examDetail.completed_at ? uncompleteMutation.mutate() : completeMutation.mutate())}
-                    className="h-7 rounded-[var(--radius)] border border-rule px-3 text-[12px] font-medium text-ink hover:bg-steel-lo"
+                    onClick={() => setReviewOpen(true)}
+                    className={clsx(
+                      "h-7 rounded-[var(--radius)] px-3 text-[12px] font-medium",
+                      examDetail.completed_at ? "border border-rule text-ink hover:bg-steel-lo" : "bg-steel text-white hover:opacity-90",
+                    )}
                   >
-                    {examDetail.completed_at ? "Reopen exam" : "Complete exam"}
+                    {examDetail.completed_at ? "Transcript" : "Review and approve"}
                   </button>
                 )}
               </div>
             </div>
+
+            <PerioReviewPanel
+              open={reviewOpen}
+              onClose={() => setReviewOpen(false)}
+              examId={examDetail.id}
+              approved={!!examDetail.completed_at}
+              approvedLine={
+                examDetail.approved_at
+                  ? `Approved by ${providers.find((p) => p.id === examDetail.approved_by)?.full_name ?? "—"} · ${new Date(examDetail.approved_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: user?.organization.timezone })}`
+                  : null
+              }
+              canApprove={canApprove}
+              onApprove={() => completeMutation.mutate()}
+              approving={completeMutation.isPending}
+              onReopen={(reason) => uncompleteMutation.mutate(reason)}
+              reopening={uncompleteMutation.isPending}
+              error={((completeMutation.error ?? uncompleteMutation.error) as Error | null)?.message ?? null}
+              renderTooth={(t) => renderTooth(t, user?.organization.tooth_notation_display ?? "fdi")}
+              timeZone={user?.organization.timezone}
+            />
 
             {compareEnabled && compareData && compareData.against_exam_id === null && (
               <p className="text-[12px] text-ink-soft">No prior exam to compare against — this is the first one on record.</p>

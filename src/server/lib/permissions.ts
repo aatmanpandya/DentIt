@@ -18,6 +18,7 @@ export type Resource =
   | "appointments"
   | "odontogram"
   | "perio"
+  | "perio.approve"
   | "clinical_notes"
   | "clinical_notes.sign"
   | "treatment_plans"
@@ -50,6 +51,11 @@ const MATRIX: Record<Resource, Partial<Record<Role, Action[]>>> = {
   perio: {
     owner: ["read", "write"], admin: ["read"],
     provider: ["read", "write"], hygienist: ["read", "write"], assistant: ["read", "write"],
+  },
+  // Approving a perio exam makes it the permanent record: the same clinicians who sign
+  // clinical notes. Assistants enter perio but don't approve it (14 Nov, owner).
+  "perio.approve": {
+    owner: ["write"], provider: ["write"], hygienist: ["write"],
   },
   clinical_notes: {
     owner: ["read", "write"], provider: ["read", "write"], hygienist: ["read", "write"],

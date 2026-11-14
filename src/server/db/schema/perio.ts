@@ -1,4 +1,4 @@
-import { boolean, date, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { tenantColumns } from "./_helpers";
 import { patients } from "./_patients-base";
 
@@ -11,8 +11,37 @@ export const perioExams = pgTable("perio_exams", {
   providerId: uuid("provider_id").notNull(), // who examined — see who typed in audit_log
   examDate: date("exam_date").notNull(),
   notes: text("notes"),
+  // Set by approval: an exam is the permanent record only once a dentist or hygienist has
+  // reviewed its transcript and approved it (docs/specs/perio-approval.md).
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  approvedBy: uuid("approved_by"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
 });
+
+export const perioExamEventKind = pgEnum("perio_exam_event_kind", ["phrase", "typed", "approved", "reopened"]);
+
+/**
+ * How a perio exam was made, in order (docs/specs/perio-approval.md): every dictated phrase
+ * (what Chrome heard, the reading used, written/refused/waiting/undo, the cells it changed),
+ * every keyboard save (server-computed change list), and every approval and reopening.
+ * Append-only: rls.sql revokes UPDATE and DELETE.
+ */
+export const perioExamEvents = pgTable(
+  "perio_exam_events",
+  {
+    ...tenantColumns(),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => perioExams.id),
+    kind: perioExamEventKind("kind").notNull(),
+    heard: jsonb("heard"), // Chrome's guesses, best first (phrase only)
+    used: text("used"), // the reading the grammar used (phrase only)
+    outcome: text("outcome"), // written | refused | waiting | undo (phrase only)
+    note: text("note"), // why refused, or the reopening reason
+    changes: jsonb("changes"), // [{ tooth, site, field, from, to }]
+  },
+  (t) => [index("perio_exam_events_exam_idx").on(t.examId, t.createdAt)],
+);
 
 export const perioToothRecords = pgTable(
   "perio_tooth_records",

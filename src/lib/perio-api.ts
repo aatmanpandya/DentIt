@@ -28,6 +28,8 @@ export interface PerioExam {
   exam_date: string;
   notes: string | null;
   completed_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +87,7 @@ export interface UpsertPerioToothRecordInput {
   is_skipped?: boolean;
   sites: PerioSiteInput[];
   clear_sites?: string[];
+  source?: "keyboard" | "voice";
 }
 
 // The load-bearing call — fires once per tooth as the operator advances. The grid's own
@@ -97,8 +100,37 @@ export function completePerioExam(id: string) {
   return apiFetch<PerioExam>(`/perio-exams/${id}/complete`, { method: "POST" });
 }
 
-export function uncompletePerioExam(id: string) {
-  return apiFetch<PerioExam>(`/perio-exams/${id}/uncomplete`, { method: "POST" });
+export function uncompletePerioExam(id: string, reason: string) {
+  return apiFetch<PerioExam>(`/perio-exams/${id}/uncomplete`, { method: "POST", body: JSON.stringify({ reason }) });
+}
+
+// The exam's transcript — docs/specs/perio-approval.md.
+export interface PerioChange {
+  tooth: string;
+  site: string | null;
+  field: "pocket_depth" | "recession" | "bleeding" | "suppuration" | "plaque" | "mobility" | "furcation" | "skipped";
+  from: number | boolean | null;
+  to: number | boolean | null;
+}
+
+export interface PerioExamEvent {
+  id: string;
+  kind: "phrase" | "typed" | "approved" | "reopened";
+  at: string;
+  by: string | null;
+  heard: string[] | null;
+  used: string | null;
+  outcome: "written" | "refused" | "waiting" | "undo" | null;
+  note: string | null;
+  changes: PerioChange[];
+}
+
+export function listPerioExamEvents(id: string) {
+  return apiFetch<{ data: PerioExamEvent[] }>(`/perio-exams/${id}/events`);
+}
+
+export function recordPerioPhrase(id: string, phrase: Pick<PerioExamEvent, "heard" | "used" | "outcome" | "note" | "changes">) {
+  return apiFetch<PerioExamEvent>(`/perio-exams/${id}/events`, { method: "POST", body: JSON.stringify(phrase) });
 }
 
 export interface PerioSiteDelta {

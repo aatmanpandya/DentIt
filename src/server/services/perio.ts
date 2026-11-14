@@ -1,6 +1,6 @@
 import { sql, eq, and, isNull, desc, lt, inArray, asc } from "drizzle-orm";
 import { dbForRequest } from "@/server/db/tenant";
-import { perioExams, perioToothRecords, perioSiteMeasurements, patients, users } from "@/server/db/schema";
+import { perioExams, perioExamEvents, perioToothRecords, perioSiteMeasurements, patients, users } from "@/server/db/schema";
 import { assertCan } from "@/server/lib/permissions";
 import { hasFurcation, isPrimaryTooth, isValidFdiTooth } from "@/server/lib/tooth-notation";
 // Pure, DOM-free arch/socket geometry — no React dependency (see its own header comment).
@@ -284,6 +284,9 @@ export interface UpsertPerioToothRecordInput {
   is_skipped?: boolean;
   sites: PerioSiteInput[];
   clear_sites?: string[];
+  // "voice": the dictated phrase is already in the transcript with its own change list, so the
+  // save isn't logged again. Anything else is a keyboard/click edit, logged as "typed".
+  source?: "keyboard" | "voice";
 }
 
 /**
@@ -311,6 +314,11 @@ export async function upsertPerioToothRecord(actor: RequestActor, examId: string
       .where(and(eq(perioToothRecords.examId, examId), eq(perioToothRecords.tooth, tooth)))
       .limit(1);
     if (!existing) throw new InvalidToothError(tooth);
+
+    const sitesBefore = await tx
+      .select()
+      .from(perioSiteMeasurements)
+      .where(and(eq(perioSiteMeasurements.examId, examId), eq(perioSiteMeasurements.tooth, tooth)));
 
     const patch = {
       mobility: input.mobility !== undefined ? input.mobility : existing.mobility,
@@ -378,13 +386,120 @@ export async function upsertPerioToothRecord(actor: RequestActor, examId: string
       after: record,
     });
 
+    // The exam's transcript (docs/specs/perio-approval.md): keyboard edits go in as "typed",
+    // with exactly what changed. A retried save that changes nothing adds nothing.
+    if (input.source !== "voice") {
+      const changes = diffTooth(tooth, existing, record, sitesBefore, sites);
+      if (changes.length > 0) {
+        await tx.insert(perioExamEvents).values({ organizationId: actor.organizationId, examId, kind: "typed", changes, createdBy: actor.userId });
+      }
+    }
+
     return { record, sites };
   });
 }
 
-/** POST /perio-exams/:id/complete — locks non-skip fields, per docs/specs/perio.md. */
-export async function completePerioExam(actor: RequestActor, examId: string) {
+
+export interface PerioChange {
+  tooth: string;
+  site: string | null;
+  field: string;
+  from: number | boolean | null;
+  to: number | boolean | null;
+}
+
+type SiteRow = typeof perioSiteMeasurements.$inferSelect;
+type ToothRow = typeof perioToothRecords.$inferSelect;
+
+/** What one tooth save changed: tooth-level fields, then each site's fields. */
+export function diffTooth(tooth: string, before: ToothRow, after: ToothRow, sitesBefore: SiteRow[], sitesAfter: SiteRow[]): PerioChange[] {
+  const out: PerioChange[] = [];
+  for (const [field, key] of [["mobility", "mobility"], ["furcation", "furcation"], ["skipped", "isSkipped"]] as const) {
+    if (before[key] !== after[key]) out.push({ tooth, site: null, field, from: before[key], to: after[key] });
+  }
+  const FIELDS = [["pocket_depth", "pocketDepth"], ["recession", "gingivalMargin"], ["bleeding", "bleedingOnProbing"], ["suppuration", "suppuration"], ["plaque", "plaque"]] as const;
+  const sites = new Set([...sitesBefore, ...sitesAfter].map((s) => s.site));
+  for (const site of sites) {
+    const b = sitesBefore.find((s) => s.site === site);
+    const a = sitesAfter.find((s) => s.site === site);
+    for (const [field, key] of FIELDS) {
+      // A site that doesn't exist has no measurements: numbers read null, flags read false.
+      const isFlag = field === "bleeding" || field === "suppuration" || field === "plaque";
+      const from = b ? b[key] : isFlag ? false : null;
+      const to = a ? a[key] : isFlag ? false : null;
+      if (from !== to) out.push({ tooth, site, field, from, to });
+    }
+  }
+  return out;
+}
+
+export class PerioApprovalReasonRequiredError extends Error {
+  constructor() {
+    super("Say why the approved exam is being reopened.");
+    this.name = "PerioApprovalReasonRequiredError";
+  }
+}
+
+export class PerioExamNotApprovedError extends Error {
+  constructor() {
+    super("This exam isn't approved, so there's nothing to reopen.");
+    this.name = "PerioExamNotApprovedError";
+  }
+}
+
+export interface RecordPhraseInput {
+  heard: string[];
+  used: string | null;
+  outcome: "written" | "refused" | "waiting" | "undo";
+  note: string | null;
+  changes: PerioChange[];
+}
+
+/** POST /perio-exams/:id/events — one dictated phrase, in the exam's transcript. */
+export async function recordPerioPhrase(actor: RequestActor, examId: string, input: RecordPhraseInput) {
   assertCan(actor.role, "perio", "write");
+  return dbForRequest(actor.organizationId, async (tx) => {
+    const exam = await requireExam(tx, actor, examId);
+    if (exam.completedAt) throw new PerioExamCompletedError();
+    const [row] = await tx
+      .insert(perioExamEvents)
+      .values({
+        organizationId: actor.organizationId,
+        examId,
+        kind: "phrase",
+        heard: input.heard,
+        used: input.used,
+        outcome: input.outcome,
+        note: input.note,
+        changes: input.changes,
+        createdBy: actor.userId,
+      })
+      .returning();
+    return row;
+  });
+}
+
+/** GET /perio-exams/:id/events — the transcript, oldest first, with who did each step. */
+export async function listPerioExamEvents(actor: RequestActor, examId: string) {
+  assertCan(actor.role, "perio", "read");
+  return dbForRequest(actor.organizationId, async (tx) => {
+    await requireExam(tx, actor, examId);
+    return tx
+      .select({ event: perioExamEvents, by: users.fullName })
+      .from(perioExamEvents)
+      .leftJoin(users, eq(users.id, perioExamEvents.createdBy))
+      .where(eq(perioExamEvents.examId, examId))
+      .orderBy(asc(perioExamEvents.createdAt), asc(perioExamEvents.id));
+  });
+}
+
+/**
+ * POST /perio-exams/:id/complete — approval. A dentist or hygienist, having reviewed the
+ * transcript, approves the exam: it locks (docs/specs/perio.md) and becomes the permanent
+ * record, with who and when (docs/specs/perio-approval.md).
+ */
+export async function completePerioExam(actor: RequestActor, examId: string) {
+  assertCan(actor.role, "perio.approve", "write");
 
   return dbForRequest(actor.organizationId, async (tx) => {
     const before = await requireExam(tx, actor, examId);
@@ -392,9 +507,10 @@ export async function completePerioExam(actor: RequestActor, examId: string) {
 
     const [after] = await tx
       .update(perioExams)
-      .set({ completedAt: new Date(), updatedBy: actor.userId, updatedAt: new Date() })
+      .set({ completedAt: new Date(), approvedAt: new Date(), approvedBy: actor.userId, updatedBy: actor.userId, updatedAt: new Date() })
       .where(eq(perioExams.id, examId))
       .returning();
+    await tx.insert(perioExamEvents).values({ organizationId: actor.organizationId, examId, kind: "approved", createdBy: actor.userId });
 
     await writeAudit(tx, { organizationId: actor.organizationId, actorUserId: actor.userId, actorIp: null }, {
       entityType: "perio_exam",
@@ -409,21 +525,24 @@ export async function completePerioExam(actor: RequestActor, examId: string) {
 }
 
 /**
- * POST /perio-exams/:id/uncomplete — not in the original api-surface.md list; added for the
- * explicit un-complete decision in docs/specs/perio.md (no separate amend-exam path exists
- * the way notes has amend-note). Audited same as every other mutation in this codebase.
+ * POST /perio-exams/:id/uncomplete — reopens an approved exam for correction. Needs an
+ * approver and a reason, which goes in the transcript; the exam must be approved again
+ * (docs/specs/perio-approval.md). Audited same as every other mutation in this codebase.
  */
-export async function uncompletePerioExam(actor: RequestActor, examId: string) {
-  assertCan(actor.role, "perio", "write");
+export async function uncompletePerioExam(actor: RequestActor, examId: string, reason: string) {
+  assertCan(actor.role, "perio.approve", "write");
+  if (!reason || reason.trim().length < 3) throw new PerioApprovalReasonRequiredError();
 
   return dbForRequest(actor.organizationId, async (tx) => {
     const before = await requireExam(tx, actor, examId);
+    if (!before.completedAt) throw new PerioExamNotApprovedError();
 
     const [after] = await tx
       .update(perioExams)
-      .set({ completedAt: null, updatedBy: actor.userId, updatedAt: new Date() })
+      .set({ completedAt: null, approvedAt: null, approvedBy: null, updatedBy: actor.userId, updatedAt: new Date() })
       .where(eq(perioExams.id, examId))
       .returning();
+    await tx.insert(perioExamEvents).values({ organizationId: actor.organizationId, examId, kind: "reopened", note: reason.trim(), createdBy: actor.userId });
 
     await writeAudit(tx, { organizationId: actor.organizationId, actorUserId: actor.userId, actorIp: null }, {
       entityType: "perio_exam",

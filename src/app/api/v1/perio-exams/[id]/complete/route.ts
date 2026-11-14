@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   } catch (err) {
     if (err instanceof UnauthenticatedError) return errorResponse(401, "AUTH_TOKEN_EXPIRED", err.message);
     if (err instanceof SessionExpiredError) return errorResponse(401, "AUTH_SESSION_IDLE_TIMEOUT", err.message);
-    if (err instanceof PermissionDeniedError) return errorResponse(403, "PERMISSION_DENIED", "You don't have permission to record perio.");
+    if (err instanceof PermissionDeniedError) return errorResponse(403, "PERMISSION_DENIED", "Only a dentist or hygienist can approve a perio exam.");
     if (err instanceof PerioExamNotFoundError) return errorResponse(404, "NOT_FOUND", err.message);
     if (err instanceof PerioExamCompletedError) return errorResponse(422, "PERIO_EXAM_COMPLETED", err.message);
     throw err;

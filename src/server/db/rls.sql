@@ -64,6 +64,8 @@ revoke update, delete on audit_log from dentit_app;
 -- row; nothing in the ledger is ever deleted.
 revoke update, delete on invoice_lines, payments, payment_allocations, adjustments, payment_reversals from dentit_app;
 revoke delete on invoices from dentit_app;
+-- The perio exam transcript is a record of how the exam was made: append-only.
+revoke update, delete on perio_exam_events from dentit_app;
 
 -- user_location_access has no organization_id (it's keyed by user + location), so the loop
 -- above skips it — but it is tenant data. Scope it through the user's organisation.

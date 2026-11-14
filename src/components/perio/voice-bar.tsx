@@ -5,7 +5,8 @@ import clsx from "clsx";
 import { Mic, MicOff, Undo2 } from "lucide-react";
 import { createWebSpeech, speechSupported, type SpeechToText } from "@/lib/voice/stt";
 import { readPhrase } from "@/lib/voice/grammar";
-import { planPhrase, INITIAL_VOICE_STATE, type ToothChange, type VoiceState } from "./voice-apply";
+import { planPhrase, draftChanges, INITIAL_VOICE_STATE, type DraftChange, type ToothChange, type VoiceState } from "./voice-apply";
+import { recordPerioPhrase } from "@/lib/perio-api";
 import { buildRoute, type ProbingRoute } from "./voice-route";
 import { hasFurcation } from "./tooth-furcation";
 import type { PerioSiteCode, ToothDraft } from "./perio-entry";
@@ -16,6 +17,7 @@ export interface VoiceCell {
 }
 
 interface Props {
+  examId: string;
   activeOrder: string[];
   disabled: boolean;
   knownDraft: (tooth: string) => ToothDraft;
@@ -89,7 +91,7 @@ function readRoute(): ProbingRoute {
  * nothing is written and the heard text shows red with the reason. "Undo" takes back the whole
  * last phrase. The route is remembered per device for the pilot.
  */
-export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restoreVoice, onHighlight, renderTooth }: Props) {
+export function VoiceBar({ examId, activeOrder, disabled, knownDraft, applyVoice, restoreVoice, onHighlight, renderTooth }: Props) {
   const [supported] = useState(speechSupported);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
@@ -112,7 +114,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
   const routeDone = voice.cursor !== null && voice.cursor.offset >= 3;
   const next = routeDone ? undefined : voice.cursor ? steps.find((s) => s.tooth === voice.cursor?.tooth && s.side === voice.cursor?.side) : steps[0];
 
-  function undo() {
+  function undo(heardAs: string[] = ["undo (button)"]) {
     const last = history[history.length - 1];
     if (!last) {
       setHeard({ text: "undo", ok: false, note: "Nothing to undo." });
@@ -120,6 +122,13 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
       return;
     }
     restoreVoice(last.changes, last.skips);
+    logPhrase(
+      heardAs,
+      "undo",
+      `Took back “${last.text}”.`,
+      "undo",
+      draftChanges(last.changes.map((c) => ({ tooth: c.tooth, before: c.after, after: c.before })), last.skips, true),
+    );
     setVoice(last.voiceBefore);
     setHistory((h) => h.slice(0, -1));
     setHeard({ text: "undo", ok: true, note: `Took back “${last.text}”.` });
@@ -127,8 +136,11 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     onHighlight(last.cells);
   }
 
-  // Development only: every phrase goes to evals/voice/session-log.jsonl for review.
-  function logPhrase(alternatives: string[], outcome: string, note: string) {
+  // Every phrase goes into the exam's transcript, which the dentist reviews before approving
+  // (docs/specs/perio-approval.md). In development it also goes to
+  // evals/voice/session-log.jsonl, for building eval cases.
+  function logPhrase(alternatives: string[], outcome: "written" | "refused" | "waiting" | "undo", note: string, used: string | null = null, changes: DraftChange[] = []) {
+    void recordPerioPhrase(examId, { heard: alternatives.slice(0, 5), used, outcome, note: note || null, changes }).catch(() => {});
     if (process.env.NODE_ENV !== "development") return;
     void fetch("/api/dev/voice-log", {
       method: "POST",
@@ -159,22 +171,21 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     if (!parsed.ok) {
       setHeard({ text, ok: false, note: `${parsed.reason} Nothing written.` });
       cue("refused");
-      logPhrase(alternatives, "rejected", parsed.reason);
+      logPhrase(alternatives, "refused", parsed.reason);
       return;
     }
     if (parsed.commands[0].type === "undo") {
-      logPhrase(alternatives, "undo", "");
-      undo();
+      undo(alternatives);
       return;
     }
     const plan = planPhrase(parsed.commands, voice, { steps, draftFor: knownDraft, hasFurcation });
     if (!plan.ok) {
       setHeard({ text, ok: false, note: `${plan.reason} Nothing written.` });
       cue("refused");
-      logPhrase(alternatives, "rejected", plan.reason);
+      logPhrase(alternatives, "refused", plan.reason);
       return;
     }
-    logPhrase(alternatives, "written", JSON.stringify(parsed.commands));
+    logPhrase(alternatives, "written", "", text, draftChanges(plan.changes, plan.skips));
     applyVoice(plan.changes, plan.skips);
     setHistory((h) => [...h.slice(-49), { changes: plan.changes, skips: plan.skips, voiceBefore: voice, text, cells: plan.cells }]);
     setVoice(plan.voice);
@@ -261,7 +272,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
         </span>
         <button
           type="button"
-          onClick={undo}
+          onClick={() => undo()}
           disabled={history.length === 0}
           className="flex items-center gap-1 text-[12px] text-steel hover:underline disabled:text-ink-soft disabled:no-underline"
         >

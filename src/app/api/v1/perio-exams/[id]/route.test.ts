@@ -145,8 +145,20 @@ describe("complete / uncomplete", () => {
     expect(completeRes.status).toBe(200);
     expect((await completeRes.json()).completed_at).not.toBeNull();
 
-    const uncompleteRes = await uncompleteRoute(
+    // Reopening an approved exam needs a reason (docs/specs/perio-approval.md).
+    const noReason = await uncompleteRoute(
       new NextRequest(`http://localhost/api/v1/perio-exams/${exam.id}/uncomplete`, { method: "POST", headers: authHeaders(token) }),
+      { params: Promise.resolve({ id: exam.id }) },
+    );
+    expect(noReason.status).toBe(422);
+    expect((await noReason.json()).error.code).toBe("REASON_REQUIRED");
+
+    const uncompleteRes = await uncompleteRoute(
+      new NextRequest(`http://localhost/api/v1/perio-exams/${exam.id}/uncomplete`, {
+        method: "POST",
+        headers: { ...authHeaders(token), "content-type": "application/json" },
+        body: JSON.stringify({ reason: "Wrong depth on 16 MB" }),
+      }),
       { params: Promise.resolve({ id: exam.id }) },
     );
     expect(uncompleteRes.status).toBe(200);

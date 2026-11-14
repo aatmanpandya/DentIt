@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { adminDb } from "@/server/db/client";
-import { organizations, users, patients, chartedConditions } from "@/server/db/schema";
+import { organizations, users, patients, chartedConditions, perioExamEvents } from "@/server/db/schema";
+import { dbForRequest } from "@/server/db/tenant";
 import { wipeOrganizationData } from "@/server/db/wipe-organization";
 import { PermissionDeniedError } from "@/server/lib/permissions";
 import type { RequestActor } from "@/server/lib/request-auth";
@@ -15,6 +16,10 @@ import {
   upsertPerioToothRecord,
   completePerioExam,
   uncompletePerioExam,
+  listPerioExamEvents,
+  recordPerioPhrase,
+  PerioApprovalReasonRequiredError,
+  PerioExamNotApprovedError,
   comparePerioExam,
   PerioExamNotFoundError,
   PerioExamCompletedError,
@@ -319,7 +324,7 @@ describe("exam notes and lifecycle", () => {
 
     await expect(completePerioExam(actor, exam.id)).rejects.toThrow(PerioExamCompletedError);
 
-    const reopened = await uncompletePerioExam(actor, exam.id);
+    const reopened = await uncompletePerioExam(actor, exam.id, "Wrong tooth on 16");
     expect(reopened.completedAt).toBeNull();
 
     // Editable again after un-complete.
@@ -423,5 +428,90 @@ describe("upsertPerioToothRecord clear_sites", () => {
     const { sites } = await upsertPerioToothRecord(actor, exam.id, "16", { sites: [], clear_sites: ["B", "DB"] });
 
     expect(sites.map((s) => s.site)).toEqual(["MB"]);
+  });
+});
+
+describe("perio exam transcript and approval (docs/specs/perio-approval.md)", () => {
+  afterEach(cleanup);
+
+  async function staff(orgId: string, role: RequestActor["role"]): Promise<RequestActor> {
+    const [u] = await adminDb
+      .insert(users)
+      .values({ organizationId: orgId, email: `perio-${role}-${Date.now()}-${Math.random()}@example.test`, fullName: `Test ${role}`, role })
+      .returning();
+    return { userId: u.id, organizationId: orgId, role };
+  }
+
+  it("logs a keyboard save as 'typed' with exactly what changed, and a retry adds nothing", async () => {
+    const { actor, patient } = await setup("hygienist", "1989-03-02");
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+    const save = { mobility: 2, sites: [{ site: "MB" as const, pocket_depth: 4, gingival_margin: 1 }] };
+    await upsertPerioToothRecord(actor, exam.id, "16", save);
+    await upsertPerioToothRecord(actor, exam.id, "16", save); // retry: no change
+
+    const events = await listPerioExamEvents(actor, exam.id);
+    expect(events).toHaveLength(1);
+    expect(events[0].event.kind).toBe("typed");
+    expect(events[0].event.changes).toEqual([
+      { tooth: "16", site: null, field: "mobility", from: null, to: 2 },
+      { tooth: "16", site: "MB", field: "pocket_depth", from: null, to: 4 },
+      { tooth: "16", site: "MB", field: "recession", from: null, to: 1 },
+    ]);
+  });
+
+  it("doesn't log a voice save twice: the dictated phrase carries its own changes", async () => {
+    const { actor, patient } = await setup("hygienist", "1989-03-02");
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+    await recordPerioPhrase(actor, exam.id, {
+      heard: ["323", "32"],
+      used: "323",
+      outcome: "written",
+      note: null,
+      changes: [{ tooth: "18", site: "DB", field: "pocket_depth", from: null, to: 3 }],
+    });
+    await upsertPerioToothRecord(actor, exam.id, "18", { source: "voice", sites: [{ site: "DB", pocket_depth: 3 }] });
+
+    const events = await listPerioExamEvents(actor, exam.id);
+    expect(events.map((e) => e.event.kind)).toEqual(["phrase"]);
+    expect(events[0].event.heard).toEqual(["323", "32"]);
+  });
+
+  it("lets a hygienist approve but not an assistant; approval locks and is in the transcript", async () => {
+    const { actor, patient, org } = await setup("hygienist", "1989-03-02");
+    const assistant = await staff(org.id, "assistant");
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+
+    await expect(completePerioExam(assistant, exam.id)).rejects.toThrow(PermissionDeniedError);
+    const approved = await completePerioExam(actor, exam.id);
+    expect(approved).toMatchObject({ approvedBy: actor.userId });
+    expect(approved.approvedAt).not.toBeNull();
+    await expect(upsertPerioToothRecord(assistant, exam.id, "16", { sites: [] })).rejects.toThrow(PerioExamCompletedError);
+    expect((await listPerioExamEvents(actor, exam.id)).map((e) => e.event.kind)).toEqual(["approved"]);
+  });
+
+  it("reopening needs an approver and a reason, clears the approval, and records the reason", async () => {
+    const { actor, patient, org } = await setup("provider", "1989-03-02");
+    const assistant = await staff(org.id, "assistant");
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+
+    await expect(uncompletePerioExam(actor, exam.id, "fix 16")).rejects.toThrow(PerioExamNotApprovedError);
+    await completePerioExam(actor, exam.id);
+    await expect(uncompletePerioExam(actor, exam.id, "")).rejects.toThrow(PerioApprovalReasonRequiredError);
+    await expect(uncompletePerioExam(assistant, exam.id, "fix 16")).rejects.toThrow(PermissionDeniedError);
+
+    const reopened = await uncompletePerioExam(actor, exam.id, "Wrong depth on 16 MB");
+    expect(reopened).toMatchObject({ completedAt: null, approvedAt: null, approvedBy: null });
+    const events = await listPerioExamEvents(actor, exam.id);
+    expect(events.map((e) => [e.event.kind, e.event.note])).toEqual([["approved", null], ["reopened", "Wrong depth on 16 MB"]]);
+  });
+
+  it("the transcript can't be edited or deleted by the app", async () => {
+    const { actor, patient } = await setup("hygienist", "1989-03-02");
+    const exam = await createPerioExam(actor, patient.id, { exam_date: "2026-08-19" });
+    await completePerioExam(actor, exam.id);
+    await expect(
+      dbForRequest(actor.organizationId, (tx) => tx.update(perioExamEvents).set({ note: "tampered" }).where(eq(perioExamEvents.examId, exam.id))),
+    ).rejects.toThrow();
+    await expect(dbForRequest(actor.organizationId, (tx) => tx.delete(perioExamEvents).where(eq(perioExamEvents.examId, exam.id)))).rejects.toThrow();
   });
 });
