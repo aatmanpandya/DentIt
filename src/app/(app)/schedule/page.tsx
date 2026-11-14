@@ -21,8 +21,8 @@ function shiftDateStr(date: string, delta: number) {
   return d.toLocaleDateString("en-CA");
 }
 
-// Single-location UI for the pilot — the data model supports multiple locations, but
-// the pilot UI shows one. Uses the org's first active location
+// Single-location UI — the data model supports multiple locations, but the UI shows
+// one. Uses the org's first active location
 // rather than offering a switcher.
 export default function SchedulePage() {
   const [view, setView] = useState<View>("day");

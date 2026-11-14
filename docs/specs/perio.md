@@ -202,4 +202,5 @@ judgement, same rationale as the provider-picker decision above).
 
 ## Explicit scope cut
 
-**Voice-driven perio entry** stays deferred, gated on the day-5 feasibility test. Not built now.
+**Voice-driven perio entry** was deferred from this spec and built later: see
+`docs/specs/voice-perio.md` and `docs/specs/perio-approval.md`.
