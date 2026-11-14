@@ -392,6 +392,9 @@ async function main() {
       providerId: userIds[exam.provider],
       examDate: dateOnly(exam.day_offset),
       completedAt: exam.completed ? atOffset(exam.day_offset) : null,
+      // Seeded exams predate the transcript: approved by their examiner on the exam day.
+      approvedAt: exam.completed ? atOffset(exam.day_offset) : null,
+      approvedBy: exam.completed ? userIds[exam.provider] : null,
     }).returning();
 
     const specifiedTeeth = new Set(exam.teeth.map((t) => t.tooth));

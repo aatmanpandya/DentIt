@@ -257,3 +257,23 @@
 {"at":"2026-11-14T04:14:30.387Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"48 outside","route":"around_tooth"}
 {"at":"2026-11-14T04:14:31.444Z","alternatives":["no meet that 5:00"],"outcome":"written","note":"[{\"type\":\"correction\",\"value\":5}]","next":null,"route":"around_tooth"}
 {"at":"2026-11-14T04:14:32.039Z","alternatives":["444"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,4]}]","next":null,"route":"around_tooth"}
+{"at":"2026-11-14T13:29:13.263Z","alternatives":["323","32"],"outcome":"written","note":"","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T13:29:14.170Z","alternatives":["434"],"outcome":"written","note":"","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T13:29:15.064Z","alternatives":["3124","324"],"outcome":"refused","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T13:29:15.974Z","alternatives":["bleeding first"],"outcome":"written","note":"","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T13:29:16.879Z","alternatives":["222"],"outcome":"written","note":"","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T13:29:17.781Z","alternatives":["undo"],"outcome":"undo","note":"Took back “222”.","next":"17 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:03:21.381Z","alternatives":["232"],"outcome":"written","note":"","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:03:25.408Z","alternatives":["323 bleeding on","323 bleeding all","323 bleeding"],"outcome":"written","note":"","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:03:30.343Z","alternatives":["344","3441","344 for"],"outcome":"written","note":"","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:25.371Z","alternatives":["323","3 2 3","3 to 3","33","32"],"outcome":"written","note":"","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:30.145Z","alternatives":["23 bleeding on","23 bleeding all","323 bleeding on","323 bleeding all","23 bleeding"],"outcome":"refused","note":"Heard 2 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:36.721Z","alternatives":["so again because it was not three numbers it was rejected","so again because it was not 3 numbers it was rejected","so again because it was not 3 number it was rejected","so again because it was not three number it was rejected"],"outcome":"refused","note":"Didn't understand “so”.","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:40.715Z","alternatives":["323 bleeding all","323 bleeding wall","3 2 3 bleeding all","3 2 3 bleeding wall","323 bleeding"],"outcome":"written","note":"","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:45.406Z","alternatives":["3 12 4","3:24","3:2","3 124"],"outcome":"refused","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:53.010Z","alternatives":["not a valid number for this I need to say three deep 124","it's a not a valid number for this I need to say three deep 124","it's a not a valid number for this I need to say 3 deep 124","again it's a not a valid number for this I need to say three deep 124","not a valid number for this I need to say three deep 12"],"outcome":"refused","note":"Didn't understand “not”.","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:05:56.503Z","alternatives":["3D 24","three deep 124","3 deep 124","3D 124","3 deep 24"],"outcome":"refused","note":"“deep 24” isn't a pocket of 10–15 mm.","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:07:39.393Z","alternatives":["323","3 2 3","32","33"],"outcome":"written","note":"","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T16:07:42.818Z","alternatives":["323 bleeding loan","323 bleeding lawn","323 bleeding law","23 bleeding loan","23 bleeding lawn"],"outcome":"refused","note":"Didn't understand “bleeding”.","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:07:46.737Z","alternatives":["323 bleeding wall","3 to 3 bleeding wall","323 bleeding","3 to 3 breed in law","3 to 3 breed in lawn"],"outcome":"written","note":"","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T16:07:52.113Z","alternatives":["224"],"outcome":"written","note":"","next":"17 outside","route":"around_tooth"}
