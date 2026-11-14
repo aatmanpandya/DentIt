@@ -1858,6 +1858,151 @@
     "3/4"
    ],
    "expect": null
+  },
+  {
+   "id": "live-27",
+   "source": "live full chart 14 Nov",
+   "said": "no, make that five",
+   "category": "correction",
+   "alternatives": [
+    "no meet that 5",
+    "no meet that five",
+    "no meet that 5:00"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": "live-28",
+   "source": "live full chart 14 Nov",
+   "said": "no, make that five",
+   "category": "correction",
+   "alternatives": [
+    "no meet you at 5:00",
+    "no meet that 5",
+    "no meet you at 5"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": "live-29",
+   "source": "live full chart 14 Nov",
+   "said": "no, make that five",
+   "category": "correction",
+   "alternatives": [
+    "no met at 5",
+    "no met",
+    "no met at 5:00"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": "live-30",
+   "source": "live full chart 14 Nov",
+   "said": "no, make that five",
+   "category": "correction",
+   "alternatives": [
+    "no makes that 5",
+    "no makes that five",
+    "no mix that five"
+   ],
+   "expect": [
+    {
+     "type": "correction",
+     "value": 5
+    }
+   ]
+  },
+  {
+   "id": "live-31",
+   "source": "live full chart 14 Nov",
+   "said": "two two two, two two three (split by Chrome)",
+   "category": "must_reject",
+   "alternatives": [
+    "2223",
+    "3",
+    "223"
+   ],
+   "expect": null
+  },
+  {
+   "id": "live-32",
+   "source": "live full chart 14 Nov",
+   "said": "two one two, two two two (split by Chrome)",
+   "category": "must_reject",
+   "alternatives": [
+    "12 222",
+    "212 222"
+   ],
+   "expect": null
+  },
+  {
+   "id": "live-33",
+   "source": "live full chart 14 Nov",
+   "said": "three four four",
+   "category": "depths",
+   "alternatives": [
+    "434 334 black all",
+    "434334 black all",
+    "434 334"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      3,
+      4,
+      3,
+      3,
+      4
+     ]
+    },
+    {
+     "type": "flag",
+     "flag": "plaque",
+     "sites": [
+      "first",
+      "middle",
+      "last"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "live-34",
+   "source": "live full chart 14 Nov",
+   "said": "four deep eleven five",
+   "category": "deep",
+   "alternatives": [
+    "4 deep 115",
+    "4 deep 115",
+    "4D 115"
+   ],
+   "expect": [
+    {
+     "type": "depths",
+     "values": [
+      4,
+      11,
+      5
+     ]
+    }
+   ]
   }
  ]
 }

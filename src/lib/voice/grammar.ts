@@ -57,6 +57,7 @@ const SIDE_WORDS: Record<string, Side> = {
 const FURCATION_WORDS = new Set(["furcation", "vacation", "vocation", "occasion", "education", "purchasing", "furcations", "forcian", "forcion", "forshan", "fortian"]);
 const RECESSION_WORDS = new Set(["recession", "session", "resection"]);
 const UNDO_WORDS = new Set(["undo", "undu", "andu"]);
+const CORRECTION_WORDS = new Set(["make", "makes", "made", "meet", "meets", "met", "mix", "mate"]);
 
 const FLAG_SPELLINGS: Record<FlagName, string[]> = {
   // Not "bleed": its sound key ("plat") ties with plaque's mishearings ("plot", live 13 Nov).
@@ -270,10 +271,14 @@ export function parse(transcript: string): ParseResult {
     }
 
     // "no, make that four" / "make that deep twelve".
-    if (w === "no" || w === "make" || w === "makes") {
-      while (isWord(tokens[i], "no", "make", "makes", "that", "it's", "its")) i++;
+    // Live, 14 Nov: "make" came back "meet" 16 times running ("no meet that 5"), also "mix",
+    // "met", "makes". After "no", skip up to three words to the number.
+    if (w === "no" || (w && CORRECTION_WORDS.has(w))) {
+      const start = i;
+      while (i < tokens.length && i - start < 4 && tokens[i].t === "word" && !(tokens[i] as { w: string }).w.startsWith("deep") && !HOMOPHONES[(tokens[i] as { w: string }).w]) i++;
       const values = depthValues(readRun({ deep: true, homophonesAtStart: true }));
       if (typeof values === "string") return failNumbers(values);
+      if (values.length === 0 && atEnd()) return waiting("Waiting for the corrected number…");
       if (values.length !== 1) return failNumbers("Correct one number at a time, e.g. “no, make that four”.");
       commands.push({ type: "correction", value: values[0] });
       continue;

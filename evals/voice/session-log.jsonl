@@ -82,3 +82,178 @@
 {"at":"2026-11-13T17:29:51.874Z","alternatives":["undo","undu"],"outcome":"undo","note":"","next":"18 inside","route":"outside_first"}
 {"at":"2026-11-13T17:29:56.232Z","alternatives":["3124","324","312 4","3/4","3/24"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"18 inside","route":"outside_first"}
 {"at":"2026-11-13T17:30:01.226Z","alternatives":["222","22","2222","22222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"18 inside","route":"outside_first"}
+{"at":"2026-11-14T01:26:20.228Z","alternatives":["2 to 3","2 2 3","223"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,3]}]","next":"18 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:24.962Z","alternatives":["2 3 2","232"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,3,2]}]","next":"17 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:29.044Z","alternatives":["1 2 1","121","12","1"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[1,2,1]}]","next":"16 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:31.189Z","alternatives":["recession 2 1","recession 21","recession"],"outcome":"waiting","note":"Waiting for the recession numbers…","next":"15 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:35.623Z","alternatives":["recession 2 1 2","recession","recession 2"],"outcome":"written","note":"[{\"type\":\"recession\",\"values\":[2,1,2]}]","next":"15 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:47.677Z","alternatives":["andulust","undulast","undulust","and last","undula"],"outcome":"rejected","note":"Didn't understand “andulust”.","next":"15 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:51.081Z","alternatives":["andulast","Andu last","undulast","undlu last"],"outcome":"rejected","note":"Didn't understand “andulast”.","next":"15 outside","route":"outside_first"}
+{"at":"2026-11-14T01:26:56.202Z","alternatives":["undo","UN"],"outcome":"undo","note":"","next":"15 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:07.373Z","alternatives":["114","1 and 4","1 month 4","1 month food","11"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[1,1,4]}]","next":"15 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:12.743Z","alternatives":["move to inside 15","move to inside one-5","move to inside one five","move to inside one file"],"outcome":"rejected","note":"Didn't understand “move”.","next":"14 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:17.178Z","alternatives":["move inside 15","move inside one-5","mov inside 15","mov inside one-5"],"outcome":"rejected","note":"Didn't understand “move”.","next":"14 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:21.984Z","alternatives":["41","441","441","44","4 4 1"],"outcome":"waiting","note":"Heard 4 1 — waiting for the rest…","next":"14 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:24.859Z","alternatives":["441","441","41","44"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,1]}]","next":"14 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:28.438Z","alternatives":["144"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[1,4,4]}]","next":"13 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:34.408Z","alternatives":["131 separation middle","131 se middle","131 separation midd"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[1,3,1]},{\"type\":\"flag\",\"flag\":\"suppuration\",\"sites\":[\"middle\"]}]","next":"12 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:49.609Z","alternatives":["311 percation middle","311 middle","311","311fashion middle"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,1,1]}]","next":"11 outside","route":"outside_first"}
+{"at":"2026-11-14T01:27:54.272Z","alternatives":["fation middle","fashion middle"],"outcome":"rejected","note":"Didn't catch “fation” — bleeding, suppuration or plaque?","next":"21 outside","route":"outside_first"}
+{"at":"2026-11-14T01:28:21.433Z","alternatives":["move inside 11","move inside one one","mov inside 11","mov inside one one","move inside one"],"outcome":"rejected","note":"Didn't understand “move”.","next":"21 outside","route":"outside_first"}
+{"at":"2026-11-14T01:28:38.353Z","alternatives":["jump 1 inside","jump 11 inside","jump 115"],"outcome":"written","note":"[{\"type\":\"jump\",\"tooth\":\"11\",\"side\":\"inside\"}]","next":"21 outside","route":"outside_first"}
+{"at":"2026-11-14T01:28:42.606Z","alternatives":["434"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"11 inside","route":"outside_first"}
+{"at":"2026-11-14T01:29:09.133Z","alternatives":["334"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4]}]","next":"12 inside","route":"outside_first"}
+{"at":"2026-11-14T01:29:27.795Z","alternatives":["443"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,3]}]","next":"13 inside","route":"outside_first"}
+{"at":"2026-11-14T01:29:30.675Z","alternatives":["122","122","12","12"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[1,2,2]}]","next":"14 inside","route":"outside_first"}
+{"at":"2026-11-14T01:29:34.549Z","alternatives":["34","234"],"outcome":"waiting","note":"Heard 3 4 — waiting for the rest…","next":"15 inside","route":"outside_first"}
+{"at":"2026-11-14T01:29:37.929Z","alternatives":["234"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,3,4]}]","next":"15 inside","route":"outside_first"}
+{"at":"2026-11-14T03:38:10.302Z","alternatives":["323"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3]}]","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:38:11.063Z","alternatives":["434"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:38:11.873Z","alternatives":["bleeding first"],"outcome":"written","note":"[{\"type\":\"flag\",\"flag\":\"bleeding_on_probing\",\"sites\":[\"first\"]}]","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:38:12.678Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:54:02.187Z","alternatives":["332","33"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,2]}]","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:54:05.588Z","alternatives":["422","422","4 22","42"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,2,2]}]","next":"18 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:55:36.919Z","alternatives":["334 434","334434","3344 34","33434"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4,4,3,4]}]","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:55:42.114Z","alternatives":["323","32"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3]}]","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:55:45.113Z","alternatives":["333","3333","3","3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,3]}]","next":"17 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:55:52.274Z","alternatives":["434 recession 101","4 34 recession 101","434 recession 101"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]},{\"type\":\"recession\",\"values\":[1,0,1]}]","next":"16 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:03.752Z","alternatives":["435 leading first mobility 1 forcation grade 1","435 lead in first mobility 1 forcation grade 1","435 leading first mobility 1 percation grade 1","435 lead in first mobility 1 percation grade 1","435 leading first mobility 1 forcation Grade One"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,5]},{\"type\":\"flag\",\"flag\":\"bleeding_on_probing\",\"sites\":[\"first\"]},{\"type\":\"mobility\",\"value\":1},{\"type\":\"furcation\",\"value\":1}]","next":"16 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:14.412Z","alternatives":["3 2 3","323","32","3 2","3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3]}]","next":"15 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:16.588Z","alternatives":["3 2 3","2 3","323","3 23","3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3]}]","next":"15 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:20.216Z","alternatives":["2 2 3","2 23","2 2 2 3","2 3","2 2"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,3]}]","next":"14 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:22.150Z","alternatives":["322","3 2 2","2 2","3 2","32"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,2]}]","next":"14 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:26.399Z","alternatives":["222","22"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"13 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:28.619Z","alternatives":["222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"13 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:32.925Z","alternatives":["12","212"],"outcome":"waiting","note":"Heard 1 2 — waiting for the rest…","next":"12 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:37.326Z","alternatives":["212"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2]}]","next":"12 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:40.241Z","alternatives":["222","22","2"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"12 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:48.692Z","alternatives":["12","212"],"outcome":"waiting","note":"Heard 1 2 — waiting for the rest…","next":"11 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:51.919Z","alternatives":["212","21"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2]}]","next":"11 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:56:54.554Z","alternatives":["212","12","1212"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2]}]","next":"11 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:57:11.051Z","alternatives":["212","12","21"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2]}]","next":"21 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:57:14.685Z","alternatives":["212","12","21"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2]}]","next":"21 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:57:18.494Z","alternatives":["222","22","2"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"22 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:57:21.130Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"22 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:57:54.376Z","alternatives":["222","22"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"22 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:57:59.851Z","alternatives":["32","322"],"outcome":"waiting","note":"Heard 3 2 — waiting for the rest…","next":"23 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:03.430Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"23 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:12.115Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"23 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:16.567Z","alternatives":["2 hello","hello","2"],"outcome":"rejected","note":"Heard 1 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"23 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:20.339Z","alternatives":["322","32"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,2]}]","next":"23 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:25.718Z","alternatives":["32"],"outcome":"waiting","note":"Heard 3 2 — waiting for the rest…","next":"23 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:31.297Z","alternatives":["32 3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3]}]","next":"23 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:37.659Z","alternatives":["323","32","23","23"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3]}]","next":"24 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:40.900Z","alternatives":["333","3","3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,3]}]","next":"24 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:46.145Z","alternatives":["434","4 34","434","43","43"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"25 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:53.427Z","alternatives":["445 bleeding all","445","445 bleeding","45 bleeding all","4 5 bleeding all"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,5]},{\"type\":\"flag\",\"flag\":\"bleeding_on_probing\",\"sites\":[\"first\",\"middle\",\"last\"]}]","next":"25 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:58:58.751Z","alternatives":["purchase rate to","purchasing rate to","purchasing grade 2","purchase to"],"outcome":"rejected","note":"Tooth 25 isn't multi-rooted — furcation doesn't apply.","next":"26 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:02.814Z","alternatives":["percation grade 2","peruation grade 2","fucation grade 2","frication grade 2"],"outcome":"rejected","note":"Tooth 25 isn't multi-rooted — furcation doesn't apply.","next":"26 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:19.812Z","alternatives":["3 3 4","3 4"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4]}]","next":"26 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:23.249Z","alternatives":["4 3 4","3 4","4","4 3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"26 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:27.816Z","alternatives":["4 3 4","3 4","4 3","3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"27 outside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:31.074Z","alternatives":["4","4 4","4 4 4","444","4 4 4 4"],"outcome":"waiting","note":"Heard 4 — waiting for the rest…","next":"27 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:47.738Z","alternatives":["444","44"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,4]}]","next":"27 inside","route":"around_tooth"}
+{"at":"2026-11-14T03:59:57.366Z","alternatives":["434 434","34 434","3434","34434","344 34"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4,4,3,4]}]","next":"28 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:00:03.261Z","alternatives":["334 333","33433","334 33","334 3333","3433"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4,3,3,3]}]","next":"38 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:00:18.941Z","alternatives":["4 deep 115","4 deep 115","4D 115"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,11,5]}]","next":"37 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:00:44.471Z","alternatives":["434 separation middle","434 separation middle"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]},{\"type\":\"flag\",\"flag\":\"suppuration\",\"sites\":[\"middle\"]}]","next":"37 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:00:51.133Z","alternatives":["323 323","3 to 3323","3 2 3 3 2 3","323","3 to 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3,3,2,3]}]","next":"36 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:00:56.016Z","alternatives":["223","23","223"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,3]}]","next":"35 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:00:58.541Z","alternatives":["222","22","22","222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"35 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:04.918Z","alternatives":["222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"34 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:09.897Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"34 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:13.211Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"34 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:17.312Z","alternatives":["222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"34 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:26.152Z","alternatives":["222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"33 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:33.353Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"33 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:37.540Z","alternatives":[],"outcome":"rejected","note":"Nothing heard.","next":"33 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:43.195Z","alternatives":["222","tu tu","Tu Tu Tu","Tu Tu Tu Tu","22"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"33 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:50.083Z","alternatives":["12 222","212 222"],"outcome":"rejected","note":"Heard 5 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"32 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:01:55.171Z","alternatives":["212 222","12 222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2,2,2,2]}]","next":"32 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:03.271Z","alternatives":["12 212","212 212","12","1212","12212"],"outcome":"rejected","note":"Heard 5 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"31 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:07.288Z","alternatives":["212 212","21212","12 212","12","212"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2,2,1,2]}]","next":"31 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:15.295Z","alternatives":["212 212","12 212","12","212","21212"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,1,2,2,1,2]}]","next":"41 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:21.514Z","alternatives":["222","222 222","2222","22222","222222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"42 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:25.127Z","alternatives":["222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"42 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:35.411Z","alternatives":["3 222","23 222","322","322"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:43.647Z","alternatives":["2223","3","223","22 23","23"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:48.938Z","alternatives":["2223","222 223","22223","222","223"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:54.102Z","alternatives":["222","22"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:56.990Z","alternatives":["3","223","23","2223"],"outcome":"waiting","note":"Heard 3 — waiting for the rest…","next":"43 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:02:59.685Z","alternatives":["223","2223","223","222"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,3]}]","next":"43 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:03:06.778Z","alternatives":["322 322","322 32322","322","22 322","22322"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,2,3,2,2]}]","next":"44 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:03:15.259Z","alternatives":["434 334 black all","434334 black all","434 334","434334","43434 black all"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4,3,3,4]},{\"type\":\"flag\",\"flag\":\"plaque\",\"sites\":[\"first\",\"middle\",\"last\"]}]","next":"45 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:03:23.365Z","alternatives":["no met at 5","no met","no met at 5:00","no met that 5"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:03:33.918Z","alternatives":["no meet that 5","no meet that five","no meet that"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:03:39.466Z","alternatives":["no meet that 5","no meets that 5","no meets at 5","no meets that five"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:03:57.598Z","alternatives":["no meet that 5","no meet that five","no meet that 5:00","no meet at 5:00","no meet at 5"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:01.689Z","alternatives":["no meet that 5","no meet that five"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:05.940Z","alternatives":["no meet that 5","no meet that five"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:12.909Z","alternatives":["no meet you at 5:00","no meet that 5","no meet you at 5","no meet that five"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:16.959Z","alternatives":["no meet that 5","no meet that five","no meet that 5:00"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:20.801Z","alternatives":["no meet that 5","no meet that five","no meet that 5:00"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:24.552Z","alternatives":["no meet lot 5","no mitle at 5","no Mithila at 5","no Mithila at five","no melo at 5"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:29.240Z","alternatives":["no meet that 5","no meet that five","no meet that 5:00"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:34.457Z","alternatives":["no meet that 5","no meet that five","no meet at 5","no meet at 5:00"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:39.240Z","alternatives":["no meet that 5","no meet that five"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:42.479Z","alternatives":["met","meet","minute"],"outcome":"rejected","note":"Didn't understand “met”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:47.596Z","alternatives":["I meet","I met"],"outcome":"rejected","note":"Didn't understand “i”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:04:50.510Z","alternatives":["made"],"outcome":"rejected","note":"Didn't understand “made”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:06:54.012Z","alternatives":["no meet that 5","no make that five","no make that 5","no meet that's why","no meet that five"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:07:02.926Z","alternatives":["no meet that 5","no meet that five","no meet that 5:00","no meet at 5:00"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:07:04.931Z","alternatives":["make"],"outcome":"rejected","note":"Correct one number at a time, e.g. “no, make that four”.","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:07:09.468Z","alternatives":["no make that 5","no make that five","that 5","that five"],"outcome":"written","note":"[{\"type\":\"correction\",\"value\":5}]","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:07:23.908Z","alternatives":["334 334","3 3 4 3 3 4","34 334","33 4334","33 433"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4,3,3,4]}]","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:07:31.174Z","alternatives":["434 4","434 444","43 444","434 44","4344"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"47 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:17.033Z","alternatives":["2223","22223","222","223","22 23"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:20.305Z","alternatives":["222","22"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2]}]","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:22.914Z","alternatives":["3","23","23","2 23"],"outcome":"waiting","note":"Heard 3 — waiting for the rest…","next":"43 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:25.818Z","alternatives":["223"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,3]}]","next":"43 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:33.634Z","alternatives":["322 322","322","32322","322 32","22 322"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,2,3,2,2]}]","next":"44 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:43.138Z","alternatives":["323 323","32323","323"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,2,3,3,2,3]}]","next":"45 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:48.920Z","alternatives":["434","43","4 34","43","4 3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:51.946Z","alternatives":["344","34"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,4,4]}]","next":"46 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:54.397Z","alternatives":["black wall","plot all","plot","black all"],"outcome":"written","note":"[{\"type\":\"flag\",\"flag\":\"plaque\",\"sites\":[\"first\",\"middle\",\"last\"]}]","next":"47 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:08:59.948Z","alternatives":["no makes that 5","no makes that five","no mix that five","no mix that 5"],"outcome":"written","note":"[{\"type\":\"correction\",\"value\":5}]","next":"47 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:07.561Z","alternatives":["3 3 4","334","34","33","3 3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4]}]","next":"47 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:09.862Z","alternatives":["3 3 4","3 4"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[3,3,4]}]","next":"47 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:16.160Z","alternatives":["4 3 4 4","4 3 4 4 4","4 3 4 4 4 4","3 4 4","4 3 4"],"outcome":"rejected","note":"Heard 4 numbers — say three per side, and “deep twelve” for 10–15 mm.","next":"48 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:21.268Z","alternatives":["3 4","3"],"outcome":"waiting","note":"Heard 3 4 — waiting for the rest…","next":"48 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:24.167Z","alternatives":["4 3 4","3 4","4 3"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,3,4]}]","next":"48 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:27.432Z","alternatives":["4","4 4","4 4 4","4 4 4 4"],"outcome":"waiting","note":"Heard 4 — waiting for the rest…","next":"48 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:09:39.314Z","alternatives":["444","44"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,4]}]","next":"48 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:10:29.998Z","alternatives":["is it done"],"outcome":"rejected","note":"Didn't understand “done”.","next":"48 inside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:22.576Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"18 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:22.821Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"17 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:23.072Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"16 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:23.327Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"15 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:23.577Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"14 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:23.827Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"13 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:24.078Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"12 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:24.331Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"11 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:24.585Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"21 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:24.835Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"22 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:25.088Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"23 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:25.341Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"24 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:25.593Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"25 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:25.845Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"26 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:26.097Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"27 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:26.348Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"28 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:26.601Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"38 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:26.853Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"37 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:27.105Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"36 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:27.357Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"35 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:27.609Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"34 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:27.861Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"33 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:28.112Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"32 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:28.366Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"31 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:28.618Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"41 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:28.873Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"42 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:29.124Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"43 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:29.373Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"44 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:29.624Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"45 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:29.877Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"46 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:30.128Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"47 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:30.387Z","alternatives":["222 333"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[2,2,2,3,3,3]}]","next":"48 outside","route":"around_tooth"}
+{"at":"2026-11-14T04:14:31.444Z","alternatives":["no meet that 5:00"],"outcome":"written","note":"[{\"type\":\"correction\",\"value\":5}]","next":null,"route":"around_tooth"}
+{"at":"2026-11-14T04:14:32.039Z","alternatives":["444"],"outcome":"written","note":"[{\"type\":\"depths\",\"values\":[4,4,4]}]","next":null,"route":"around_tooth"}

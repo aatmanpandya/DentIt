@@ -35,6 +35,8 @@ const NUMBER_WORDS: Record<string, string> = {
 export function normalise(transcript: string): Token[] {
   const text = transcript
     .toLowerCase()
+    // "5:00": Chrome writes "five" as a time after "that" ("no meet that 5:00", live 14 Nov).
+    .replace(/\b(\d{1,2}):00\b/g, "$1")
     .replace(/[,.;:!?"]/g, " ")
     .replace(/\bout side\b/g, "outside")
     .replace(/\bin side\b/g, "inside");

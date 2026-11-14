@@ -38,6 +38,39 @@ interface Heard {
 const JOIN_WINDOW_MS = 15000;
 
 const ROUTE_KEY = "dentit.voiceRoute";
+const SOUND_KEY = "dentit.voiceSound";
+
+/**
+ * A sound per outcome, so the dentist knows without looking: live (14 Nov) a refused phrase went
+ * unnoticed while eyes were on the mouth, and every later number landed a tooth behind the script.
+ * Commercial voice charting chimes for the same reason. Web Audio, no files.
+ */
+type Cue = "written" | "waiting" | "refused";
+function playCue(ctx: AudioContext | null, cue: Cue) {
+  if (!ctx) return;
+  const tones: [number, number, number][] =
+    cue === "written" ? [[880, 0, 0.08]] : cue === "waiting" ? [[600, 0, 0.06]] : [[220, 0, 0.14], [220, 0.2, 0.14]];
+  for (const [freq, at, dur] of tones) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.type = cue === "refused" ? "square" : "sine";
+    const t = ctx.currentTime + at;
+    gain.gain.setValueAtTime(cue === "refused" ? 0.08 : 0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur);
+  }
+}
+
+function readSound(): boolean {
+  try {
+    return window.localStorage.getItem(SOUND_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
 // "Around each tooth" first: it's how Suman Dental Care probes (Dr Nimisha, 14 Nov).
 const ROUTE_LABEL: Record<ProbingRoute, string> = { around_tooth: "Around each tooth", outside_first: "Outside first", each_jaw: "Each jaw first" };
 
@@ -67,20 +100,30 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
   const [history, setHistory] = useState<{ changes: ToothChange[]; skips: string[]; voiceBefore: VoiceState; text: string; cells: VoiceCell[] }[]>([]);
   const [showHelp, setShowHelp] = useState(false);
   const sttRef = useRef<SpeechToText | null>(null);
+  const [sound, setSound] = useState(readSound);
+  const audioRef = useRef<AudioContext | null>(null);
+  const cue = (c: Cue) => {
+    if (sound) playCue(audioRef.current, c);
+  };
 
   const steps = useMemo(() => buildRoute(route, activeOrder), [route, activeOrder]);
-  const next = voice.cursor ? steps.find((s) => s.tooth === voice.cursor?.tooth && s.side === voice.cursor?.side) : steps[0];
+  // The planner leaves the cursor on the last side with offset 3 once the route is done; that
+  // used to read "Next: 48 inside" with nothing to say the chart was finished (live, 14 Nov).
+  const routeDone = voice.cursor !== null && voice.cursor.offset >= 3;
+  const next = routeDone ? undefined : voice.cursor ? steps.find((s) => s.tooth === voice.cursor?.tooth && s.side === voice.cursor?.side) : steps[0];
 
   function undo() {
     const last = history[history.length - 1];
     if (!last) {
       setHeard({ text: "undo", ok: false, note: "Nothing to undo." });
+      cue("refused");
       return;
     }
     restoreVoice(last.changes, last.skips);
     setVoice(last.voiceBefore);
     setHistory((h) => h.slice(0, -1));
     setHeard({ text: "undo", ok: true, note: `Took back “${last.text}”.` });
+    cue("written");
     onHighlight(last.cells);
   }
 
@@ -109,11 +152,13 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     if (!parsed.ok && parsed.incomplete) {
       pendingRef.current = { text: alternatives[0] ?? "", at: Date.now() };
       setHeard({ text, ok: false, waiting: true, note: parsed.reason });
+      cue("waiting");
       logPhrase(alternatives, "waiting", parsed.reason);
       return;
     }
     if (!parsed.ok) {
       setHeard({ text, ok: false, note: `${parsed.reason} Nothing written.` });
+      cue("refused");
       logPhrase(alternatives, "rejected", parsed.reason);
       return;
     }
@@ -125,6 +170,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     const plan = planPhrase(parsed.commands, voice, { steps, draftFor: knownDraft, hasFurcation });
     if (!plan.ok) {
       setHeard({ text, ok: false, note: `${plan.reason} Nothing written.` });
+      cue("refused");
       logPhrase(alternatives, "rejected", plan.reason);
       return;
     }
@@ -135,6 +181,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
     const onlyMoved = parsed.commands.every((c) => c.type === "jump" || c.type === "back");
     setHeard({ text, ok: true, note: plan.changes.length + plan.skips.length === 0 && !onlyMoved ? "Already recorded." : "" });
     onHighlight(plan.cells);
+    cue("written");
   }
 
   // The recogniser is created once per listening session; its callbacks must see the latest
@@ -163,6 +210,15 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
       return;
     }
     setError(null);
+    // Browsers only allow sound after a click: make the audio context here.
+    if (!audioRef.current) {
+      try {
+        audioRef.current = new AudioContext();
+      } catch {
+        audioRef.current = null;
+      }
+    }
+    void audioRef.current?.resume();
     const stt = createWebSpeech({
       onInterim: setInterim,
       onFinal: (alts) => handleRef.current(alts),
@@ -200,7 +256,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
               {voice.cursor && voice.cursor.offset > 0 && voice.cursor.offset < 3 ? ` · site ${voice.cursor.offset + 1}` : ""}
             </>
           ) : (
-            "Route finished"
+            <span className="font-medium text-healthy">✓ Every tooth on the route is done</span>
           )}
         </span>
         <button
@@ -234,6 +290,22 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
             ))}
           </select>
         </label>
+        <label className="flex items-center gap-1 text-[12px] text-ink-soft">
+          <input
+            id="voice-sound"
+            type="checkbox"
+            checked={sound}
+            onChange={(e) => {
+              setSound(e.target.checked);
+              try {
+                window.localStorage.setItem(SOUND_KEY, e.target.checked ? "on" : "off");
+              } catch {
+                // per-device convenience only
+              }
+            }}
+          />
+          Sound
+        </label>
         <button type="button" onClick={() => setShowHelp((v) => !v)} className="text-[12px] text-steel hover:underline">
           {showHelp ? "Hide phrases" : "What to say"}
         </button>
@@ -266,6 +338,7 @@ export function VoiceBar({ activeOrder, disabled, knownDraft, applyVoice, restor
           <li>“one eight is missing”</li>
           <li>“no, make that four” — the last depth</li>
           <li>“back”, “undo”</li>
+          <li className="sm:col-span-2">Say one side at a time and wait for the ding before the next. Two low buzzes: nothing written, say it again.</li>
         </ul>
       )}
     </div>

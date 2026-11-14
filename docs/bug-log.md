@@ -651,3 +651,29 @@ didn't contain.
     Chrome's guesses, so 1, 2, 2 was written. The cell is highlighted and "no, make that one"
     corrects it; the real fix is a recogniser that hears digits better (ADR-0004).
   - Eval with both runs' phrases: 98/99 exact, 0 wrong values.
+
+---
+
+## 39. Voice perio, full-chart dictation: corrections refused 16 times; script and app drifted apart
+
+The owner dictated a full 32-tooth chart on the new "around each tooth" route (113 phrases,
+`evals/voice/session-log.jsonl`, 14 Nov).
+
+- **"No, make that five" was refused 16 times running.** Chrome heard "make" as "meet" ("no meet
+  that 5", "no meet you at 5:00", "no met at 5"), and "meet" wasn't a correction word. The error
+  said "Correct one number at a time", which was wrong and unhelpful. Now any of make, meet, met,
+  mix, made after "no" is a correction (up to three words are skipped to the number); "5:00" reads
+  as 5; "no meet that" with no number waits for it.
+- **The dictation drifted a tooth behind the script.** A line for 23 was lost ("Nothing heard"
+  twice), the owner carried on with the script, and 24's numbers went on 23 and so on. Nothing in
+  the rules can know which tooth the dentist means, but the drift was invisible because eyes are
+  on the mouth, not the screen. Fix: a sound per outcome (one ding written, a soft blip waiting,
+  two low buzzes refused), on by default with a Sound toggle; the phrase guide says to wait for
+  the ding. Notably the furcation rule caught the drift: "furcation grade 2" landed on 25 and was
+  refused as not multi-rooted.
+- **"Every tooth done" was never said.** After the last tooth the bar still read "Next: 48
+  inside". It now says every tooth on the route is done.
+- **Lines with a comma split badly:** "two two two, two two three" came back "2223" eight times;
+  the three-per-side rule rejected each, nothing wrong written. Saying one side per phrase avoids
+  it; the guide says so.
+- Eval with these phrases added: see the commit.
