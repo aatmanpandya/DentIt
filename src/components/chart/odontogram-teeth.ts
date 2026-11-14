@@ -49,6 +49,7 @@ export interface ToothSpec {
   spread?: number;  // apex spread across the neck
   bow?: number;     // single-root curvature
   boxy?: 0 | 1;     // posterior flanks (near-vertical) vs anterior (fuller, tapering)
+  molar?: 0 | 1;    // permanent molar: drawn by molarRing (bulging crown, curved roots)
   name: string;
 }
 
@@ -77,17 +78,17 @@ export const SPEC: Record<string, ToothSpec> = {
   U3: { cw: 64, nw: 46, ch: 100, rl: 146, occ: 'CAN', n: 1, bow: 4, name: 'canine' },
   U4: { boxy: 1, cw: 68, nw: 50, ch: 82, rl: 128, occ: 'PM', n: 2, furc: 44, spread: 0.50, name: 'first premolar' },
   U5: { boxy: 1, cw: 68, nw: 52, ch: 80, rl: 130, occ: 'PM', n: 1, bow: 3, name: 'second premolar' },
-  U6: { boxy: 1, cw: 100, nw: 74, ch: 76, rl: 122, occ: 'M2', n: 3, furc: 36, spread: 0.66, name: 'first molar' },
-  U7: { boxy: 1, cw: 94, nw: 72, ch: 74, rl: 116, occ: 'M2', n: 3, furc: 32, spread: 0.62, name: 'second molar' },
-  U8: { boxy: 1, cw: 84, nw: 64, ch: 70, rl: 94, occ: 'M2', n: 2, furc: 26, spread: 0.50, name: 'third molar' },
+  U6: { boxy: 1, molar: 1, cw: 100, nw: 74, ch: 76, rl: 122, occ: 'M2', n: 3, furc: 36, spread: 0.66, name: 'first molar' },
+  U7: { boxy: 1, molar: 1, cw: 94, nw: 72, ch: 74, rl: 116, occ: 'M2', n: 3, furc: 32, spread: 0.62, name: 'second molar' },
+  U8: { boxy: 1, molar: 1, cw: 84, nw: 64, ch: 70, rl: 94, occ: 'M2', n: 2, furc: 26, spread: 0.50, name: 'third molar' },
   L1: { cw: 46, nw: 36, ch: 80, rl: 122, occ: 'INC', n: 1, bow: 2, name: 'central incisor' },
   L2: { cw: 52, nw: 38, ch: 86, rl: 128, occ: 'INC', n: 1, bow: 3, name: 'lateral incisor' },
   L3: { cw: 58, nw: 44, ch: 96, rl: 144, occ: 'CAN', n: 1, bow: 4, name: 'canine' },
   L4: { boxy: 1, cw: 60, nw: 46, ch: 78, rl: 126, occ: 'PM', n: 1, bow: 3, name: 'first premolar' },
   L5: { boxy: 1, cw: 66, nw: 50, ch: 78, rl: 128, occ: 'PM', n: 1, bow: 3, name: 'second premolar' },
-  L6: { boxy: 1, cw: 104, nw: 76, ch: 74, rl: 120, occ: 'M3', n: 2, furc: 40, spread: 0.62, name: 'first molar' },
-  L7: { boxy: 1, cw: 98, nw: 74, ch: 72, rl: 114, occ: 'M2', n: 2, furc: 36, spread: 0.60, name: 'second molar' },
-  L8: { boxy: 1, cw: 88, nw: 68, ch: 68, rl: 92, occ: 'M2', n: 2, furc: 28, spread: 0.52, name: 'third molar' },
+  L6: { boxy: 1, molar: 1, cw: 104, nw: 76, ch: 74, rl: 120, occ: 'M3', n: 2, furc: 40, spread: 0.62, name: 'first molar' },
+  L7: { boxy: 1, molar: 1, cw: 98, nw: 74, ch: 72, rl: 114, occ: 'M2', n: 2, furc: 36, spread: 0.60, name: 'second molar' },
+  L8: { boxy: 1, molar: 1, cw: 88, nw: 68, ch: 68, rl: 92, occ: 'M2', n: 2, furc: 28, spread: 0.52, name: 'third molar' },
 
   /* deciduous — smaller, fuller crowns on flared roots */
   DU1: { cw: 44, nw: 32, ch: 60, rl: 78, occ: 'INC', n: 1, bow: 2, name: 'primary central incisor' },
@@ -138,10 +139,81 @@ function rootRails(p: ToothSpec, cervY: number): Rail[] {
   return out;
 }
 
+/**
+ * Permanent molars, modelled on a reference molar illustration (14 Nov): a crown that bulges
+ * past its neck and narrows into a clear cervical waist; two rounded cusps with a small bump
+ * between them; a short root trunk; outer roots that bow outward and curve back in at rounded
+ * tips; a shorter middle root on three-rooted teeth. Mesial on the left, crown +y, roots -y,
+ * the same frame and ring order as controlRing (roots mesial→distal, then crown distal→mesial).
+ */
+function molarRing(p: ToothSpec): Array<[number, number]> {
+  const cervY = BOX.cervical, ch = p.ch, top = cervY + ch;
+  const h = p.cw / 2, nh = p.nw / 2, rl = p.rl, n = p.n ?? 2;
+  const apexY = cervY - rl * 0.94;                              // same reach as the other teeth: stays in the box
+  const trunkY = cervY - Math.max(p.furc ?? 30, rl * 0.26);   // furcation: roots part here
+  const ring: Array<[number, number]> = [];
+  const at = (x: number, y: number) => ring.push([x, y]);
+
+  // mesial root: neck, splaying outward, tip curving back in, rounded apex, inner edge back up
+  at(-nh, cervY);
+  at(-nh * 1.07, cervY - rl * 0.22);
+  at(-nh * 1.22, cervY - rl * 0.5);
+  at(-nh * 1.24, cervY - rl * 0.76);
+  at(-nh * 1.13, apexY + 6);
+  at(-nh * 0.98, apexY);
+  at(-nh * 0.83, apexY + 8);
+  at(-nh * 0.78, cervY - rl * 0.6);
+  if (n >= 3) {
+    // short, narrow middle (palatal) root between two furcation notches
+    const midApex = cervY - rl * 0.8;
+    at(-nh * 0.5, trunkY - 6);
+    at(-nh * 0.3, trunkY - 14);
+    at(-nh * 0.24, cervY - rl * 0.58);
+    at(-nh * 0.14, midApex + 6);
+    at(0, midApex);
+    at(nh * 0.14, midApex + 6);
+    at(nh * 0.24, cervY - rl * 0.58);
+    at(nh * 0.3, trunkY - 14);
+    at(nh * 0.5, trunkY - 6);
+  } else {
+    at(-nh * 0.4, trunkY - 10);
+    at(0, trunkY);
+    at(nh * 0.4, trunkY - 10);
+  }
+  // distal root: inner edge down, rounded apex, splaying back up to the neck
+  at(nh * 0.78, cervY - rl * 0.6);
+  at(nh * 0.83, apexY + 8);
+  at(nh * 0.98, apexY);
+  at(nh * 1.13, apexY + 6);
+  at(nh * 1.24, cervY - rl * 0.76);
+  at(nh * 1.22, cervY - rl * 0.5);
+  at(nh * 1.07, cervY - rl * 0.22);
+  at(nh, cervY);
+
+  // crown, distal → mesial: waist, bulge, two rounded cusps either side of a central dip
+  at(h * 0.88, cervY + ch * 0.18);
+  at(h * 1.0, cervY + ch * 0.46);
+  at(h * 0.96, cervY + ch * 0.74);
+  at(h * 0.8, top - 3);
+  at(h * 0.52, top);
+  at(h * 0.26, top - 8);
+  at(h * 0.1, top - 15);
+  at(0, top - 12);
+  at(-h * 0.1, top - 15);
+  at(-h * 0.26, top - 8);
+  at(-h * 0.52, top + 1);
+  at(-h * 0.8, top - 3);
+  at(-h * 0.96, cervY + ch * 0.74);
+  at(-h * 1.0, cervY + ch * 0.46);
+  at(-h * 0.88, cervY + ch * 0.18);
+  return ring;
+}
+
 /** The control-point ring for one tooth type, in the shared drawing box. */
 export function controlRing(key: string): Array<[number, number]> {
   const p = SPEC[key];
   if (!p) throw new Error('unknown tooth type ' + key);
+  if (p.molar) return molarRing(p);
   const cervY = BOX.cervical, ch = p.ch, occY = cervY + ch;
   const raw: Pt[] = [];
   const R = 3.2;
