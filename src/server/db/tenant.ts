@@ -9,10 +9,11 @@ import * as schema from "./schema";
  * connects as `dentit_app` — a role with no BYPASSRLS. A forgotten WHERE clause
  * leaks nothing. See docs/specs/data-model.md and docs/adr/ for the RLS design.
  *
- * Do not reuse a pooled connection across requests with different organizationId —
- * `postgres()` with max:1 here forces a fresh session per call so the GUC can't leak
- * between tenants. This trades connection reuse for correctness; revisit with a
- * transaction-scoped SET LOCAL if pilot load ever makes this a bottleneck.
+ * Two layers keep one clinic's id from reaching another clinic's request: the setting is
+ * transaction-local (`set_config(..., true)`), and each call also gets its own connection
+ * (`max: 1`), so nothing can carry over even if a query ever ran outside the transaction.
+ * This trades connection reuse for safety; move to a shared pool if pilot load makes it a
+ * bottleneck.
  */
 export async function dbForRequest<T>(
   organizationId: string,

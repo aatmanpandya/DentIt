@@ -328,33 +328,31 @@ export function parse(transcript: string): ParseResult {
 /**
  * Chrome returns up to five guesses, best first. The best one is used if it parses. If it
  * doesn't because of a misheard word (not because its numbers were ambiguous), the lower guesses
- * are tried — but only used if every one of them that parses agrees,
- * so a fallback is never a coin-flip between readings.
+ * are tried — but only used if every one of them that parses agrees, so a fallback is never a
+ * coin-flip between readings.
  */
-/** The tooth digits said after "jump" in one guess, valid or not ("jump to one" → "1"). */
-function jumpDigits(text: string): string | null {
-  const tokens = normalise(text);
-  const at = tokens.findIndex((t) => t.t === "word" && (t.w === "jump" || t.w === "go"));
-  if (at === -1) return null;
-  let i = at + 1;
-  if (tokens[i]?.t === "word" && ["to", "too"].includes((tokens[i] as { w: string }).w)) i++;
-  let digits = "";
-  while (tokens[i]?.t === "digits") digits += (tokens[i++] as { s: string }).s;
-  return digits;
-}
-
 export function parseAlternatives(alternatives: string[]): ParseResult & { used?: string } {
   if (alternatives.length === 0) return { ok: false, reason: "Nothing heard." };
+
   const top = parse(alternatives[0]);
   if (top.ok) return guardJump({ ...top, used: alternatives[0] }, alternatives);
+
   // The best guess's numbers were ambiguous ("3124" for "three twelve four"): a lower guess with
   // different numbers ("324") would be a guess at the values. Write nothing.
   if (top.numbers) return top;
-  const others = alternatives.slice(1).map((a) => ({ a, r: parse(a) })).filter((x) => x.r.ok) as { a: string; r: { ok: true; commands: VoiceCommand[] } }[];
+
+  const others = alternatives.slice(1).flatMap((text) => {
+    const result = parse(text);
+    return result.ok ? [{ text, result }] : [];
+  });
   if (others.length === 0) return top;
-  const first = JSON.stringify(others[0].r.commands);
-  if (others.some((o) => JSON.stringify(o.r.commands) !== first)) return { ok: false, reason: `Heard “${alternatives[0]}” — not sure what was meant. Say it again.` };
-  return guardJump({ ...others[0].r, used: others[0].a }, alternatives);
+
+  const first = JSON.stringify(others[0].result.commands);
+  const disagree = others.some((o) => JSON.stringify(o.result.commands) !== first);
+  if (disagree) {
+    return { ok: false, reason: `Heard “${alternatives[0]}” — not sure what was meant. Say it again.` };
+  }
+  return guardJump({ ...others[0].result, used: others[0].text }, alternatives);
 }
 
 /**
@@ -363,15 +361,39 @@ export function parseAlternatives(alternatives: string[]): ParseResult & { used?
  * move — except when one is just the other with a trailing digit lost or added ("1" beside "16",
  * "six" heard as "side"; "111" beside "11"), which can't put the cursor on a different tooth.
  */
-function guardJump(result: { ok: true; commands: VoiceCommand[]; used: string }, alternatives: string[]): ParseResult & { used?: string } {
+function guardJump(
+  result: { ok: true; commands: VoiceCommand[]; used: string },
+  alternatives: string[],
+): ParseResult & { used?: string } {
   const jump = result.commands.find((c) => c.type === "jump");
   if (!jump || jump.type !== "jump") return result;
-  const conflict = alternatives.some((a) => {
-    const d = jumpDigits(a);
-    return d !== null && d !== "" && d !== jump.tooth && !jump.tooth.startsWith(d) && !d.startsWith(jump.tooth);
+
+  const conflict = alternatives.some((text) => {
+    const digits = jumpDigits(text);
+    if (!digits || digits === jump.tooth) return false;
+    return !jump.tooth.startsWith(digits) && !digits.startsWith(jump.tooth);
   });
   if (!conflict) return result;
-  return { ok: false, numbers: true, reason: `Not sure which tooth (heard “${alternatives[0]}”). Say “jump”, then the tooth, without “to”: “jump one one inside”.` };
+
+  return {
+    ok: false,
+    numbers: true,
+    reason: `Not sure which tooth (heard “${alternatives[0]}”). Say “jump”, then the tooth, without “to”: “jump one one inside”.`,
+  };
+}
+
+/** The tooth digits said after "jump" in one guess, valid or not ("jump to one" → "1"). */
+function jumpDigits(text: string): string | null {
+  const tokens = normalise(text);
+  const at = tokens.findIndex((t) => isWord(t, "jump", "go"));
+  if (at === -1) return null;
+
+  let i = at + 1;
+  if (isWord(tokens[i], "to", "too")) i++;
+
+  let digits = "";
+  for (let t = tokens[i]; t?.t === "digits"; t = tokens[++i]) digits += t.s;
+  return digits;
 }
 
 /**
